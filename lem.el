@@ -30,15 +30,16 @@
 
 (setq fedi-http--api-version "v3")
 
-(defvar lem-instance-url "https://lemmy.ml")
+;; (defvar lem-instance-url "https://lemmy.ml")
+(defvar fedi-instance-url "https://lemmy.ml")
 
-(defun lem-get-site ()
+(defun lem-site ()
   "Return detauls about instance at `lem-instance-url'."
   (let ((url (fedi-http--api "site")))
     (fedi-http--get-json url)))
 
 (defun lem-list-communities ()
-  "List communities on the instnance."
+  "List communities on the instance."
   (let ((url (fedi-http--api "community/list")))
     (fedi-http--get-json url)))
 
@@ -47,29 +48,72 @@
   (let ((url (fedi-http--api "post/list")))
     (fedi-http--get-json url)))
 
-(defun lem-get-community (id)
-  "Get community with ID."
+(defun lem-community (id)
+  "Get community with ID. Returns community_view object."
   (let* ((params `(("id" . ,id)))
          (url (fedi-http--api "community")))
     (fedi-http--get-json url params)))
 
-(defun lem-get-post (id)
-  "Post with ID."
+(defun lem-get-post (id) ; &optional auth
+  "Get post with ID, for display.
+Returns post_view, community_view and moderators objects."
+  ;; post_view contains: post, creator, community,
+  ;; creator_banned_from_community, counts, etc.
   (let* ((params `(("id" . ,id)))
-         (url (fedi-http--api "post/list")))
+         (url (fedi-http--api "post")))
     (fedi-http--get-json url params)))
 
-(defun lem-get-community-posts (id)
-  "Posts for community with ID."
+(defun lem-like-post (id)
+  "Like post with ID. Requires auth."
+  (let* ((params `(("id" . ,id)))
+         (url (fedi-http--api "post/like")))
+    (fedi-http--get-json url params)))
+
+(defun lem-report-post (id reason auth)
+  "Report post with ID, providing REASON, using AUTH."
+  (let* ((params `(("id" . ,id)))
+         (url (fedi-http--api "post/report")))
+    (fedi-http--get-json url params)))
+
+(defun lem-get-post-comments (post-id)
+  "Get comments for POST-ID.
+Returns comments,a list of comment objects, for display."
+  (let ((params `(("post_id" . ,post-id)))
+        (url (fedi-http--api "comment/list")))
+    (fedi-http--get-json url params)))
+
+(defun lem-community-posts (id ) ; limit page &optional auth
+  "Get posts for community with ID.
+Returns posts, for listing not viewing."
   (let* ((params `(("community_id" . ,id)))
          (url (fedi-http--api "post/list")))
     (fedi-http--get-json url params)))
 
-(defun lem-get-search (query)
-  "Search for QUERY."
+(defun lem-search (query)
+  "Search for QUERY.
+Returns comments, posts, communities objects."
   (let ((params `(("q" . ,query)))
         (url (fedi-http--api "search")))
     (fedi-http--get-json url params)))
+
+(defun lem-map-community-ids-names (communities)
+  "Return an alist of id and name for each item in COMMUNITIES."
+  ;; communities can have the same name and title, so to disambig we need
+  ;; description, and to display it in completing-read.
+  (mapcar (lambda (x)
+            (let ((comm (alist-get 'community x)))
+              (cons (number-to-string (alist-get 'id comm))
+                    (alist-get 'name comm))))
+          communities))
+
+(defun lem-community-search ()
+  "Search for a term, then community from list of matches."
+  (let* ((query (read-string "Community search: "))
+         (communities (alist-get 'communities (lem-search query)))
+         (choice (completing-read "Community: "
+                                  (lem-map-community-ids-names communities)))) ;
+    ;; (lem-get-community choice))) ; returns community_view, its own info
+    (lem-community-posts choice))) ; returns community's posts
 
 (provide 'lem)
 ;;; lem.el ends here
