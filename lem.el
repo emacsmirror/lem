@@ -115,5 +115,19 @@ Returns comments, posts, communities objects."
     ;; (lem-get-community choice))) ; returns community_view, its own info
     (lem-community-posts choice))) ; returns community's posts
 
+(defun lem-get-person-by-id (id) ; &optional auth
+  "Return details for user with ID.
+Returns person_view, which has person, comments, posts, and moderates."
+  (let ((params `(("person_id" . ,id)))
+        (url (fedi-http--api "user")))
+    (fedi-http--get-json url params)))
+
+(defun lem-get-person-by-name (name) ; &optional auth
+  "Return details for user with NAME.
+Returns person_view, which has person, comments, posts, and moderates."
+  (let ((params `(("username" . ,name)))
+        (url (fedi-http--api "user")))
+    (fedi-http--get-json url params)))
+
 (provide 'lem)
 ;;; lem.el ends here
