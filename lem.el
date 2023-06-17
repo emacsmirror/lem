@@ -30,8 +30,9 @@
 
 (setq fedi-http--api-version "v3")
 
-;; (defvar lem-instance-url "https://lemmy.ml")
 (defvar fedi-instance-url "https://lemmy.ml")
+
+(defvar lem-auth-token nil)
 
 (defun lem-site ()
   "Return detauls about instance at `lem-instance-url'."
@@ -128,6 +129,24 @@ Returns person_view, which has person, comments, posts, and moderates."
   (let ((params `(("username" . ,name)))
         (url (fedi-http--api "user")))
     (fedi-http--get-json url params)))
+
+(defun lem-log-in (name password)
+  "Login with NAME and PASSWORD.
+Retuns auth token, and sets `lem-auth-token' to its value."
+  (let* ((params `(("username_or_email" . ,name)
+                   ("password" . ,password)))
+         (json (json-encode params))
+         (headers '(("Content-Type" . "application/json")
+                    ("Accept" . "application/json")))
+         (url (fedi-http--api "user/login"))
+         (response (fedi-http--post url json headers t t)))
+    ;; (switch-to-buffer response)
+    (fedi-http--triage
+     response
+     (lambda ()
+       (with-current-buffer response
+         (let ((json (fedi-http--process-json)))
+           (setq lem-auth-token (alist-get 'jwt json))))))))
 
 (provide 'lem)
 ;;; lem.el ends here
