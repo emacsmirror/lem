@@ -135,12 +135,8 @@ Returns person_view, which has person, comments, posts, and moderates."
 Retuns auth token, and sets `lem-auth-token' to its value."
   (let* ((params `(("username_or_email" . ,name)
                    ("password" . ,password)))
-         (json (json-encode params))
-         (headers '(("Content-Type" . "application/json")
-                    ("Accept" . "application/json")))
          (url (fedi-http--api "user/login"))
-         (response (fedi-http--post url json headers t t)))
-    ;; (switch-to-buffer response)
+         (response (fedi-http--post url params nil :unauthed :json)))
     (fedi-http--triage
      response
      (lambda ()
