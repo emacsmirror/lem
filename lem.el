@@ -155,8 +155,7 @@ Retuns auth token, and sets `lem-auth-token' to its value."
         (format "Subscribed to %s [%s]" name desc)))))
 
 (defun lem-follow-community (id)
-  "Follow community with ID.
-ID is a number.
+  "Follow community with ID, a number.
 Returns a community_view."
   (let* ((params `(("community_id" . ,id)
                    ("auth" . ,lem-auth-token)
@@ -166,6 +165,33 @@ Returns a community_view."
     (fedi-http--triage response
                        (lambda ()
                          (lem-follow-community-cb response)))))
+
+(defun lem-create-post-cb (response)
+  (with-current-buffer response
+    (let* ((json (fedi-http--process-json))
+           (post (alist-get 'post (car json)))
+           (name (alist-get 'name post)))
+      (when name
+        (format "Post created: %s" name)))))
+
+(defun lem-create-post (name id
+                             &optional body url nsfw lang-id honeypot)
+  "Create post with NAME in community with ID, a number.
+BODY is the text.
+URL, NSFW, LANG-ID and HONEYPOT are post attributes.
+Returns a post_view."
+  (let* ((params `(("community_id" . ,id)
+                   ("auth" . ,lem-auth-token)
+                   ("name" . ,name)
+                   ("body" . ,body)
+                   ("url" . ,url)
+                   ("nsfw" . ,nsfw)
+                   ("honeypot" . ,honeypot)))
+         (url (fedi-http--api "post"))
+         (response (fedi-http--post url params nil :unauthed :json)))
+    (fedi-http--triage response
+                       (lambda ()
+                         (lem-create-post-cb response)))))
 
 (provide 'lem)
 ;;; lem.el ends here
