@@ -144,5 +144,28 @@ Retuns auth token, and sets `lem-auth-token' to its value."
          (let ((json (fedi-http--process-json)))
            (setq lem-auth-token (alist-get 'jwt json))))))))
 
+(defun lem-follow-community-cb (response)
+  (with-current-buffer response
+    (let* ((json (fedi-http--process-json))
+           (comm (alist-get 'community (car json)))
+           (subed (alist-get 'subscribed (car json)))
+           (name (alist-get 'name comm))
+           (desc (alist-get 'description comm)))
+      (when (equal subed "Subscribed")
+        (format "Subscribed to %s [%s]" name desc)))))
+
+(defun lem-follow-community (id)
+  "Follow community with ID.
+ID is a number.
+Returns a community_view."
+  (let* ((params `(("community_id" . ,id)
+                   ("auth" . ,lem-auth-token)
+                   ("follow" . t)))
+         (url (fedi-http--api "community/follow"))
+         (response (fedi-http--post url params nil :unauthed :json)))
+    (fedi-http--triage response
+                       (lambda ()
+                         (lem-follow-community-cb response)))))
+
 (provide 'lem)
 ;;; lem.el ends here
