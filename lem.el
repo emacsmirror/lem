@@ -138,8 +138,7 @@ ARGS are for the function, PARAMS is an alist of form parameters.
 JSON means to send params as a JSON payload."
   (declare (debug t)
            (indent 1))
-  (let ((req-fun (intern (concat "fedi-http--" method)))
-        (cb (intern (concat "lem-" name "-cb"))))
+  (let ((req-fun (intern (concat "fedi-http--" method))))
     `(defun ,(intern (concat "lem-" name)) ,args
        (let* ((url (fedi-http--api ,endpoint))
               (response (funcall #',req-fun url ,params nil :unauthed ,json)))
