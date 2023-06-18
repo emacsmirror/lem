@@ -52,7 +52,9 @@ JSON means to send params as a JSON payload."
                (cond ((equal ,method "post")
                       (funcall #',req-fun url ,params nil :unauthed ,json))
                      ((equal ,method "get")
-                      (funcall #',req-fun url ,params)))))
+                      (funcall #',req-fun url ,params))
+                     ((equal ,method "put")
+                      (funcall #',req-fun url ,params nil ,json)))))
          (fedi-http--triage response
                             (lambda ()
                               (with-current-buffer response
@@ -228,6 +230,17 @@ JSON means to send params as a JSON payload."
 ;; (lem-like-post 1341246 1) ; dunno how scoring works
 
 ;; TODO: edit post
+(lem-def-request "put"
+  "edit-post" "post"
+  (id new-name &optional new-body) ; nsfw url lang-id
+  `(("post_id" . ,id)
+    ("name" . ,new-name)
+    ("body" . ,new-body)
+    ;; ("content" . ,new-str)
+    ("auth" . ,lem-auth-token))
+  :json)
+
+;; (lem-edit-post 1341246 "blaodh")
 
 (lem-def-request "post"
   "report-post" "post/report"
@@ -277,6 +290,15 @@ JSON means to send params as a JSON payload."
 ;; (lem-get-community-comments "96200")
 
 ;; TODO: edit comment
+(lem-def-request "put"
+  "edit-comment" "comment"
+  (id new-str)
+  `(("comment_id" . ,id)
+    ("content" . ,new-str)
+    ("auth" . ,lem-auth-token))
+  :json)
+
+(lem-edit-comment 765662 "tasdfl;k")
 
 (lem-def-request "post"
   "report-comment" "comment/report"
