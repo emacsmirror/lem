@@ -179,16 +179,16 @@ JSON means to send params as a JSON payload."
 ;;     (format "Subscribed to %s [%s]" name desc)))
 
 (lem-def-request "post"
-  "create-post" "post"
-  (name community-id &optional body url nsfw land-id honeypot)
-  `(("community_id" . ,community-id)
-    ("auth" . ,lem-auth-token)
-    ("name" . ,name)
-    ("body" . ,body)
-    ("url" . ,url)
-    ("nsfw" . ,nsfw)
-    ("honeypot" . ,honeypot))
-  :json)
+"create-post" "post"
+(name community-id &optional body url nsfw honeypot) ; lang-id
+`(("community_id" . ,community-id)
+  ("auth" . ,lem-auth-token)
+  ("name" . ,name)
+  ("body" . ,body)
+  ("url" . ,url)
+  ("nsfw" . ,nsfw)
+  ("honeypot" . ,honeypot))
+:json)
 
 ;; cb:
 ;; (let* ((json (fedi-http--process-json))
