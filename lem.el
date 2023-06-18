@@ -130,10 +130,10 @@ Returns person_view, which has person, comments, posts, and moderates."
         (url (fedi-http--api "user")))
     (fedi-http--get-json url params)))
 
-(defmacro lem-def-request (method name endpoint args params cb-body &optional json)
-  "Create http request funcation called NAME, with METHOD, and ENDPOINT.
-ARGS, PARAMS, CB-BODY.
-JSON means send params as a json payload."
+(defmacro lem-def-request (method name endpoint args params &optional json)
+  "Create http request function NAME, using http METHOD, for ENDPOINT.
+ARGS are for the function, PARAMS is an alist of form parameters.
+JSON means to send params as a JSON payload."
   (declare (debug t)
            (indent 1))
   (let ((req-fun (intern (concat "fedi-http--" method)))
@@ -144,31 +144,37 @@ JSON means send params as a json payload."
          (fedi-http--triage response
                             (lambda ()
                               (with-current-buffer response
-                                ,cb-body)))))))
+                                (fedi-http--process-json))))))))
 
 (lem-def-request "post"
-  "log-in" "user/login"
+  "login" "user/login"
   (name password)
   `(("username_or_email" . ,name)
     ("password" . ,password))
-  (let ((json (fedi-http--process-json)))
-    (setq lem-auth-token (alist-get 'jwt json)))
   :json)
+
+(defun lem-login-set-token (name password)
+  "Login for user NAME with PASSWORD."
+  (interactive)
+  (let ((json (lem-login (name password))))
+    (setq lem-auth-token (alist-get 'jwt json))))
 
 (lem-def-request "post"
   "follow-community" "community/follow"
-  (id)
-  `(("community_id" . ,id)
+  (community-id)
+  `(("community_id" . ,community-id)
     ("auth" . ,lem-auth-token)
     ("follow" . t))
-  (let* ((json (fedi-http--process-json))
-         (comm (alist-get 'community (car json)))
-         (subed (alist-get 'subscribed (car json)))
-         (name (alist-get 'name comm))
-         (desc (alist-get 'description comm)))
-    (when (equal subed "Subscribed")
-      (format "Subscribed to %s [%s]" name desc)))
   :json)
+
+;; cb:
+;; (let* ((json (fedi-http--process-json))
+;;        (comm (alist-get 'community (car json)))
+;;        (subed (alist-get 'subscribed (car json)))
+;;        (name (alist-get 'name comm))
+;;        (desc (alist-get 'description comm)))
+;;   (when (equal subed "Subscribed")
+;;     (format "Subscribed to %s [%s]" name desc)))
 
 (lem-def-request "post"
   "create-post" "post"
@@ -180,12 +186,14 @@ JSON means send params as a json payload."
     ("url" . ,url)
     ("nsfw" . ,nsfw)
     ("honeypot" . ,honeypot))
-  (let* ((json (fedi-http--process-json))
-         (post (alist-get 'post (car json)))
-         (name (alist-get 'name post)))
-    (when name
-      (format "Post created: %s" name)))
   :json)
+
+;; cb:
+;; (let* ((json (fedi-http--process-json))
+;;        (post (alist-get 'post (car json)))
+;;        (name (alist-get 'name post)))
+;;   (when name
+;;     (format "Post created: %s" name)))
 
 (lem-def-request "post"
   "create-comment" "comment"
@@ -194,11 +202,13 @@ JSON means send params as a json payload."
     ("auth" . ,lem-auth-token)
     ("content" . ,content)
     ("parent_id" . ,parent-id))
-  (let* ((json (fedi-http--process-json))
-         (comment (alist-get 'comment (car json))))
-    (when comment
-      (format "Comment created: %s" comment)))
   :json)
+
+;; cb:
+;; (let* ((json (fedi-http--process-json))
+;;        (comment (alist-get 'comment (car json))))
+;;   (when comment
+;;     (format "Comment created: %s" comment)))
 
 ;; (lem-create-comment 1235982 "test" :json)
 ;; (setq lem-post-comments (lem-get-post-comments "1235982"))
