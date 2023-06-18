@@ -157,7 +157,7 @@ JSON means to send params as a JSON payload."
 (defun lem-login-set-token (name password)
   "Login for user NAME with PASSWORD."
   (interactive)
-  (let ((json (lem-login (name password))))
+  (let ((json (lem-login name password)))
     (setq lem-auth-token (alist-get 'jwt json))))
 
 (lem-def-request "post"
