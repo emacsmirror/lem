@@ -193,5 +193,25 @@ Returns a post_view."
                        (lambda ()
                          (lem-create-post-cb response)))))
 
+(defun lem-create-comment (id content)
+  ;; &optional form-id lang-id parent-id)
+  "Create comment on post with ID, a number.
+Returns a comment_view."
+  (let ((params `(("comment_id" . ,id)
+                  ("auth" . ,lem-auth-token)
+                  ("content" . ,content)))
+        (url (fedi-http--api "comment"))
+        (response (fedi-http--post url params nil :unauthed :json)))
+    (fedi-http--triage response
+                       (lambda ()
+                         (lem-create-comment-cb response)))))
+
+(defun lem-create-comment-cb (response)
+  (with-current-buffer response
+    (let* ((json (fedi-http--process-json))
+           (comment (alist-get 'comment (car json))))
+      (when comment
+        (format "Comment created: %s" comment)))))
+
 (provide 'lem)
 ;;; lem.el ends here
