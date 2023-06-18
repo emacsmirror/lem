@@ -131,7 +131,9 @@ Returns person_view, which has person, comments, posts, and moderates."
     (fedi-http--get-json url params)))
 
 (defmacro lem-def-request (method name endpoint args params cb-body &optional json)
-  ""
+  "Create http request funcation called NAME, with METHOD, and ENDPOINT.
+ARGS, PARAMS, CB-BODY.
+JSON means send params as a json payload."
   (declare (debug t)
            (indent 1))
   (let ((req-fun (intern (concat "fedi-http--" method)))
