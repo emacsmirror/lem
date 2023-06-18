@@ -124,6 +124,23 @@ JSON means to send params as a JSON payload."
 
 ;; (lem-get-person-by-name "blawsybogsy")
 
+;;; NOTIFS
+(lem-def-request "get"
+  "get-mentions" "user/mention"
+  () ; (&optional unread-only)
+  `(("auth" . ,lem-auth-token)
+    ("unread_only" . "true")))
+
+;; (lem-get-mentions)
+
+(lem-def-request "get"
+  "get-replies" "user/replies"
+  () ; (&optional unread-only)
+  `(("auth" . ,lem-auth-token)
+    ("unread_only" . "true")))
+
+;; (lem-get-replies)
+
 ;;; COMMUNITIES
 (lem-def-request "get"
   "get-community" "community"
