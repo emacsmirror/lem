@@ -219,22 +219,15 @@ JSON means to send params as a JSON payload."
 ;;   (when name
 ;;     (format "Post created: %s" name)))
 
-(lem-def-request "get"
+(lem-def-request "post"
   "like-post" "post/like"
-  (id)
-  `(("id" . ,id)
-    ("auth" . ,lem-auth-token)))
+  (post-id score)
+  `(("post_id" . ,id)
+    ("auth" . ,lem-auth-token)
+    ("score" . ,score))
+  :json)
 
-;; (lem-like-post "1341264")
-;; (lem-like-post "1341246")
-;; (lem-like-post "765662")
-
-;; (defun lem-like-post (id)
-;;   "Like post with ID. Requires auth."
-;;   (let ((params `(("id" . ,id)
-;;                   ("auth" . ,lem-auth-token)))
-;;         (url (fedi-http--api "post/like")))
-;;     (fedi-http--get-json url params)))
+;; (lem-like-post 1341246 1) ; dunno how scoring works
 
 ;; TODO: edit post
 
