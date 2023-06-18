@@ -22,7 +22,9 @@
 
 ;;; Commentary:
 
-;; basics for a lemmy client library. These functions just return plain JSON.
+;; Basic functions for a Lemmy client library.
+
+;; All functions return parsed JSON.
 
 ;;; Code:
 
