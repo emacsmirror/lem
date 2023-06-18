@@ -170,6 +170,15 @@ JSON means to send params as a JSON payload."
 
 
 ;; TODO: CreateCommunity
+(lem-def-request "post"
+  "create-community" "community"
+  (name)
+  `(("name" . ,name)
+    ("title" . ,name)
+    ("auth" . ,lem-auth-token)))
+
+;; (lem-create-community "created-comm-une-ity")
+
 ;; TODO: DeleteCommunity
 
 ;;; POSTS
