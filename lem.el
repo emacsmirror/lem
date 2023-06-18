@@ -220,7 +220,7 @@ JSON means to send params as a JSON payload."
 (lem-def-request "post"
   "like-post" "post/like"
   (post-id score)
-  `(("post_id" . ,id)
+  `(("post_id" . ,post-id)
     ("auth" . ,lem-auth-token)
     ("score" . ,score))
   :json)
