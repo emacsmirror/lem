@@ -72,9 +72,11 @@ Returns post_view, community_view and moderators objects."
          (url (fedi-http--api "post/like")))
     (fedi-http--get-json url params)))
 
-(defun lem-report-post (id reason auth)
-  "Report post with ID, providing REASON, using AUTH."
-  (let* ((params `(("id" . ,id)))
+(defun lem-report-post (id reason)
+  "Report post with ID, providing REASON."
+  (let* ((params `(("post_id" . ,id)
+                   ("reason" . ,reason)
+                   ("auth" . ,lem-auth-token)))
          (url (fedi-http--api "post/report")))
     (fedi-http--get-json url params)))
 
