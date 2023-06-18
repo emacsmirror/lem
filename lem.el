@@ -166,53 +166,65 @@ Returns a community_view."
                        (lambda ()
                          (lem-follow-community-cb response)))))
 
-(defun lem-create-post-cb (response)
-  (with-current-buffer response
-    (let* ((json (fedi-http--process-json))
-           (post (alist-get 'post (car json)))
-           (name (alist-get 'name post)))
-      (when name
-        (format "Post created: %s" name)))))
-
-(defun lem-create-post (name id
-                             &optional body url nsfw lang-id honeypot)
-  "Create post with NAME in community with ID, a number.
-BODY is the text.
-URL, NSFW, LANG-ID and HONEYPOT are post attributes.
-Returns a post_view."
-  (let* ((params `(("community_id" . ,id)
-                   ("auth" . ,lem-auth-token)
-                   ("name" . ,name)
-                   ("body" . ,body)
-                   ("url" . ,url)
-                   ("nsfw" . ,nsfw)
-                   ("honeypot" . ,honeypot)))
-         (url (fedi-http--api "post"))
-         (response (fedi-http--post url params nil :unauthed :json)))
-    (fedi-http--triage response
-                       (lambda ()
-                         (lem-create-post-cb response)))))
-
-(defun lem-create-comment (id content)
-  ;; &optional form-id lang-id parent-id)
-  "Create comment on post with ID, a number.
-Returns a comment_view."
-  (let* ((params `(("post_id" . ,id)
-                   ("auth" . ,lem-auth-token)
-                   ("content" . ,content)))
-         (url (fedi-http--api "comment"))
-         (response (fedi-http--post url params nil :unauthed :json)))
-    (fedi-http--triage response
-                       (lambda ()
-                         (lem-create-comment-cb response)))))
-
-(defun lem-create-comment-cb (response)
+(defmacro lem-def-request (method name endpoint args params cb-body &optional json)
   ""
-  (with-current-buffer response
-    (let* ((json (fedi-http--process-json))
-           (comment (alist-get 'comment (car json))))
-      (when comment
-        (format "Comment created: %s" comment)))))
+  (declare (debug t)
+           (indent 1))
+  (let ((req-fun (intern (concat "fedi-http--" method)))
+        (cb (intern (concat "lem-" name "-cb")))
+        (obj (intern endpoint)))
+    `(defun ,(intern (concat "lem-" name)) ,args
+       (let* ((url (fedi-http--api ,endpoint))
+              (response (funcall #',req-fun url ,params nil :unauthed ,json)))
+         (fedi-http--triage response
+                            (lambda ()
+                              (with-current-buffer response
+                                ,cb-body)))))))
+
+(lem-def-request "post"
+  "create-post" "post"
+  (name community-id &optional body url nsfw land-id honeypot)
+  `(("community_id" . ,community-id)
+    ("auth" . ,lem-auth-token)
+    ("name" . ,name)
+    ("body" . ,body)
+    ("url" . ,url)
+    ("nsfw" . ,nsfw)
+    ("honeypot" . ,honeypot))
+  (let* ((json (fedi-http--process-json))
+         (post (alist-get 'post (car json)))
+         (name (alist-get 'name post)))
+    (when name
+      (format "Post created: %s" name)))
+  :json)
+
+(lem-def-request "post"
+  "create-comment" "comment"
+  (post-id content &optional parent-id)
+  `(("post_id" . ,post-id)
+    ("auth" . ,lem-auth-token)
+    ("content" . ,content)
+    ("parent_id" . ,parent-id))
+  (let* ((json (fedi-http--process-json))
+         (comment (alist-get 'comment (car json))))
+    (when comment
+      (format "Comment created: %s" comment)))
+  :json)
+
+;; (lem-create-comment 1235982 "test" :json)
+;; (setq lem-post-comments (lem-get-post-comments "1235982"))
+;; (setq lem-comm (lem-community-posts "14856"))
+
+;; eg ids:
+;; emacs community: 14856
+;; a post: 1235982 (emacs lemmy client?)
+;; a comment on above post: 763989
+;; lem.el test community: 96200
+;; lem.el test community post: 1341246
+
+;; (lem-create-comment 1341243 "comment")
+;; (lem-create-post "title" 96200 "body text")
+;; (lem-create-comment 1341246 "another body text 2")
 
 (provide 'lem)
 ;;; lem.el ends here
