@@ -83,7 +83,7 @@ Returns comments,a list of comment objects, for display."
         (url (fedi-http--api "comment/list")))
     (fedi-http--get-json url params)))
 
-(defun lem-community-posts (id ) ; limit page &optional auth
+(defun lem-community-posts (id) ; limit page &optional auth
   "Get posts for community with ID.
 Returns posts, for listing not viewing."
   (let* ((params `(("community_id" . ,id)))
@@ -197,16 +197,17 @@ Returns a post_view."
   ;; &optional form-id lang-id parent-id)
   "Create comment on post with ID, a number.
 Returns a comment_view."
-  (let ((params `(("comment_id" . ,id)
-                  ("auth" . ,lem-auth-token)
-                  ("content" . ,content)))
-        (url (fedi-http--api "comment"))
-        (response (fedi-http--post url params nil :unauthed :json)))
+  (let* ((params `(("post_id" . ,id)
+                   ("auth" . ,lem-auth-token)
+                   ("content" . ,content)))
+         (url (fedi-http--api "comment"))
+         (response (fedi-http--post url params nil :unauthed :json)))
     (fedi-http--triage response
                        (lambda ()
                          (lem-create-comment-cb response)))))
 
 (defun lem-create-comment-cb (response)
+  ""
   (with-current-buffer response
     (let* ((json (fedi-http--process-json))
            (comment (alist-get 'comment (car json))))
