@@ -237,6 +237,12 @@ JSON means to send params as a JSON payload."
     ("parent_id" . ,parent-id))
   :json)
 
+;; cb:
+;; (let* ((json (fedi-http--process-json))
+;;        (comment (alist-get 'comment (car json))))
+;;   (when comment
+;;     (format "Comment created: %s" comment)))
+
 (lem-def-request "get"
   "get-post-comments" "comment/list"
   (post-id)
@@ -249,11 +255,7 @@ JSON means to send params as a JSON payload."
 ;; TODO: report comment
 ;; TODO: list community comments
 
-;; cb:
-;; (let* ((json (fedi-http--process-json))
-;;        (comment (alist-get 'comment (car json))))
-;;   (when comment
-;;     (format "Comment created: %s" comment)))
+
 
 ;; (lem-create-comment 1235982 "test" :json)
 ;; (setq lem-post-comments (lem-get-post-comments "1235982"))
