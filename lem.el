@@ -135,8 +135,7 @@ Returns person_view, which has person, comments, posts, and moderates."
   (declare (debug t)
            (indent 1))
   (let ((req-fun (intern (concat "fedi-http--" method)))
-        (cb (intern (concat "lem-" name "-cb")))
-        (obj (intern endpoint)))
+        (cb (intern (concat "lem-" name "-cb"))))
     `(defun ,(intern (concat "lem-" name)) ,args
        (let* ((url (fedi-http--api ,endpoint))
               (response (funcall #',req-fun url ,params nil :unauthed ,json)))
