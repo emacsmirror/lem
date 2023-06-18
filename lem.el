@@ -67,8 +67,6 @@ JSON means to send params as a JSON payload."
 
 ;; (lem-get-instance-posts)
 
-(lem-def-request "get" "get-communities" "community/list")
-
 ;;; SEARCH
 (lem-def-request "get"
   "search" "search"
@@ -107,7 +105,6 @@ JSON means to send params as a JSON payload."
   (interactive)
   (let ((json (lem-login name password)))
     (setq lem-auth-token (alist-get 'jwt json))))
-
 
 ;;; USERS
 (lem-def-request "get"
@@ -149,6 +146,10 @@ JSON means to send params as a JSON payload."
     ("auth" . ,lem-auth-token)))
 
 ;; (lem-get-community "96200")
+
+(lem-def-request "get" "get-communities" "community/list")
+
+;; (lem-get-communities)
 
 (lem-def-request "post"
   "follow-community" "community/follow"
