@@ -168,8 +168,6 @@ JSON means to send params as a JSON payload."
 ;;   (when (equal subed "Subscribed")
 ;;     (format "Subscribed to %s [%s]" name desc)))
 
-
-;; TODO: CreateCommunity
 (lem-def-request "post"
   "create-community" "community"
   (name)
@@ -271,9 +269,24 @@ JSON means to send params as a JSON payload."
 
 ;; (lem-get-post-comments "1341246")
 
+(lem-def-request "get"
+  "get-community-comments" "comment/list"
+  (community-id) ; &optional sort limit
+  `(("comminuty_id" . ,community-id)))
+
+;; (lem-get-community-comments "96200")
+
 ;; TODO: edit comment
-;; TODO: report comment
-;; TODO: list community comments
+
+(lem-def-request "post"
+  "report-comment" "comment/report"
+  (id reason)
+  `(("comment_id" . ,id)
+    ("reason" . ,reason)
+    ("auth" . ,lem-auth-token))
+  :json)
+
+;; (lem-report-comment 765662 "test")
 
 
 
