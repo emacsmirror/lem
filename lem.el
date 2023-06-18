@@ -130,42 +130,6 @@ Returns person_view, which has person, comments, posts, and moderates."
         (url (fedi-http--api "user")))
     (fedi-http--get-json url params)))
 
-(defun lem-log-in (name password)
-  "Login with NAME and PASSWORD.
-Retuns auth token, and sets `lem-auth-token' to its value."
-  (let* ((params `(("username_or_email" . ,name)
-                   ("password" . ,password)))
-         (url (fedi-http--api "user/login"))
-         (response (fedi-http--post url params nil :unauthed :json)))
-    (fedi-http--triage
-     response
-     (lambda ()
-       (with-current-buffer response
-         (let ((json (fedi-http--process-json)))
-           (setq lem-auth-token (alist-get 'jwt json))))))))
-
-(defun lem-follow-community-cb (response)
-  (with-current-buffer response
-    (let* ((json (fedi-http--process-json))
-           (comm (alist-get 'community (car json)))
-           (subed (alist-get 'subscribed (car json)))
-           (name (alist-get 'name comm))
-           (desc (alist-get 'description comm)))
-      (when (equal subed "Subscribed")
-        (format "Subscribed to %s [%s]" name desc)))))
-
-(defun lem-follow-community (id)
-  "Follow community with ID, a number.
-Returns a community_view."
-  (let* ((params `(("community_id" . ,id)
-                   ("auth" . ,lem-auth-token)
-                   ("follow" . t)))
-         (url (fedi-http--api "community/follow"))
-         (response (fedi-http--post url params nil :unauthed :json)))
-    (fedi-http--triage response
-                       (lambda ()
-                         (lem-follow-community-cb response)))))
-
 (defmacro lem-def-request (method name endpoint args params cb-body &optional json)
   ""
   (declare (debug t)
@@ -180,6 +144,30 @@ Returns a community_view."
                             (lambda ()
                               (with-current-buffer response
                                 ,cb-body)))))))
+
+(lem-def-request "post"
+  "log-in" "user/login"
+  (name password)
+  `(("username_or_email" . ,name)
+    ("password" . ,password))
+  (let ((json (fedi-http--process-json)))
+    (setq lem-auth-token (alist-get 'jwt json)))
+  :json)
+
+(lem-def-request "post"
+  "follow-community" "community/follow"
+  (id)
+  `(("community_id" . ,id)
+    ("auth" . ,lem-auth-token)
+    ("follow" . t))
+  (let* ((json (fedi-http--process-json))
+         (comm (alist-get 'community (car json)))
+         (subed (alist-get 'subscribed (car json)))
+         (name (alist-get 'name comm))
+         (desc (alist-get 'description comm)))
+    (when (equal subed "Subscribed")
+      (format "Subscribed to %s [%s]" name desc)))
+  :json)
 
 (lem-def-request "post"
   "create-post" "post"
