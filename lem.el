@@ -47,34 +47,21 @@
 
 (setq fedi-package-prefix "lem")
 
-;; (defalias 'lem-request 'fedi-request)
-(defmacro lem-request (method name endpoint &optional args params json no-auth)
+;;; MACRO
+(defmacro lem-request
+    (method name endpoint &optional args params authorized json headers)
   "Create http request function NAME, using http METHOD, for ENDPOINT.
-ARGS are for the function, PARAMS is an alist of form parameters.
-JSON means to send params as a JSON payload.
-Before calling this, set `fedi-package-prefix' to the name of your package.
-NO-AUTH means do not add the auth form parameter."
-  (declare (debug t)
-           (indent 1))
-  (let ((req-fun (intern (concat "fedi-http--" method))))
-    `(defun ,(intern (concat fedi-package-prefix "-" name)) ,args
-       (let* ((url (fedi-http--api ,endpoint))
-              (params (unless ,no-auth
-                        (append `(("auth" . ,lem-auth-token))
-                                ,params)))
-              (response
-               (cond ((or (equal ,method "post")
-                          (equal ,method "put"))
-                      (funcall #',req-fun url params nil :unauthed ,json))
-                     ((equal ,method "get")
-                      (funcall #',req-fun url params)))))
-         ;; (switch-to-buffer response)
-         (fedi-http--triage response
-                            (lambda ()
-                              (with-current-buffer response
-                                ;; (fedi-http--process-json)
-                                (fedi-http--process-response :no-headers))))))))
-
+ARGS are for the function.
+PARAMS is an alist of form parameters to send with the request.
+AUTHORIZED means submit an auth alist to params.
+JSON means to encode params as a JSON payload.
+HEADERS is an alist that will be bound as `url-request-extra-headers'.
+To use this macro, you first need to set `fedi-package-prefix' to
+the name of your package.
+See `fedi-request'."
+  `(fedi-request ,method
+     ,name ,endpoint ,args ,params
+     (when ,authorized `(("auth" . ,lem-auth-token))) ,headers))
 
 ;;; INSTANCE
 (lem-request "get" "instance" "site")
