@@ -50,7 +50,8 @@
 
 ;;; MACRO
 (defmacro lem-request
-    (method name endpoint &optional args params json headers unauthorized)
+    (method name endpoint
+            &optional args docstring params json headers unauthorized)
   "Create http request function NAME, using http METHOD, for ENDPOINT.
 ARGS are for the function.
 PARAMS is an alist of form parameters to send with the request.
@@ -63,21 +64,27 @@ See `fedi-request'."
   (declare (debug t)
            (indent 2))
   `(fedi-request ,method
-       ,name ,endpoint ,args ,params
+       ,name ,endpoint ,args ,docstring ,params
        (unless ,unauthorized `(("auth" . ,lem-auth-token))) ,json ,headers))
 
 ;;; INSTANCE
-(lem-request "get" "instance" "site")
+(lem-request "get" "instance" "site"
+             nil
+             "Returns a site_view.")
 
 ;; (lem-instance)
 
-(lem-request "get" "get-instance-posts" "post/list")
+(lem-request "get" "get-instance-posts" "post/list"
+             nil
+             "Returns a list of posts.")
 
 ;; (lem-get-instance-posts)
 
 ;;; SEARCH
 (lem-request "get" "search"
   "search" (query)
+  "Make a GET request to /search.
+Returns comments, posts, communities and users lists."
   `(("q" . ,query)))
 
 ;; (lem-search "emacs")
@@ -102,9 +109,11 @@ See `fedi-request'."
 ;; (lem-community-posts choice))) ; returns community's posts
 
 ;; (lem-community-search)
+
 ;;; AUTH
 (lem-request "post" "login"
   "user/login" (name password)
+  "Log in to `fedi-instance-url' with NAME and PASSWORD."
   `(("username_or_email" . ,name)
     ("password" . ,password))
   :json nil :unauthed)
@@ -118,12 +127,16 @@ See `fedi-request'."
 ;;; USERS
 (lem-request "get" "get-person-by-id"
   "user" (id)
+  "Get person with ID.
+Returns a person_view."
   `(("person_id" . ,id)))
 
 ;; (lem-get-person-by-id "8511")
 
 (lem-request "get" "get-person-by-name"
   "user" (name)
+  "Get person with NAME.
+Returns a person_view."
   `(("username" . ,name)))
 
 ;; (lem-get-person-by-name "blawsybogsy")
@@ -131,12 +144,16 @@ See `fedi-request'."
 ;;; NOTIFS
 (lem-request "get" "get-mentions"
   "user/mention" () ; (&optional unread-only)
+  "Get mentions for the current user.
+Returns a mentions list."
   `(("unread_only" . "true")))
 
 ;; (lem-get-mentions)
 
 (lem-request "get" "get-replies"
   "user/replies" () ; (&optional unread-only)
+  "Get replies for the current user.
+Returns a replies list."
   `(("unread_only" . "true")))
 
 ;; (lem-get-replies)
@@ -144,22 +161,29 @@ See `fedi-request'."
 ;;; COMMUNITIES
 (lem-request "get" "get-community-by-id"
   "community" (id)
+  "Get community with ID.
+Returns a community_view."
   `(("id" . ,id)))
 
 ;; (lem-get-community-by-id "96200")
 
 (lem-request "get" "get-community-by-name"
   "community" (name)
+  "Get community with NAME.
+Returns a community_view."
   `(("name" . ,name)))
 
 ;; (lem-get-community-by-name "lemel")
 
-(lem-request "get" "get-communities" "community/list")
+(lem-request "get" "get-communities" "community/list"
+             nil "Returns a list of communities.")
 
 ;; (lem-get-communities)
 
 (lem-request "post" "follow-community"
   "community/follow" (community-id)
+  "Follow a community with COMMUNITY-ID.
+Returns a community_view."
   `(("community_id" . ,community-id)
     ("follow" . t))
   :json)
@@ -177,6 +201,7 @@ See `fedi-request'."
 
 (lem-request "post" "create-community"
   "community" (name)
+  "Create a community with NAME."
   `(("name" . ,name)
     ("title" . ,name)))
 
@@ -187,12 +212,16 @@ See `fedi-request'."
 ;;; POSTS
 (lem-request "get" "get-post"
   "post" (id)
+  "Get post with ID.
+Returns a post_view."
   `(("id" . ,id)))
 
 ;; (lem-get-post "1341246")
 
 (lem-request "get" "list-posts"
   "post/list" (community-id) ; &optional limit page sort type
+  "Get posts of community with COMMUNITY_ID.
+Retuns a posts list."
   `(("community_id" . ,community-id)))
 ;; ("limit" . ,limit)
 ;; ("page" . ,page)))
@@ -202,6 +231,9 @@ See `fedi-request'."
 (lem-request "post" "create-post"
   "post"
   (name community-id &optional body url nsfw honeypot) ; lang-id
+  "Create a new post with NAME, on community with COMMUNITY-ID.
+BODY is the post's content. URL is its link.
+NSFW and HONEYPOT not yet implemented."
   `(("community_id" . ,community-id)
     ("name" . ,name)
     ("body" . ,body)
@@ -221,6 +253,9 @@ See `fedi-request'."
 
 (lem-request "post" "like-post"
   "post/like" (post-id score)
+  "Like post with POST-ID.
+SCORE.
+Returns a post_view."
   `(("post_id" . ,post-id)
     ("score" . ,score))
   :json)
@@ -230,6 +265,8 @@ See `fedi-request'."
 ;; TODO: edit post
 (lem-request "put" "edit-post"
   "post" (id new-name &optional new-body) ; nsfw url lang-id
+  "Edit post with ID, giving it a NEW-NAME, and NEW-BODY and NEW-URL.
+Returns a post_view."
   `(("post_id" . ,id)
     ("name" . ,new-name)
     ("body" . ,new-body))
@@ -239,6 +276,8 @@ See `fedi-request'."
 
 (lem-request "post" "report-post"
   "post/report" (id reason)
+  "Report post with ID to instance moderator, giving REASON, a string.
+Returns ????"
   `(("post_id" . ,id)
     ("reason" . ,reason))
   :json)
@@ -246,6 +285,8 @@ See `fedi-request'."
 ;;; COMMENTS
 (lem-request "get" "get-comment"
   "comment" (id)
+  "Get comment with ID.
+Returns a comment_view."
   `(("id" . ,id)))
 
 ;; (lem-get-comment "765662")
@@ -265,12 +306,16 @@ See `fedi-request'."
 
 (lem-request "get" "get-post-comments"
   "comment/list" (post-id)
+  "Get the comments of post with POST-ID.
+Returns a list of comments."
   `(("post_id" . ,post-id)))
 
 ;; (lem-get-post-comments "1341246")
 
 (lem-request "get" "get-community-comments"
   "comment/list" (community-id) ; &optional sort limit
+  "Get comments for community with COMMUNITY-ID.
+Returns a list of comments."
   `(("comminuty_id" . ,community-id)))
 
 ;; (lem-get-community-comments "96200")
@@ -278,6 +323,8 @@ See `fedi-request'."
 ;; TODO: edit comment
 (lem-request "put" "edit-comment"
   "comment" (id new-str)
+  "Edit comment with ID, providing content NEW-STR.
+Returns a comment_view."
   `(("comment_id" . ,id)
     ("content" . ,new-str))
   :json)
@@ -286,6 +333,8 @@ See `fedi-request'."
 
 (lem-request "post" "report-comment"
   "comment/report" (id reason)
+  "Report comment with ID to instance moderator, giving REASON, a string.
+Returns ????"
   `(("comment_id" . ,id)
     ("reason" . ,reason))
   :json)
@@ -295,12 +344,14 @@ See `fedi-request'."
 ;;; PRIVATE MESSAGES
 (lem-request "get" "get-private-messages"
   "private_message/list" ()
+  "Get private messages for the current user."
   `(("unread_only" . "true")))
 
 ;; (lem-get-private-messages)
 
 (lem-request "post" "send-private-message"
   "private_message" (content recipient-id)
+  "Sent a private message CONTENT to user with RECIPIENT-ID."
   `(("content" . ,content)
     ("recipient_id" . ,recipient-id))
   :json)
