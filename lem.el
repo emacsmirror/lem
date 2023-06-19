@@ -90,6 +90,8 @@ NO-AUTH means do not add the auth form parameter."
   (query)
   `(("q" . ,query)))
 
+;; (lem-search "emacs")
+
 (defun lem-map-community-ids-names (communities)
   "Return an alist of id and name for each item in COMMUNITIES."
   ;; communities can have the same name and title, so to disambig we need
