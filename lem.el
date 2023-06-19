@@ -68,10 +68,12 @@ NO-AUTH means do not add the auth form parameter."
                       (funcall #',req-fun url params))
                      ((equal ,method "put")
                       (funcall #',req-fun url params nil :unauthed ,json)))))
+         ;; (switch-to-buffer response)
          (fedi-http--triage response
                             (lambda ()
                               (with-current-buffer response
-                                (fedi-http--process-json))))))))
+                                ;; (fedi-http--process-json)
+                                (fedi-http--process-response :no-headers))))))))
 
 
 ;;; INSTANCE
