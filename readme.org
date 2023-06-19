@@ -7,3 +7,7 @@ All functions make requests and return JSON data pased into Elisp.
 The idea is that it's then possible to write different frontends so users can read lemmy posts in whatever forms they like. Possibilities are notmuch, gnus, md4rd, elfeed, or a standalone rendering option more like mastodon.el.
 
 Currently, most of the basic endpoints are implemented, but not all parameters for each endpoint. 
+
+* Logging in
+
+See =lem-login= and =lem-login-set-token=. Lemmy seems to just require an =auth= parameter with a token you receive as a response to logging in. Currently this token is saved to the persistent variable =lem-auth-token=, which is probably not smart, but it's easy.
