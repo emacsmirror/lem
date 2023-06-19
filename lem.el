@@ -200,12 +200,21 @@ Returns a community_view."
 ;;     (format "Subscribed to %s [%s]" name desc)))
 
 (lem-request "post" "create-community"
-  "community" (name)
+  "community"
+  (name title &optional banner description discussion-languages
+        icon nsfw mods-only-post)
   "Create a community with NAME."
   `(("name" . ,name)
-    ("title" . ,name)))
+    ("title" . ,title)
+    ("banner" . ,banner)
+    ("description" . ,description)
+    ("discussion_languages" . ,discussion-languages)
+    ("nsfw" . ,nsfw)
+    ("icon" . ,icon)
+    ("posting_restricted_to_mods" . ,mods-only-post))
+  :json)
 
-;; (lem-create-community "created-comm-une-ity") ; broken
+;; (lem-create-community "communeity" "com") ; broken
 
 ;; TODO: DeleteCommunity
 
