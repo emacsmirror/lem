@@ -32,6 +32,11 @@
 ;; all be strings. See the commented example calls under the definitions
 ;; below. This should probably be amended for consistency.
 
+;; Code hacked up together roughly, using:
+;; <https://join-lemmy.org/api/classes/LemmyHttp.html>
+;; <https://github.com/LemmyNet/lemmyBB/tree/main/src/api>
+;; <https://github.com/LemmyNet/lemmy/blob/main/src/api_routes_http.rs>
+
 ;;; Code:
 
 (require 'fedi)
