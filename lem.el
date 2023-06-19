@@ -296,6 +296,25 @@
 ;; (lem-report-comment 765662 "test")
 
 
+;;; PRIVATE MESSAGES
+(lem-request "get"
+  "get-private-messages" "private_message/list"
+  ()
+  `(("unread_only" . "true")
+    ("auth" . ,lem-auth-token)))
+
+;; (lem-get-private-messages)
+
+(lem-request "post"
+  "send-private-message" "private_message"
+  (content recipient-id)
+  `(("content" . ,content)
+    ("recipient_id" . ,recipient-id)
+    ("auth" . ,lem-auth-token))
+  :json)
+
+;; (lem-send-private-message "test" 8551)
+
 
 ;; (lem-create-comment 1235982 "test" :json)
 ;; (setq lem-post-comments (lem-get-post-comments "1235982"))
@@ -307,7 +326,7 @@
 ;; a comment on above post: 763989
 ;; lem.el test community: 96200
 ;; lem.el test community post: 1341246
-
+;; user: blawsybogsy, 8511
 ;; (lem-create-comment 1341243 "comment")
 ;; (lem-create-post "title" 96200 "body text")
 ;; (lem-create-comment 1341246 "another body text 2")
