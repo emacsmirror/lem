@@ -1,6 +1,6 @@
 * lem
 
-Lem is an Emacs client library for Lemmy, the federated link-aggregator.
+Lem is an Emacs client library for Lemmy, the federated link-aggregator. For information about Lemmy, see [[http://joinlemmy.org][http://joinlemmy.org]].
 
 All functions make requests and return JSON data pased into Elisp.
 
