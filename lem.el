@@ -237,9 +237,10 @@ Retuns a posts list."
 
 ;; (lem-list-posts "96200")
 
+;; https://join-lemmy.org/api/interfaces/CreatePost.html
 (lem-request "post" "create-post"
   "post"
-  (name community-id &optional body url nsfw honeypot) ; lang-id
+  (name community-id &optional body url nsfw honeypot language-id)
   "Create a new post with NAME, on community with COMMUNITY-ID.
 BODY is the post's content. URL is its link.
 NSFW and HONEYPOT not yet implemented."
@@ -248,10 +249,11 @@ NSFW and HONEYPOT not yet implemented."
     ("body" . ,body)
     ("url" . ,url)
     ("nsfw" . ,nsfw)
-    ("honeypot" . ,honeypot))
+    ("honeypot" . ,honeypot)
+    ("language_id" . ,language-id))
   :json)
 
-;; (lem-create-post "tootle on" 96200 "hooley-dooley") ; broken! always cross-posts
+;; (lem-create-post "tootle on" 96200 "hooley-dooley") ; always cross-posts?
 
 ;; cb:
 ;; (let* ((json (fedi-http--process-json))
@@ -271,7 +273,6 @@ Returns a post_view."
 
 ;; (lem-like-post 1341246 1) ; dunno how scoring works
 
-;; TODO: edit post
 (lem-request "put" "edit-post"
   "post" (id new-name &optional new-body new-url) ; nsfw url lang-id
   "Edit post with ID, giving it a NEW-NAME, and NEW-BODY and NEW-URL.
@@ -330,7 +331,6 @@ Returns a list of comments."
 
 ;; (lem-get-community-comments "96200")
 
-;; TODO: edit comment
 (lem-request "put" "edit-comment"
   "comment" (id new-str)
   "Edit comment with ID, providing content NEW-STR.
