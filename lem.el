@@ -181,7 +181,7 @@ Returns a community_view."
 ;; (lem-get-community-by-name "lemel")
 
 (lem-request "get" "get-communities" "community/list"
-             nil "Returns a list of communities.")
+             nil "Returns a list of community objects.")
 
 ;; (lem-get-communities)
 
@@ -208,7 +208,8 @@ Returns a community_view."
   "community"
   (name title &optional banner description discussion-languages
         icon nsfw mods-only-post)
-  "Create a community with NAME."
+  "Create a community with NAME.
+Returns a community_view."
   `(("name" . ,name)
     ("title" . ,title)
     ("banner" . ,banner)
@@ -219,7 +220,7 @@ Returns a community_view."
     ("posting_restricted_to_mods" . ,mods-only-post))
   :json)
 
-;; (lem-create-community "communeity" "com") ; broken
+;; (lem-create-community "communeity" "com")
 
 ;; TODO: DeleteCommunity
 
@@ -235,7 +236,7 @@ Returns a post_view."
 (lem-request "get" "list-posts"
   "post/list" (community-id) ; &optional limit page sort type
   "Get posts of community with COMMUNITY_ID.
-Retuns a posts list."
+Retuns a list of post objects."
   `(("community_id" . ,community-id)))
 ;; ("limit" . ,limit)
 ;; ("page" . ,page)))
@@ -248,7 +249,8 @@ Retuns a posts list."
   (name community-id &optional body url nsfw honeypot language-id)
   "Create a new post with NAME, on community with COMMUNITY-ID.
 BODY is the post's content. URL is its link.
-NSFW and HONEYPOT not yet implemented."
+NSFW and HONEYPOT not yet implemented.
+Returns a post_view."
   `(("community_id" . ,community-id)
     ("name" . ,name)
     ("body" . ,body)
@@ -309,10 +311,15 @@ Returns a comment_view."
 
 (lem-request "post" "create-comment"
   "comment" (post-id content &optional parent-id)
+  "Create a comment on post POST-ID, with CONTENT.
+PARENT-ID is the parent comment to reply to.
+Returns a comment_view."
   `(("post_id" . ,post-id)
     ("content" . ,content)
     ("parent_id" . ,parent-id))
   :json)
+
+;; (lem-create-comment 1341246 "replying via lem.el")
 
 ;; cb:
 ;; (let* ((json (fedi-http--process-json))
@@ -323,7 +330,7 @@ Returns a comment_view."
 (lem-request "get" "get-post-comments"
   "comment/list" (post-id)
   "Get the comments of post with POST-ID.
-Returns a list of comments."
+Returns a list of comment objects."
   `(("post_id" . ,post-id)))
 
 ;; (lem-get-post-comments "1341246")
@@ -331,7 +338,7 @@ Returns a list of comments."
 (lem-request "get" "get-community-comments"
   "comment/list" (community-id) ; &optional sort limit
   "Get comments for community with COMMUNITY-ID.
-Returns a list of comments."
+Returns a list of comment objects."
   `(("comminuty_id" . ,community-id)))
 
 ;; (lem-get-community-comments "96200")
