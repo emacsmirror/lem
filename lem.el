@@ -148,11 +148,18 @@ NO-AUTH means do not add the auth form parameter."
 
 ;;; COMMUNITIES
 (lem-request "get"
-  "get-community" "community"
+  "get-community-by-id" "community"
   (id)
   `(("id" . ,id)))
 
-;; (lem-get-community "96200")
+;; (lem-get-community-by-id "96200")
+
+(lem-request "get"
+  "get-community-by-name" "community"
+  (name)
+  `(("name" . ,name)))
+
+;; (lem-get-community-by-name "lemel")
 
 (lem-request "get" "get-communities" "community/list")
 
