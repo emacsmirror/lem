@@ -50,7 +50,7 @@
 
 ;;; MACRO
 (defmacro lem-request
-    (method name endpoint &optional args params authorized json headers)
+    (method name endpoint &optional args params json headers unauthorized)
   "Create http request function NAME, using http METHOD, for ENDPOINT.
 ARGS are for the function.
 PARAMS is an alist of form parameters to send with the request.
@@ -64,7 +64,7 @@ See `fedi-request'."
            (indent 2))
   `(fedi-request ,method
        ,name ,endpoint ,args ,params
-       (when ,authorized `(("auth" . ,lem-auth-token))) ,headers))
+       (unless ,unauthorized `(("auth" . ,lem-auth-token))) ,json ,headers))
 
 ;;; INSTANCE
 (lem-request "get" "instance" "site")
@@ -101,12 +101,13 @@ See `fedi-request'."
     (lem-get-community choice))) ; returns community_view, its own info
 ;; (lem-community-posts choice))) ; returns community's posts
 
+;; (lem-community-search)
 ;;; AUTH
 (lem-request "post" "login"
   "user/login" (name password)
   `(("username_or_email" . ,name)
     ("password" . ,password))
-  :json)
+  :json nil :unauthed)
 
 (defun lem-login-set-token (name password)
   "Login for user NAME with PASSWORD."
