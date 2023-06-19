@@ -62,12 +62,11 @@ NO-AUTH means do not add the auth form parameter."
                         (append `(("auth" . ,lem-auth-token))
                                 ,params)))
               (response
-               (cond ((equal ,method "post")
+               (cond ((or (equal ,method "post")
+                          (equal ,method "put"))
                       (funcall #',req-fun url params nil :unauthed ,json))
                      ((equal ,method "get")
-                      (funcall #',req-fun url params))
-                     ((equal ,method "put")
-                      (funcall #',req-fun url params nil :unauthed ,json)))))
+                      (funcall #',req-fun url params)))))
          ;; (switch-to-buffer response)
          (fedi-http--triage response
                             (lambda ()
