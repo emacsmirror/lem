@@ -1,6 +1,6 @@
 * lem
 
-Lem is an Emacs client library for Lemmy, the federated link-aggregator. For information about Lemmy, see [[http://joinlemmy.org][joinlemmy.org]].
+=lem= is an Emacs client library for Lemmy, the federated link-aggregator. For information about Lemmy, see [[http://joinlemmy.org][joinlemmy.org]].
 
 All functions make requests and return JSON data pased into Elisp.
 
@@ -11,3 +11,7 @@ Currently, most of the basic endpoints are implemented, but not all parameters f
 * Logging in
 
 See =lem-login= and =lem-login-set-token=. Lemmy seems to just require an =auth= parameter with a token you receive as a response to logging in. Currently this token is saved to the persistent variable =lem-auth-token=, which is probably not smart, but it's easy.
+
+* dependency
+
+=lem= depends on [[https://codeberg.org/martianh/fedi.el][fedi.el]], a library to make writing API requests easier.
