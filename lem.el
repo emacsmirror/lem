@@ -1,10 +1,10 @@
-;;; lem.el --- Basics for a lemmy client -*- lexical-binding: t; -*-
+;;; lem.el --- Basics for a lemmy client library -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2023  martian hiatus
 ;; Author: martian hiatus <martianhiatus [a t] riseup [d o t] net>
 ;; Version: 0.1
 ;; URL: https://codeberg.org/martianh/lem
-;; Package-Requires: ((emacs "27.1") (fedi-http "0.1"))
+;; Package-Requires: ((emacs "27.1") (fedi "0.1"))
 ;; Keywords: multimedia, multimedia
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -29,7 +29,7 @@
 ;; Currently, POST and PUT requests submit JSON payloads, while GET requests
 ;; submit form parameters. This means that parameters in POST and PUT calls
 ;; need to respect types (numbers, boolean, etc.), while GET parameters can
-;; all be strings. See the commended example calls under the definitions
+;; all be strings. See the commented example calls under the definitions
 ;; below. This should probably be amended for consistency.
 
 ;;; Code:
@@ -37,6 +37,7 @@
 (require 'fedi)
 (require 'persist)
 
+(defvar fedi-http--api-version)
 (setq fedi-http--api-version "v3")
 
 (defvar fedi-instance-url)
@@ -178,7 +179,7 @@ See `fedi-request'."
   `(("name" . ,name)
     ("title" . ,name)))
 
-;; (lem-create-community "created-comm-une-ity")
+;; (lem-create-community "created-comm-une-ity") ; broken
 
 ;; TODO: DeleteCommunity
 
