@@ -26,6 +26,12 @@
 
 ;; All functions return parsed JSON.
 
+;; Currently, POST and PUT requests submit JSON payloads, while GET requests
+;; submit form parameters. This means that parameters in POST and PUT calls
+;; need to respect types (numbers, boolean, etc.), while GET parameters can
+;; all be strings. See the commended example calls under the definitions
+;; below. This should probably be amended for consistency.
+
 ;;; Code:
 
 (require 'fedi)
@@ -61,7 +67,7 @@ NO-AUTH means do not add the auth form parameter."
                      ((equal ,method "get")
                       (funcall #',req-fun url params))
                      ((equal ,method "put")
-                      (funcall #',req-fun url params nil ,json)))))
+                      (funcall #',req-fun url params nil :unauthed ,json)))))
          (fedi-http--triage response
                             (lambda ()
                               (with-current-buffer response
@@ -246,10 +252,9 @@ NO-AUTH means do not add the auth form parameter."
   `(("post_id" . ,id)
     ("name" . ,new-name)
     ("body" . ,new-body))
-  ;; ("content" . ,new-str)
   :json)
 
-;; (lem-edit-post 1341246 "blaodh")
+;; (lem-edit-post 1341246 "blaodh" "trep")
 
 (lem-request "post"
   "report-post" "post/report"
