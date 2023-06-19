@@ -28,7 +28,7 @@
 
 ;;; Code:
 
-(require 'fedi-http)
+(require 'fedi)
 (require 'persist)
 
 (setq fedi-http--api-version "v3")
@@ -38,39 +38,22 @@
 (persist-defvar lem-auth-token nil
                 "A user auth token for a lemmy instance.")
 
-;;; MACRO
-(defmacro lem-def-request (method name endpoint &optional args params json)
-  "Create http request function NAME, using http METHOD, for ENDPOINT.
-ARGS are for the function, PARAMS is an alist of form parameters.
-JSON means to send params as a JSON payload."
-  (declare (debug t)
-           (indent 1))
-  (let ((req-fun (intern (concat "fedi-http--" method))))
-    `(defun ,(intern (concat "lem-" name)) ,args
-       (let* ((url (fedi-http--api ,endpoint))
-              (response
-               (cond ((equal ,method "post")
-                      (funcall #',req-fun url ,params nil :unauthed ,json))
-                     ((equal ,method "get")
-                      (funcall #',req-fun url ,params))
-                     ((equal ,method "put")
-                      (funcall #',req-fun url ,params nil ,json)))))
-         (fedi-http--triage response
-                            (lambda ()
-                              (with-current-buffer response
-                                (fedi-http--process-json))))))))
+(setq fedi-package-prefix "lem")
+
+(defalias 'lem-request 'fedi-request)   ;
+
 
 ;;; INSTANCE
-(lem-def-request "get" "instance" "site")
+(lem-request "get" "instance" "site")
 
 ;; (lem-instance)
 
-(lem-def-request "get" "get-instance-posts" "post/list")
+(lem-request "get" "get-instance-posts" "post/list")
 
 ;; (lem-get-instance-posts)
 
 ;;; SEARCH
-(lem-def-request "get"
+(lem-request "get"
   "search" "search"
   (query)
   `(("q" . ,query)))
@@ -95,7 +78,7 @@ JSON means to send params as a JSON payload."
 ;; (lem-community-posts choice))) ; returns community's posts
 
 ;;; AUTH
-(lem-def-request "post"
+(lem-request "post"
   "login" "user/login"
   (name password)
   `(("username_or_email" . ,name)
@@ -109,14 +92,14 @@ JSON means to send params as a JSON payload."
     (setq lem-auth-token (alist-get 'jwt json))))
 
 ;;; USERS
-(lem-def-request "get"
+(lem-request "get"
   "get-person-by-id" "user"
   (id)
   `(("person_id" . ,id)))
 
 ;; (lem-get-person-by-id "8511")
 
-(lem-def-request "get"
+(lem-request "get"
   "get-person-by-name" "user"
   (name)
   `(("username" . ,name)))
@@ -124,7 +107,7 @@ JSON means to send params as a JSON payload."
 ;; (lem-get-person-by-name "blawsybogsy")
 
 ;;; NOTIFS
-(lem-def-request "get"
+(lem-request "get"
   "get-mentions" "user/mention"
   () ; (&optional unread-only)
   `(("auth" . ,lem-auth-token)
@@ -132,7 +115,7 @@ JSON means to send params as a JSON payload."
 
 ;; (lem-get-mentions)
 
-(lem-def-request "get"
+(lem-request "get"
   "get-replies" "user/replies"
   () ; (&optional unread-only)
   `(("auth" . ,lem-auth-token)
@@ -141,7 +124,7 @@ JSON means to send params as a JSON payload."
 ;; (lem-get-replies)
 
 ;;; COMMUNITIES
-(lem-def-request "get"
+(lem-request "get"
   "get-community" "community"
   (id)
   `(("id" . ,id)
@@ -149,17 +132,19 @@ JSON means to send params as a JSON payload."
 
 ;; (lem-get-community "96200")
 
-(lem-def-request "get" "get-communities" "community/list")
+(lem-request "get" "get-communities" "community/list")
 
 ;; (lem-get-communities)
 
-(lem-def-request "post"
+(lem-request "post"
   "follow-community" "community/follow"
   (community-id)
   `(("community_id" . ,community-id)
     ("auth" . ,lem-auth-token)
     ("follow" . t))
   :json)
+
+;; (lem-follow-community 14711)
 
 ;; cb:
 ;; (let* ((json (fedi-http--process-json))
@@ -170,7 +155,7 @@ JSON means to send params as a JSON payload."
 ;;   (when (equal subed "Subscribed")
 ;;     (format "Subscribed to %s [%s]" name desc)))
 
-(lem-def-request "post"
+(lem-request "post"
   "create-community" "community"
   (name)
   `(("name" . ,name)
@@ -182,7 +167,7 @@ JSON means to send params as a JSON payload."
 ;; TODO: DeleteCommunity
 
 ;;; POSTS
-(lem-def-request "get"
+(lem-request "get"
   "get-post" "post"
   (id)
   `(("id" . ,id)
@@ -190,7 +175,7 @@ JSON means to send params as a JSON payload."
 
 ;; (lem-get-post "1341246")
 
-(lem-def-request "get"
+(lem-request "get"
   "list-posts" "post/list"
   (community-id) ; &optional limit page sort type
   `(("community_id" . ,community-id)
@@ -200,7 +185,7 @@ JSON means to send params as a JSON payload."
 
 ;; (lem-list-posts "96200")
 
-(lem-def-request "post"
+(lem-request "post"
   "create-post" "post"
   (name community-id &optional body url nsfw honeypot) ; lang-id
   `(("community_id" . ,community-id)
@@ -219,7 +204,7 @@ JSON means to send params as a JSON payload."
 ;;   (when name
 ;;     (format "Post created: %s" name)))
 
-(lem-def-request "post"
+(lem-request "post"
   "like-post" "post/like"
   (post-id score)
   `(("post_id" . ,post-id)
@@ -230,7 +215,7 @@ JSON means to send params as a JSON payload."
 ;; (lem-like-post 1341246 1) ; dunno how scoring works
 
 ;; TODO: edit post
-(lem-def-request "put"
+(lem-request "put"
   "edit-post" "post"
   (id new-name &optional new-body) ; nsfw url lang-id
   `(("post_id" . ,id)
@@ -242,7 +227,7 @@ JSON means to send params as a JSON payload."
 
 ;; (lem-edit-post 1341246 "blaodh")
 
-(lem-def-request "post"
+(lem-request "post"
   "report-post" "post/report"
   (id reason)
   `(("post_id" . ,id)
@@ -251,7 +236,7 @@ JSON means to send params as a JSON payload."
   :json)
 
 ;;; COMMENTS
-(lem-def-request "get"
+(lem-request "get"
   "get-comment" "comment"
   (id)
   `(("id" . ,id)
@@ -259,7 +244,7 @@ JSON means to send params as a JSON payload."
 
 ;; (lem-get-comment "765662")
 
-(lem-def-request "post"
+(lem-request "post"
   "create-comment" "comment"
   (post-id content &optional parent-id)
   `(("post_id" . ,post-id)
@@ -274,7 +259,7 @@ JSON means to send params as a JSON payload."
 ;;   (when comment
 ;;     (format "Comment created: %s" comment)))
 
-(lem-def-request "get"
+(lem-request "get"
   "get-post-comments" "comment/list"
   (post-id)
   `(("post_id" . ,post-id)
@@ -282,7 +267,7 @@ JSON means to send params as a JSON payload."
 
 ;; (lem-get-post-comments "1341246")
 
-(lem-def-request "get"
+(lem-request "get"
   "get-community-comments" "comment/list"
   (community-id) ; &optional sort limit
   `(("comminuty_id" . ,community-id)))
@@ -290,7 +275,7 @@ JSON means to send params as a JSON payload."
 ;; (lem-get-community-comments "96200")
 
 ;; TODO: edit comment
-(lem-def-request "put"
+(lem-request "put"
   "edit-comment" "comment"
   (id new-str)
   `(("comment_id" . ,id)
@@ -298,9 +283,9 @@ JSON means to send params as a JSON payload."
     ("auth" . ,lem-auth-token))
   :json)
 
-(lem-edit-comment 765662 "tasdfl;k")
+;; (lem-edit-comment 765662 "tasdfl;k")
 
-(lem-def-request "post"
+(lem-request "post"
   "report-comment" "comment/report"
   (id reason)
   `(("comment_id" . ,id)
