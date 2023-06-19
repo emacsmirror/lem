@@ -39,7 +39,8 @@
 
 (setq fedi-http--api-version "v3")
 
-(defvar fedi-instance-url "https://lemmy.ml")
+(defvar fedi-instance-url)
+(setq fedi-instance-url "https://lemmy.ml")
 
 (persist-defvar lem-auth-token nil
                 "A user auth token for a lemmy instance.")
