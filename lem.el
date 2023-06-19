@@ -264,12 +264,13 @@ Returns a post_view."
 
 ;; TODO: edit post
 (lem-request "put" "edit-post"
-  "post" (id new-name &optional new-body) ; nsfw url lang-id
+  "post" (id new-name &optional new-body new-url) ; nsfw url lang-id
   "Edit post with ID, giving it a NEW-NAME, and NEW-BODY and NEW-URL.
 Returns a post_view."
   `(("post_id" . ,id)
     ("name" . ,new-name)
-    ("body" . ,new-body))
+    ("body" . ,new-body)
+    ("url" . ,new-url))
   :json)
 
 ;; (lem-edit-post 1341246 "blaodh" "trep")
