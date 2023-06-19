@@ -40,7 +40,32 @@
 
 (setq fedi-package-prefix "lem")
 
-(defalias 'lem-request 'fedi-request)   ;
+;; (defalias 'lem-request 'fedi-request)
+(defmacro lem-request (method name endpoint &optional args params json no-auth)
+  "Create http request function NAME, using http METHOD, for ENDPOINT.
+ARGS are for the function, PARAMS is an alist of form parameters.
+JSON means to send params as a JSON payload.
+Before calling this, set `fedi-package-prefix' to the name of your package.
+NO-AUTH means do not add the auth form parameter."
+  (declare (debug t)
+           (indent 1))
+  (let ((req-fun (intern (concat "fedi-http--" method))))
+    `(defun ,(intern (concat fedi-package-prefix "-" name)) ,args
+       (let* ((url (fedi-http--api ,endpoint))
+              (params (unless ,no-auth
+                        (append `(("auth" . ,lem-auth-token))
+                                ,params)))
+              (response
+               (cond ((equal ,method "post")
+                      (funcall #',req-fun url params nil :unauthed ,json))
+                     ((equal ,method "get")
+                      (funcall #',req-fun url params))
+                     ((equal ,method "put")
+                      (funcall #',req-fun url params nil ,json)))))
+         (fedi-http--triage response
+                            (lambda ()
+                              (with-current-buffer response
+                                (fedi-http--process-json))))))))
 
 
 ;;; INSTANCE
@@ -110,16 +135,14 @@
 (lem-request "get"
   "get-mentions" "user/mention"
   () ; (&optional unread-only)
-  `(("auth" . ,lem-auth-token)
-    ("unread_only" . "true")))
+  `(("unread_only" . "true")))
 
 ;; (lem-get-mentions)
 
 (lem-request "get"
   "get-replies" "user/replies"
   () ; (&optional unread-only)
-  `(("auth" . ,lem-auth-token)
-    ("unread_only" . "true")))
+  `(("unread_only" . "true")))
 
 ;; (lem-get-replies)
 
@@ -127,8 +150,7 @@
 (lem-request "get"
   "get-community" "community"
   (id)
-  `(("id" . ,id)
-    ("auth" . ,lem-auth-token)))
+  `(("id" . ,id)))
 
 ;; (lem-get-community "96200")
 
@@ -140,7 +162,6 @@
   "follow-community" "community/follow"
   (community-id)
   `(("community_id" . ,community-id)
-    ("auth" . ,lem-auth-token)
     ("follow" . t))
   :json)
 
@@ -159,8 +180,7 @@
   "create-community" "community"
   (name)
   `(("name" . ,name)
-    ("title" . ,name)
-    ("auth" . ,lem-auth-token)))
+    ("title" . ,name)))
 
 ;; (lem-create-community "created-comm-une-ity")
 
@@ -170,16 +190,14 @@
 (lem-request "get"
   "get-post" "post"
   (id)
-  `(("id" . ,id)
-    ("auth" . ,lem-auth-token)))
+  `(("id" . ,id)))
 
 ;; (lem-get-post "1341246")
 
 (lem-request "get"
   "list-posts" "post/list"
   (community-id) ; &optional limit page sort type
-  `(("community_id" . ,community-id)
-    ("auth" . ,lem-auth-token)))
+  `(("community_id" . ,community-id)))
 ;; ("limit" . ,limit)
 ;; ("page" . ,page)))
 
@@ -189,13 +207,14 @@
   "create-post" "post"
   (name community-id &optional body url nsfw honeypot) ; lang-id
   `(("community_id" . ,community-id)
-    ("auth" . ,lem-auth-token)
     ("name" . ,name)
     ("body" . ,body)
     ("url" . ,url)
     ("nsfw" . ,nsfw)
     ("honeypot" . ,honeypot))
   :json)
+
+;; (lem-create-post "tootle on" 96200 "hooley-dooley") ; broken! always cross-posts
 
 ;; cb:
 ;; (let* ((json (fedi-http--process-json))
@@ -208,7 +227,6 @@
   "like-post" "post/like"
   (post-id score)
   `(("post_id" . ,post-id)
-    ("auth" . ,lem-auth-token)
     ("score" . ,score))
   :json)
 
@@ -220,9 +238,8 @@
   (id new-name &optional new-body) ; nsfw url lang-id
   `(("post_id" . ,id)
     ("name" . ,new-name)
-    ("body" . ,new-body)
-    ;; ("content" . ,new-str)
-    ("auth" . ,lem-auth-token))
+    ("body" . ,new-body))
+  ;; ("content" . ,new-str)
   :json)
 
 ;; (lem-edit-post 1341246 "blaodh")
@@ -231,16 +248,14 @@
   "report-post" "post/report"
   (id reason)
   `(("post_id" . ,id)
-    ("reason" . ,reason)
-    ("auth" . ,lem-auth-token))
+    ("reason" . ,reason))
   :json)
 
 ;;; COMMENTS
 (lem-request "get"
   "get-comment" "comment"
   (id)
-  `(("id" . ,id)
-    ("auth" . ,lem-auth-token)))
+  `(("id" . ,id)))
 
 ;; (lem-get-comment "765662")
 
@@ -248,7 +263,6 @@
   "create-comment" "comment"
   (post-id content &optional parent-id)
   `(("post_id" . ,post-id)
-    ("auth" . ,lem-auth-token)
     ("content" . ,content)
     ("parent_id" . ,parent-id))
   :json)
@@ -262,8 +276,7 @@
 (lem-request "get"
   "get-post-comments" "comment/list"
   (post-id)
-  `(("post_id" . ,post-id)
-    ("auth" . ,lem-auth-token)))
+  `(("post_id" . ,post-id)))
 
 ;; (lem-get-post-comments "1341246")
 
@@ -279,8 +292,7 @@
   "edit-comment" "comment"
   (id new-str)
   `(("comment_id" . ,id)
-    ("content" . ,new-str)
-    ("auth" . ,lem-auth-token))
+    ("content" . ,new-str))
   :json)
 
 ;; (lem-edit-comment 765662 "tasdfl;k")
@@ -289,8 +301,7 @@
   "report-comment" "comment/report"
   (id reason)
   `(("comment_id" . ,id)
-    ("reason" . ,reason)
-    ("auth" . ,lem-auth-token))
+    ("reason" . ,reason))
   :json)
 
 ;; (lem-report-comment 765662 "test")
@@ -300,8 +311,7 @@
 (lem-request "get"
   "get-private-messages" "private_message/list"
   ()
-  `(("unread_only" . "true")
-    ("auth" . ,lem-auth-token)))
+  `(("unread_only" . "true")))
 
 ;; (lem-get-private-messages)
 
@@ -309,8 +319,7 @@
   "send-private-message" "private_message"
   (content recipient-id)
   `(("content" . ,content)
-    ("recipient_id" . ,recipient-id)
-    ("auth" . ,lem-auth-token))
+    ("recipient_id" . ,recipient-id))
   :json)
 
 ;; (lem-send-private-message "test" 8551)
