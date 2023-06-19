@@ -59,9 +59,11 @@ HEADERS is an alist that will be bound as `url-request-extra-headers'.
 To use this macro, you first need to set `fedi-package-prefix' to
 the name of your package.
 See `fedi-request'."
+  (declare (debug t)
+           (indent 2))
   `(fedi-request ,method
-     ,name ,endpoint ,args ,params
-     (when ,authorized `(("auth" . ,lem-auth-token))) ,headers))
+       ,name ,endpoint ,args ,params
+       (when ,authorized `(("auth" . ,lem-auth-token))) ,headers))
 
 ;;; INSTANCE
 (lem-request "get" "instance" "site")
@@ -73,9 +75,8 @@ See `fedi-request'."
 ;; (lem-get-instance-posts)
 
 ;;; SEARCH
-(lem-request "get"
-  "search" "search"
-  (query)
+(lem-request "get" "search"
+  "search" (query)
   `(("q" . ,query)))
 
 ;; (lem-search "emacs")
@@ -100,9 +101,8 @@ See `fedi-request'."
 ;; (lem-community-posts choice))) ; returns community's posts
 
 ;;; AUTH
-(lem-request "post"
-  "login" "user/login"
-  (name password)
+(lem-request "post" "login"
+  "user/login" (name password)
   `(("username_or_email" . ,name)
     ("password" . ,password))
   :json)
@@ -114,46 +114,40 @@ See `fedi-request'."
     (setq lem-auth-token (alist-get 'jwt json))))
 
 ;;; USERS
-(lem-request "get"
-  "get-person-by-id" "user"
-  (id)
+(lem-request "get" "get-person-by-id"
+  "user" (id)
   `(("person_id" . ,id)))
 
 ;; (lem-get-person-by-id "8511")
 
-(lem-request "get"
-  "get-person-by-name" "user"
-  (name)
+(lem-request "get" "get-person-by-name"
+  "user" (name)
   `(("username" . ,name)))
 
 ;; (lem-get-person-by-name "blawsybogsy")
 
 ;;; NOTIFS
-(lem-request "get"
-  "get-mentions" "user/mention"
-  () ; (&optional unread-only)
+(lem-request "get" "get-mentions"
+  "user/mention" () ; (&optional unread-only)
   `(("unread_only" . "true")))
 
 ;; (lem-get-mentions)
 
-(lem-request "get"
-  "get-replies" "user/replies"
-  () ; (&optional unread-only)
+(lem-request "get" "get-replies"
+  "user/replies" () ; (&optional unread-only)
   `(("unread_only" . "true")))
 
 ;; (lem-get-replies)
 
 ;;; COMMUNITIES
-(lem-request "get"
-  "get-community-by-id" "community"
-  (id)
+(lem-request "get" "get-community-by-id"
+  "community" (id)
   `(("id" . ,id)))
 
 ;; (lem-get-community-by-id "96200")
 
-(lem-request "get"
-  "get-community-by-name" "community"
-  (name)
+(lem-request "get" "get-community-by-name"
+  "community" (name)
   `(("name" . ,name)))
 
 ;; (lem-get-community-by-name "lemel")
@@ -162,9 +156,8 @@ See `fedi-request'."
 
 ;; (lem-get-communities)
 
-(lem-request "post"
-  "follow-community" "community/follow"
-  (community-id)
+(lem-request "post" "follow-community"
+  "community/follow" (community-id)
   `(("community_id" . ,community-id)
     ("follow" . t))
   :json)
@@ -180,9 +173,8 @@ See `fedi-request'."
 ;;   (when (equal subed "Subscribed")
 ;;     (format "Subscribed to %s [%s]" name desc)))
 
-(lem-request "post"
-  "create-community" "community"
-  (name)
+(lem-request "post" "create-community"
+  "community" (name)
   `(("name" . ,name)
     ("title" . ,name)))
 
@@ -191,24 +183,22 @@ See `fedi-request'."
 ;; TODO: DeleteCommunity
 
 ;;; POSTS
-(lem-request "get"
-  "get-post" "post"
-  (id)
+(lem-request "get" "get-post"
+  "post" (id)
   `(("id" . ,id)))
 
 ;; (lem-get-post "1341246")
 
-(lem-request "get"
-  "list-posts" "post/list"
-  (community-id) ; &optional limit page sort type
+(lem-request "get" "list-posts"
+  "post/list" (community-id) ; &optional limit page sort type
   `(("community_id" . ,community-id)))
 ;; ("limit" . ,limit)
 ;; ("page" . ,page)))
 
 ;; (lem-list-posts "96200")
 
-(lem-request "post"
-  "create-post" "post"
+(lem-request "post" "create-post"
+  "post"
   (name community-id &optional body url nsfw honeypot) ; lang-id
   `(("community_id" . ,community-id)
     ("name" . ,name)
@@ -227,9 +217,8 @@ See `fedi-request'."
 ;;   (when name
 ;;     (format "Post created: %s" name)))
 
-(lem-request "post"
-  "like-post" "post/like"
-  (post-id score)
+(lem-request "post" "like-post"
+  "post/like" (post-id score)
   `(("post_id" . ,post-id)
     ("score" . ,score))
   :json)
@@ -237,9 +226,8 @@ See `fedi-request'."
 ;; (lem-like-post 1341246 1) ; dunno how scoring works
 
 ;; TODO: edit post
-(lem-request "put"
-  "edit-post" "post"
-  (id new-name &optional new-body) ; nsfw url lang-id
+(lem-request "put" "edit-post"
+  "post" (id new-name &optional new-body) ; nsfw url lang-id
   `(("post_id" . ,id)
     ("name" . ,new-name)
     ("body" . ,new-body))
@@ -247,24 +235,21 @@ See `fedi-request'."
 
 ;; (lem-edit-post 1341246 "blaodh" "trep")
 
-(lem-request "post"
-  "report-post" "post/report"
-  (id reason)
+(lem-request "post" "report-post"
+  "post/report" (id reason)
   `(("post_id" . ,id)
     ("reason" . ,reason))
   :json)
 
 ;;; COMMENTS
-(lem-request "get"
-  "get-comment" "comment"
-  (id)
+(lem-request "get" "get-comment"
+  "comment" (id)
   `(("id" . ,id)))
 
 ;; (lem-get-comment "765662")
 
-(lem-request "post"
-  "create-comment" "comment"
-  (post-id content &optional parent-id)
+(lem-request "post" "create-comment"
+  "comment" (post-id content &optional parent-id)
   `(("post_id" . ,post-id)
     ("content" . ,content)
     ("parent_id" . ,parent-id))
@@ -276,51 +261,44 @@ See `fedi-request'."
 ;;   (when comment
 ;;     (format "Comment created: %s" comment)))
 
-(lem-request "get"
-  "get-post-comments" "comment/list"
-  (post-id)
+(lem-request "get" "get-post-comments"
+  "comment/list" (post-id)
   `(("post_id" . ,post-id)))
 
 ;; (lem-get-post-comments "1341246")
 
-(lem-request "get"
-  "get-community-comments" "comment/list"
-  (community-id) ; &optional sort limit
+(lem-request "get" "get-community-comments"
+  "comment/list" (community-id) ; &optional sort limit
   `(("comminuty_id" . ,community-id)))
 
 ;; (lem-get-community-comments "96200")
 
 ;; TODO: edit comment
-(lem-request "put"
-  "edit-comment" "comment"
-  (id new-str)
+(lem-request "put" "edit-comment"
+  "comment" (id new-str)
   `(("comment_id" . ,id)
     ("content" . ,new-str))
   :json)
 
 ;; (lem-edit-comment 765662 "tasdfl;k")
 
-(lem-request "post"
-  "report-comment" "comment/report"
-  (id reason)
+(lem-request "post" "report-comment"
+  "comment/report" (id reason)
   `(("comment_id" . ,id)
     ("reason" . ,reason))
   :json)
 
 ;; (lem-report-comment 765662 "test")
 
-
 ;;; PRIVATE MESSAGES
-(lem-request "get"
-  "get-private-messages" "private_message/list"
-  ()
+(lem-request "get" "get-private-messages"
+  "private_message/list" ()
   `(("unread_only" . "true")))
 
 ;; (lem-get-private-messages)
 
-(lem-request "post"
-  "send-private-message" "private_message"
-  (content recipient-id)
+(lem-request "post" "send-private-message"
+  "private_message" (content recipient-id)
   `(("content" . ,content)
     ("recipient_id" . ,recipient-id))
   :json)
