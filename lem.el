@@ -137,6 +137,7 @@ Returns a person_view."
   `(("person_id" . ,id)))
 
 ;; (lem-get-person-by-id "8511")
+;; (lem-get-person-by-id "899775")
 
 (lem-request "get" "get-person-by-name"
   "user" (name)
@@ -373,12 +374,13 @@ Returns ????"
 
 (lem-request "post" "send-private-message"
   "private_message" (content recipient-id)
-  "Sent a private message CONTENT to user with RECIPIENT-ID."
+  "Sent a private message CONTENT to user with RECIPIENT-ID.
+Returns a private_message_view."
   `(("content" . ,content)
     ("recipient_id" . ,recipient-id))
   :json)
 
-;; (lem-send-private-message "test" 8551)
+;; (lem-send-private-message "test" 899775)
 
 
 ;; (lem-create-comment 1235982 "test" :json)
@@ -391,7 +393,8 @@ Returns ????"
 ;; a comment on above post: 763989
 ;; lem.el test community: 96200
 ;; lem.el test community post: 1341246
-;; user: blawsybogsy, 8511
+;; user: blawsybogsy, 8511 on lemmy.ml
+;; user: martian, 899775 on sh.itjust.works
 ;; (lem-create-comment 1341243 "comment")
 ;; (lem-create-post "title" 96200 "body text")
 ;; (lem-create-comment 1341246 "another body text 2")
