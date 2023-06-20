@@ -273,13 +273,13 @@ Returns a post_view."
 (lem-request "post" "like-post"
   "post/like" (post-id score)
   "Like post with POST-ID.
-SCORE.
+SCORE is a number, either 0, 1 to upvote, and -1 to downvote.
 Returns a post_view."
   `(("post_id" . ,post-id)
     ("score" . ,score))
   :json)
 
-;; (lem-like-post 1341246 1) ; dunno how scoring works
+;; (lem-like-post 1341246 1)
 
 (lem-request "put" "edit-post"
   "post" (id new-name &optional new-body new-url) ; nsfw url lang-id
