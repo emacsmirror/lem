@@ -102,11 +102,13 @@ Returns a list of linked, list of allowed, list of blocked."
   (query &optional type community-name) ; community-id  creator-id
   ;; listing-type limit page sort)
   "Make a GET request to /search.
-With no options, returns comments, posts, communities and users lists.
+If TYPE is nil, returns comments, posts, communities and users
+lists.
 TYPE can be one of \"All\" \"Comments\" \"Communities\" \"Posts\"
 \"Url\" or \"Users\".
 COMMUNITY-ID and CREATOR-ID are numbers.
-LISTING-TYPE is one of \"all\" \"community\" \"local\" or \"subscribed\".
+LISTING-TYPE is one of \"all\" \"community\" \"local\" or
+\"subscribed\".
 LIMIT and PAGE are numbers."
   `(("q" . ,query)
     ("type_" . ,(or type "All")) ; default
@@ -156,7 +158,7 @@ LIMIT and PAGE are numbers."
 (lem-request "get" "get-person-by-id"
   "user" (id)
   "Get person with ID.
-Returns a person_view."
+Returns a person_view, comments, posts, moderates objects."
   `(("person_id" . ,id)))
 
 ;; (lem-get-person-by-id "8511")
@@ -165,7 +167,7 @@ Returns a person_view."
 (lem-request "get" "get-person-by-name"
   "user" (name)
   "Get person with NAME.
-Returns a person_view."
+Returns a person_view, comments, posts, moderates objects."
   `(("username" . ,name)))
 
 ;; (lem-get-person-by-name "blawsybogsy")
@@ -216,7 +218,7 @@ discussion_languages, default_post_language."
 (lem-request "post" "follow-community"
   "community/follow" (community-id)
   "Follow a community with COMMUNITY-ID.
-Returns a community_view."
+Returns a community_view and discussion_languages."
   `(("community_id" . ,community-id)
     ("follow" . t))
   :json)
@@ -237,7 +239,7 @@ Returns a community_view."
   (name title &optional banner description discussion-languages
         icon nsfw mods-only-post)
   "Create a community with NAME.
-Returns a community_view."
+Returns a community_view and discussion_languages."
   `(("name" . ,name)
     ("title" . ,title)
     ("banner" . ,banner)
@@ -252,7 +254,8 @@ Returns a community_view."
 
 (lem-request "post" "delete-community"
   "community/delete" (community-id)
-  "Delete community with COMMUNITY-ID, a number."
+  "Delete community with COMMUNITY-ID, a number.
+Returns a community_view and discussion_languages."
   `(("community_id" . ,community-id)
     ("deleted" . t))
   :json)
@@ -266,7 +269,7 @@ Returns a community_view."
 (lem-request "get" "get-post"
   "post" (id)
   "Get post with ID.
-Returns a post_view."
+Returns a post_view, a community_view, moderators, and online count."
   `(("id" . ,id)))
 
 ;; (lem-get-post "1341246")
@@ -274,7 +277,7 @@ Returns a post_view."
 (lem-request "get" "list-posts"
   "post/list" (community-id) ; &optional limit page sort type
   "Get posts of community with COMMUNITY_ID.
-Retuns a list of post objects."
+Retuns a list of posts objects."
   `(("community_id" . ,community-id)))
 ;; ("limit" . ,limit)
 ;; ("page" . ,page)))
@@ -333,7 +336,7 @@ Returns a post_view."
 (lem-request "post" "report-post"
   "post/report" (id reason)
   "Report post with ID to instance moderator, giving REASON, a string.
-Returns ????"
+Returns a post_report_view."
   `(("post_id" . ,id)
     ("reason" . ,reason))
   :json)
@@ -342,7 +345,7 @@ Returns ????"
 (lem-request "get" "get-comment"
   "comment" (id)
   "Get comment with ID.
-Returns a comment_view."
+Returns a comment_view, recipient_ids, and form_id."
   `(("id" . ,id)))
 
 ;; (lem-get-comment "765662")
@@ -351,7 +354,7 @@ Returns a comment_view."
   "comment" (post-id content &optional parent-id)
   "Create a comment on post POST-ID, with CONTENT.
 PARENT-ID is the parent comment to reply to.
-Returns a comment_view."
+Returns a comment_view, recipient_ids, and form_id."
   `(("post_id" . ,post-id)
     ("content" . ,content)
     ("parent_id" . ,parent-id))
@@ -390,7 +393,7 @@ Returns a list of comment objects."
   "comment" (id new-str)
   "Edit comment with ID, providing content NEW-STR.
 To get the old text for editing, you first need to fetch the comment.
-Returns a comment_view."
+  Returns a comment_view, recipient_ids, and form_id."
   `(("comment_id" . ,id)
     ("content" . ,new-str))
   :json)
@@ -400,7 +403,7 @@ Returns a comment_view."
 (lem-request "post" "report-comment"
   "comment/report" (id reason)
   "Report comment with ID to instance moderator, giving REASON, a string.
-Returns ????"
+Returns comment_report_view."
   `(("comment_id" . ,id)
     ("reason" . ,reason))
   :json)
@@ -410,7 +413,8 @@ Returns ????"
 ;;; PRIVATE MESSAGES
 (lem-request "get" "get-private-messages"
   "private_message/list" ()
-  "Get private messages for the current user."
+  "Get private messages for the current user.
+Returns private_messages."
   `(("unread_only" . "true")))
 
 ;; (lem-get-private-messages)
