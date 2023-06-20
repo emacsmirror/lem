@@ -73,9 +73,12 @@ See `fedi-request'."
        (unless ,unauthorized `(("auth" . ,lem-auth-token))) ,json ,headers))
 
 ;;; INSTANCE
-(lem-request "get" "instance" "site"
-             nil
-             "Returns a site_view.")
+(lem-request "get" "instance"
+  "site" nil
+  "Get instance details.
+Returns a site_view, admins list, online count, version, my_user,
+federated_instances, all_languages, discussion_languages, and
+taglines.")
 
 ;; (lem-instance)
 
@@ -190,7 +193,8 @@ Returns a replies list."
 (lem-request "get" "get-community-by-id"
   "community" (id)
   "Get community with ID.
-Returns a community_view."
+Returns a community_view, site, moderators, online count,
+discussion_languages, default_post_language."
   `(("id" . ,id)))
 
 ;; (lem-get-community-by-id "96200")
@@ -198,7 +202,8 @@ Returns a community_view."
 (lem-request "get" "get-community-by-name"
   "community" (name)
   "Get community with NAME.
-Returns a community_view."
+Returns a community_view, site, moderators, online count,
+discussion_languages, default_post_language."
   `(("name" . ,name)))
 
 ;; (lem-get-community-by-name "lemel")
