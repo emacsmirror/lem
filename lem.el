@@ -159,6 +159,8 @@ Returns a person_view."
 
 ;; (lem-get-person-by-name "blawsybogsy")
 
+;; TODO: block user
+
 ;;; NOTIFS
 (lem-request "get" "get-mentions"
   "user/mention" () ; (&optional unread-only)
@@ -236,6 +238,8 @@ Returns a community_view."
 ;; (lem-create-community "communeity" "com")
 
 ;; TODO: DeleteCommunity
+;; TODO: block community
+;; TODO: hide community
 
 ;;; POSTS
 (lem-request "get" "get-post"
@@ -341,24 +345,30 @@ Returns a comment_view."
 ;;     (format "Comment created: %s" comment)))
 
 (lem-request "get" "get-post-comments"
-  "comment/list" (post-id)
+  "comment/list" (post-id &optional parent-id)
   "Get the comments of post with POST-ID.
 Returns a list of comment objects."
-  `(("post_id" . ,post-id)))
+  `(("post_id" . ,post-id)
+    ("parent_id" . ,parent-id)))
 
 ;; (lem-get-post-comments "1341246")
+;; (lem-get-post-comments "1235982" "651145") ; nil first arg breaks
+
 
 (lem-request "get" "get-community-comments"
-  "comment/list" (community-id) ; &optional sort limit
+  "comment/list" (&optional community-id community-name) ; &optional sort limit
   "Get comments for community with COMMUNITY-ID.
 Returns a list of comment objects."
-  `(("comminuty_id" . ,community-id)))
+  `(("comminuty_id" . ,community-id)
+    ("community_name" . ,community-name)))
 
 ;; (lem-get-community-comments "96200")
+;; (lem-get-community-comments nil "emacs") ; nil first arg works
 
 (lem-request "put" "edit-comment"
   "comment" (id new-str)
   "Edit comment with ID, providing content NEW-STR.
+To get the old text for editing, you first need to fetch the comment.
 Returns a comment_view."
   `(("comment_id" . ,id)
     ("content" . ,new-str))
@@ -402,6 +412,7 @@ Returns a private_message_view."
 ;; eg ids:
 ;; emacs community: 14856
 ;; a post: 1235982 (emacs lemmy client?)
+;; my first comment on 1235982: 651145
 ;; a comment on above post: 763989
 ;; lem.el test community: 96200
 ;; lem.el test community post: 1341246
