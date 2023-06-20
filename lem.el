@@ -250,7 +250,15 @@ Returns a community_view."
 
 ;; (lem-create-community "communeity" "com")
 
-;; TODO: DeleteCommunity
+(lem-request "post" "delete-community"
+  "community/delete" (community-id)
+  "Delete community with COMMUNITY-ID, a number."
+  `(("community_id" . ,community-id)
+    ("deleted" . t))
+  :json)
+
+;; (lem-delete-community 98302)
+
 ;; TODO: block community
 ;; TODO: hide community
 
