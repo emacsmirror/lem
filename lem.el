@@ -87,12 +87,24 @@ See `fedi-request'."
 
 ;;; SEARCH
 (lem-request "get" "search"
-  "search" (query)
+  "search"
+  (query &optional type community-name) ; community-id  creator-id
+  ;; listing-type limit page sort)
   "Make a GET request to /search.
-Returns comments, posts, communities and users lists."
-  `(("q" . ,query)))
+With no options, returns comments, posts, communities and users lists.
+TYPE can be one of \"All\" \"Comments\" \"Communities\" \"Posts\"
+\"Url\" or \"Users\".
+COMMUNITY-ID and CREATOR-ID are numbers.
+LISTING-TYPE is one of \"all\" \"community\" \"local\" or \"subscribed\".
+LIMIT and PAGE are numbers."
+  `(("q" . ,query)
+    ("type_" . ,(or type "All")) ; default
+    ("community_name" . ,community-name)))
+;; ("community_id" . ,community-id)
+;; ("creator_id" . ,creator-id)
+;; ("listing-type" . ,listing-type)))
 
-;; (lem-search "emacs")
+;; (lem-search "emacs" nil "emacs")
 
 (defun lem-map-community-ids-names (communities)
   "Return an alist of id and name for each item in COMMUNITIES."
