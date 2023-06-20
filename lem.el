@@ -349,7 +349,7 @@ Returns a comment_view."
   "Get the comments of post with POST-ID.
 Returns a list of comment objects."
   `(("post_id" . ,post-id)
-    ("parent_id" . ,parent-id)))
+    ,(when parent-id `("parent_id" . ,parent-id))))
 
 ;; (lem-get-post-comments "1341246")
 ;; (lem-get-post-comments "1235982" "651145") ; nil first arg breaks
