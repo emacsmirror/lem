@@ -88,8 +88,8 @@ See `fedi-request'."
 (defun lem-get-federated-instances ()
   "Return a list of federated instances of the current instance.
 Returns a list of linked, list of allowed, list of blocked."
-  (let ((inst (setq lem-inst(lem-instance))))
-    (alist-get 'federated_instances (car inst))))
+  (let ((inst (setq lem-inst (lem-instance))))
+    (alist-get 'federated_instances inst)))
 
 ;; (lem-get-federated-instances)
 
