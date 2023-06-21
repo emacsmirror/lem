@@ -86,7 +86,7 @@ taglines.")
              nil
              "Returns a list of posts.")
 
-;; (lem-get-instance-posts)
+;; (setq lem-test-inst-posts (lem-get-instance-posts))
 
 (defun lem-get-federated-instances ()
   "Return a list of federated instances of the current instance.

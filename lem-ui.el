@@ -87,15 +87,22 @@ than `switch-to-buffer'."
                timestamp)
               'face font-lock-comment-face))
 
-(defun lem-ui-bt-byline (comments)
-  "Format a bottom byline for a post.
-COMMENTS is the comments count to render."
-  (format "%s %s" (lem-ui-symbol 'reply)
-          (number-to-string comments)))
+(defun lem-ui-bt-byline (comments &optional id)
+  "Format a bottom byline for a post or comment.
+COMMENTS is the comments count to render.
+ID is the item's id."
+  (format "%s %s %s" (lem-ui-symbol 'reply)
+          (number-to-string comments)
+          (propertize (concat "id: "
+                              (number-to-string id))
+                      'face font-lock-comment-face)))
 
-(defun lem-ui-render-post (post)
-  "Render single POST."
+(defun lem-ui-render-post (post &optional children sort)
+  "Render single POST.
+Optionally render its CHILDREN.
+Sort can be \"New\", \"Hot\", \"Old\", or \"Top\"."
   (let-alist post
+    ;; (lem-ui-with-buffer (get-buffer-create"*lem*") 'special-mode t
     (with-current-buffer "*lem*"
       (insert "\n"
               (lem-ui-top-byline .creator.name
@@ -111,25 +118,88 @@ COMMENTS is the comments count to render."
                 "")
               (or .post.body "") ;; cap it for list views
               "\n"
-              
-              (lem-ui-bt-byline .counts.comments)
+              (lem-ui-bt-byline .counts.comments .post.id)
               "\n"
-
               ;; properties to add:
               ;; (number-to-string .post.id) "\n"
               ;; (number-to-string .post.creator_id) "\n"
               ;; (number-to-string .post.community_id) "\n"
-              lem-horiz-bar
-              "\n"))))
+              lem-ui-horiz-bar
+              "\n")
+      (when (and children
+                 (< 0 .counts.comments))
+        (let* ((id (number-to-string .post.id))
+               (comms (lem-get-post-comments id nil sort))
+               (list (alist-get 'comments comms)))
+          (mapc (lambda (x)
+                  (lem-ui-render-comment x :children sort))
+                list))))))
 
-(defun lem-ui-render-posts (posts)
+(defun lem-ui-render-posts (posts &optional children sort)
   "Render a list of abbreviated posts POSTS.
 Used for communities posts or instance posts."
   (let ((list (alist-get 'posts posts)))
     (lem-ui-with-buffer "*lem*" 'special-mode t
-                     ;; (lem-ui-render-post (car list)))))
-                     (mapc #'lem-ui-render-post list)
-                     (goto-char (point-min)))))
+      ;; (lem-ui-render-post (car list)))))
+      (mapc (lambda (x)
+              (lem-ui-render-post x children sort))
+            list)
+      (goto-char (point-min)))))
+
+(defun lem-ui-get-community-id (community)
+  "Returns ID of COMMUNITY as a string."
+  (number-to-string
+   (alist-get 'id
+              (alist-get 'community
+                         (alist-get 'community_view community)))))
+
+(defun lem-ui-view-community (name render-sort limit)
+  "View community with NAME, sorting by SORT.
+RENDER-SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
+  (let* ((community (lem-get-community-by-name name))
+         (id (lem-ui-get-community-id community))
+         (posts (lem-list-posts id nil limit)))
+    (lem-ui-render-posts posts nil render-sort))) ; no children, ie comments
+
+(defun lem-ui-render-comment (comment &optional children sort)
+"Render single COMMENT.
+Optionally render its CHILDREN.
+Sort can be \"New\", \"Hot\", \"Old\", or \"Top\"."
+(let-alist comment
+  ;; (lem-ui-with-buffer "*lem*" 'special-mode t
+  (with-current-buffer "*lem*"
+    (insert "\n"
+            (lem-ui-top-byline .creator.name
+                               .counts.score
+                               .comment.published)
+            "\n"
+            (or .comment.content "")
+            "\n"
+            (lem-ui-bt-byline .counts.child_count .comment.id)
+            "\n"
+            ;; properties to add:
+            ;; (number-to-string .post.id) "\n"
+            ;; (number-to-string .comment.creator_id) "\n"
+            ;; (number-to-string .post.community_id) "\n"
+            lem-ui-horiz-bar
+            "\n")
+    (when (and children
+               (< 0 .counts.child_count))
+      (let* ((comms (setq lem-post-comments
+                          (lem-get-post-comments (number-to-string .post.id)
+                                                 (number-to-string .comment.id)
+                                                 sort)))
+             (list (setq lem-post-comments-list
+                         (alist-get 'comments comms))))
+        ;; (mapc (lambda (x)
+        ;;         (lem-ui-render-comment x :children
+        ;;                                ;; nil
+        ;;                                sort))
+        (cdr list))))))
+;;)
+
+;; (setq lem-post-comments (lem-get-post-comments "1235982" "651145" "New"))
+;; (setq lem-post-comments (lem-get-post-comments "1235982" nil "New"))
 
 (provide 'lem-ui)
 ;;; lem-ui.el ends here
