@@ -380,7 +380,7 @@ Returns a comment_view, recipient_ids, and form_id."
 Sort can be \"New\", \"Hot\", \"Old\", or \"Top\".
 Returns a list of comment objects."
   `(("post_id" . ,post-id)
-    ("sort" . ,sort)
+    ,(when sort `("sort" . ,sort))
     ,(when parent-id `("parent_id" . ,parent-id))))
 
 ;; (setq lem-test-comments (lem-get-post-comments "1341246"))
