@@ -148,11 +148,13 @@ LIMIT and PAGE are numbers."
     ("password" . ,password))
   :json nil :unauthed)
 
-(defun lem-login-set-token (name password)
+(defun lem-login-set-token ()
   "Login for user NAME with PASSWORD."
   (interactive)
-  (let ((json (lem-login name password)))
-    (setq lem-auth-token (alist-get 'jwt json))))
+  (let* ((name (read-string "Username: "))
+         (password (read-string "Password: "))
+         (json (lem-login name password)))
+    (setq lem-auth-token (alist-get 'jwt json)))) ;
 
 ;;; USERS
 (lem-request "get" "get-person-by-id"
