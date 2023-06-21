@@ -55,7 +55,7 @@ font settings do not support it."
   "Return the unicode symbol (as a string) corresponding to NAME.
 If symbol is not displayable, an ASCII equivalent is returned. If
 NAME is not part of the symbol table, '?' is returned."
-  (if-let* ((symbol (alist-get name mastodon-tl--symbols)))
+  (if-let* ((symbol (alist-get name lem-ui-symbols)))
       (if (char-displayable-p (string-to-char (car symbol)))
           (car symbol)
         (cdr symbol))
