@@ -161,6 +161,53 @@ Used for communities posts or instance posts."
               (alist-get 'community
                          (alist-get 'community_view community)))))
 
+(defun lem-ui-font-lock-comment (str)
+  ""
+  (propertize str
+              'face font-lock-comment-face))
+
+(defun lem-ui-render-community-header (community)
+  ""
+  (with-current-buffer (get-buffer-create "*lem*")
+    (let-alist (alist-get 'community_view community)
+      (insert
+       (propertize
+        (concat
+         (propertize .community.title
+                     'face '(:weight bold))
+         " | "
+         (lem-ui-font-lock-comment .community.name)
+         "\n"
+         .community.description
+         "\n"
+         (lem-ui-font-lock-comment .community.actor_id)
+         "\n"
+         .subscribed
+         "\n"
+         lem-ui-horiz-bar
+         "\n")
+        'community-json community))
+      ;; .community.id
+
+      ;; .counts.subscribers
+      ;; .counts.posts
+      ;; .counts.comments
+      ;; ;; ...
+      )
+    (let* ((mods-list (alist-get 'moderators community))
+           (mods (mapcar (lambda (x)
+                           (let-alist (alist-get 'moderator x)
+                             (list (number-to-string .id)
+                                   (or .display_name .name) .actor_id)))
+                         mods-list)))
+      (insert "mods: "
+              (mapconcat (lambda (x)
+                           (mapconcat #'identity x " "))
+                         mods " | ")
+              "\n"
+              lem-ui-horiz-bar
+              "\n"))))
+
 (defun lem-ui-view-community (name &optional sort limit)
   "View community with NAME, sorting by SORT.
 SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
@@ -168,6 +215,7 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
          (id (lem-ui-get-community-id community))
          (posts (lem-list-posts id nil limit))) ; no sorting
     (lem-ui-with-buffer (get-buffer-create"*lem*") 'special-mode t
+      (lem-ui-render-community-header community)
       (lem-ui-render-posts posts nil sort)))) ; no children, ie comments
 
 (defun lem-ui-thing-json ()
