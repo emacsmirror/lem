@@ -77,6 +77,23 @@ than `switch-to-buffer'."
          (switch-to-buffer ,buffer))
        ,@body)))
 
+(defun lem-ui-view-instance (sort)
+  "View posts of current user's home instance.
+SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
+  (let ((posts (lem-get-instance-posts)))
+    (lem-ui-with-buffer (get-buffer-create"*lem*") 'special-mode t
+      (lem-ui-render-posts posts nil sort))))
+
+(defun lem-ui-view-community (name &optional sort limit)
+  "View community with NAME, sorting by SORT.
+SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
+  (let* ((community (lem-get-community-by-name name))
+         (id (lem-ui-get-community-id community :string))
+         (posts (lem-list-posts id nil limit))) ; no sorting
+    (lem-ui-with-buffer (get-buffer-create"*lem*") 'special-mode t
+      (lem-ui-render-community-header community)
+      (lem-ui-render-posts posts nil sort)))) ; no children, ie comments
+
 (defun lem-ui-top-byline (name score timestamp)
   "Format a top byline for post with NAME, SCORE and TIMESTAMP."
   ;; TODO: name link to user page, etc.
