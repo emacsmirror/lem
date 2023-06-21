@@ -179,12 +179,15 @@ Used for communities posts or instance posts."
             list)
       (goto-char (point-min)))))
 
-(defun lem-ui-get-community-id (community)
+(defun lem-ui-get-community-id (community &optional string)
   "Returns ID of COMMUNITY as a string."
-  (number-to-string
-   (alist-get 'id
-              (alist-get 'community
-                         (alist-get 'community_view community)))))
+  (let ((id
+         (alist-get 'id
+                    (alist-get 'community
+                               (alist-get 'community_view community)))))
+    (if string
+        (number-to-string id)
+      id)))
 
 (defun lem-ui-font-lock-comment (str)
   ""
@@ -237,7 +240,7 @@ Used for communities posts or instance posts."
   "View community with NAME, sorting by SORT.
 SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
   (let* ((community (lem-get-community-by-name name))
-         (id (lem-ui-get-community-id community))
+         (id (lem-ui-get-community-id community :string))
          (posts (lem-list-posts id nil limit))) ; no sorting
     (lem-ui-with-buffer (get-buffer-create"*lem*") 'special-mode t
       (lem-ui-render-community-header community)
