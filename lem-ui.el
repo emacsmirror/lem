@@ -170,13 +170,28 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
     (lem-ui-with-buffer (get-buffer-create"*lem*") 'special-mode t
       (lem-ui-render-posts posts nil sort)))) ; no children, ie comments
 
+(defun lem-ui-thing-json ()
+  ""
+  ;; FIXME up scotty
+  (or
+   (get-text-property (point) 'comment-json)
+   (get-text-property (point) 'post-json)))
+
+(defun lem-ui-id-from-json (slot json &optional string)
+  "Return id as a string, from sub SLOT in JSON.
+SLOT is a symbol, either 'post or 'comment."
+  ;; FIXME up scotty
+  (let ((num (alist-get 'id
+                        (alist-get slot json))))
+    (if string
+        (number-to-string num)
+      num)))
+
 (defun lem-ui-view-post-at-point ()
   ""
   (interactive)
-  (let* ((post (get-text-property (point) 'post-json))
-         (id (number-to-string
-              (alist-get 'id
-                         (alist-get 'post post)))))
+  (let* ((post (lem-ui-thing-json))
+         (id (lem-ui-id-from-json 'post post :string)))
     (lem-ui-view-post id)))
 
 (defun lem-ui-view-post (id &optional sort limit)
@@ -186,6 +201,22 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
     (lem-ui-with-buffer (get-buffer-create"*lem-post*") 'special-mode t
       (lem-ui-render-post post :children sort)
       (goto-char (point-min))))) ; limit
+
+(defun lem-ui-reply-simple ()
+  "Reply to post or comment at point
+Simple means we just read a string."
+  (interactive)
+  (let* ((json (lem-ui-thing-json))
+         (post-id (if (alist-get 'post json)
+                      (lem-ui-id-from-json 'post json)
+                    (lem-ui-id-from-json 'post-id json)))
+         (parent-id (when-let ((comment (alist-get 'comment json)))
+                      (alist-get 'id comment)))
+         (content (read-string "Reply: "))
+         (response (lem-create-comment post-id content parent-id)))
+    (when response
+      (let-alist response
+        (message "Comment created: %s" .comment_view.comment.content)))))
 
 (defun lem-ui-render-comment (comment &optional children sort)
   "Render single COMMENT.
