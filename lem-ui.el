@@ -85,12 +85,22 @@ than `switch-to-buffer'."
          (switch-to-buffer ,buffer))
        ,@body)))
 
-(defun lem-ui-view-instance (sort)
+(defun lem-ui-view-instance (&optional sort) ; limit
   "View posts of current user's home instance.
 SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
   (let ((posts (lem-get-instance-posts)))
     (lem-ui-with-buffer (get-buffer-create"*lem*") 'special-mode t
       (lem-ui-render-posts posts nil sort))))
+
+(defun lem-ui-list-subscriptions ()
+  ""
+  ;; TODO list subscriptions. Not in API yet? get-person-by-name doesn't contain
+  )
+
+(defun lem-ui-search ()
+  ""
+  ;; TODO: interactive search functionality, discover stuff from home view.
+  )
 
 (defun lem-ui-view-community (name &optional sort limit)
   "View community with NAME, sorting by SORT.
@@ -328,6 +338,7 @@ Sort can be \"New\", \"Hot\", \"Old\", or \"Top\"."
                                                  sort)))
              (list (setq lem-post-comments-list
                          (alist-get 'comments comms))))
+        ;; FIXME: comment children recursion is broken:
         ;; (mapc (lambda (x)
         ;;         (lem-ui-render-comment x :children
         ;;                                ;; nil

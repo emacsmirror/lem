@@ -37,6 +37,10 @@
 ;; <https://github.com/LemmyNet/lemmyBB/tree/main/src/api>
 ;; <https://github.com/LemmyNet/lemmy/blob/main/src/api_routes_http.rs>
 
+;; TODO: consider returning only the value of the objects returned, else
+;; probably every request has to be followed by an (alist-get 'object object)
+;; call
+
 ;;; Code:
 
 (require 'fedi)
@@ -172,7 +176,7 @@ Returns a person_view, comments, posts, moderates objects."
 Returns a person_view, comments, posts, moderates objects."
   `(("username" . ,name)))
 
-;; (lem-get-person-by-name "blawsybogsy")
+;; (setq lem-user-me (lem-get-person-by-name "blawsybogsy"))
 
 ;; TODO: block user
 
@@ -210,7 +214,7 @@ Returns a community_view, site, moderators, online count,
 discussion_languages, default_post_language."
   `(("name" . ,name)))
 
-;; (lem-get-community-by-name "lemel")
+;; (setq lem-community-test (lem-get-community-by-name "lemel"))
 
 (lem-request "get" "get-communities" "community/list"
              nil "Returns a list of community objects.")
