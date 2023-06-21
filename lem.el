@@ -272,17 +272,22 @@ Returns a community_view and discussion_languages."
 Returns a post_view, a community_view, moderators, and online count."
   `(("id" . ,id)))
 
-;; (lem-get-post "1341246")
+;; (setq lem-test-post (lem-get-post "1341246"))
 
 (lem-request "get" "list-posts"
-  "post/list" (community-id) ; &optional limit page sort type
+  "post/list" (community-id &optional sort limit) ;page type
   "Get posts of community with COMMUNITY_ID.
+Sort can be \"New\", \"Hot\", \"Old\", or \"Top\".
+LIMIT is the amount of results to return.
 Retuns a list of posts objects."
-  `(("community_id" . ,community-id)))
-;; ("limit" . ,limit)
+  ;;  `Active`, `Hot`, `New`, `Old`, `TopDay`, `TopWeek`, `TopMonth`,
+  ;;  `TopYear`, `TopAll`, `MostComments`, `NewComments`"
+  `(("community_id" . ,community-id)
+    ,(when sort `("sort" . ,sort))
+    ,(when limit `("limit" . ,limit))))
 ;; ("page" . ,page)))
 
-;; (lem-list-posts "96200")
+;; (setq lem-test-posts (lem-list-posts "14856"))
 
 ;; https://join-lemmy.org/api/interfaces/CreatePost.html
 (lem-request "post" "create-post"
@@ -369,21 +374,28 @@ Returns a comment_view, recipient_ids, and form_id."
 ;;     (format "Comment created: %s" comment)))
 
 (lem-request "get" "get-post-comments"
-  "comment/list" (post-id &optional parent-id)
+  "comment/list" (post-id &optional parent-id sort)
+  ;; limit max_depth page saved_only type_
   "Get the comments of post with POST-ID.
+Sort can be \"New\", \"Hot\", \"Old\", or \"Top\".
 Returns a list of comment objects."
   `(("post_id" . ,post-id)
+    ("sort" . ,sort)
     ,(when parent-id `("parent_id" . ,parent-id))))
 
-;; (lem-get-post-comments "1341246")
+;; (setq lem-test-comments (lem-get-post-comments "1341246"))
+;; (setq lem-test-comments (lem-get-post-comments "1235982"))
 ;; (lem-get-post-comments "1235982" "651145") ; nil first arg breaks
 
 
 (lem-request "get" "get-community-comments"
-  "comment/list" (&optional community-id community-name) ; &optional sort limit
+  "comment/list" (&optional community-id community-name sort) ; limit
+  ;; max_depth page saved_only type_
   "Get comments for community with COMMUNITY-ID.
+Sort can be \"New\", \"Hot\", \"Old\", or \"Top\".
 Returns a list of comment objects."
   `(("comminuty_id" . ,community-id)
+    ("sort" . ,sort)
     ("community_name" . ,community-name)))
 
 ;; (lem-get-community-comments "96200")
