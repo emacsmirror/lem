@@ -61,6 +61,14 @@ NAME is not part of the symbol table, '?' is returned."
         (cdr symbol))
     "?"))
 
+(defun lem ()
+  "Open lem, a Lemmy client.
+Load current user's instance posts."
+  (interactive)
+  (unless lem-auth-token
+    (lem-login-set-token))
+  (lem-ui-view-instance "Top"))
+
 (defmacro lem-ui-with-buffer (buffer mode-fun other-window &rest body)
   "Evaluate BODY in a new or existing buffer called BUFFER.
 MODE-FUN is called to set the major mode.
