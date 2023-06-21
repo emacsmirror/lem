@@ -161,7 +161,7 @@ Used for communities posts or instance posts."
               (alist-get 'community
                          (alist-get 'community_view community)))))
 
-(defun lem-ui-view-community (name sort limit)
+(defun lem-ui-view-community (name &optional sort limit)
   "View community with NAME, sorting by SORT.
 SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
   (let* ((community (lem-get-community-by-name name))
