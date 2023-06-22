@@ -22,7 +22,7 @@
 
 ;;; Commentary:
 
-;; Some simple, unadorned, primitive, humble, basic, dashed-off functions for an interface to Lemmy, the federated link-aggregator and forum software. See <joinlemmy.org>.
+;; Some simple, unadorned, primitive, humble, basic, dashed-off functions for an interface to Lemmy, the federated link-aggregator and forum software. See <https://joinlemmy.org>.
 
 ;;; Code:
 
@@ -92,7 +92,7 @@ Load current user's instance posts."
   (interactive)
   (unless lem-auth-token
     (lem-login-set-token))
-  (lem-ui-view-instance "Top"))
+  (lem-ui-view-instance "Top" "All")) ; add customize defaults
 
 ;;; MACRO
 (defmacro lem-ui-with-buffer (buffer mode-fun other-window &rest body)
@@ -111,6 +111,18 @@ than `switch-to-buffer'."
          (switch-to-buffer ,buffer))
        ,@body)))
 
+;;; BUFFER DETAILS
+(defvar-local lem-ui-buffer-spec nil
+  "A plist containing details about the current lem buffer.")
+
+(defun lem-ui-set-buffer-spec (sort type) ; endpoint etc.
+  "Set `lem-ui-buffer-spec' for the current buffer.
+TYPE is the Lemmy ListingType, one of \"All\" \"Community\"
+\"Local\" or \"Subscribed\"."
+  (setq lem-ui-buffer-spec
+        `(:sort ,sort
+                :type ,type)))
+
 ;;; INSTANCE
 
 ;; TODO: toggle posts or comments, and cycle Local, All, or Subscribed
@@ -120,8 +132,22 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\".
 TYPE is one of \"All\" \"Community\" \"Local\" or
 \"Subscribed\"."
   (let ((posts (lem-get-instance-posts nil type))) ; no sort here, its below
-    (lem-ui-with-buffer (get-buffer-create"*lem*") 'special-mode t
-      (lem-ui-render-posts posts nil sort)))) ; no children
+    (lem-ui-with-buffer (get-buffer-create"*lem*") 'special-mode nil
+      (lem-ui-render-posts posts nil sort)
+      (lem-ui-set-buffer-spec sort type)))) ; no children
+
+;; TODO refactor to also handle sort:
+(defun lem-ui-cycle-instance-view-type ()
+  ""
+  (interactive)
+  (let ((type (plist-get lem-ui-buffer-spec :type))
+        (sort (plist-get lem-ui-buffer-spec :sort)))
+    (cond ((equal type "All")
+           (lem-ui-view-instance sort "Local"))
+          ((equal type "Local")
+           (lem-ui-view-instance sort "Subscribed"))
+          ((equal type "Subscribed")
+           (lem-ui-view-instance sort "All")))))
 
 (defun lem-ui-list-subscriptions ()
   ""
