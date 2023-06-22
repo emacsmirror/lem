@@ -125,7 +125,7 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\".
 TYPE is one of \"All\" \"Community\" \"Local\" or
 \"Subscribed\"."
   (let ((posts (lem-get-instance-posts nil type))) ; no sort here, its below
-    (lem-ui-with-buffer (get-buffer-create"*lem*") 'special-mode nil
+    (lem-ui-with-buffer (get-buffer-create"*lem*") 'lem-mode nil
       (lem-ui-render-posts posts nil sort)
       (lem-ui-set-buffer-spec sort type)))) ; no children
 
@@ -167,7 +167,7 @@ SORT.
 LIMIT."
   (let* ((post-view (lem-get-post id))
          (post (alist-get 'post_view post-view)))
-    (lem-ui-with-buffer (get-buffer-create"*lem-post*") 'special-mode t
+    (lem-ui-with-buffer (get-buffer-create"*lem-post*") 'lem-mode t
       (lem-ui-render-post post :children sort)
       (goto-char (point-min))))) ; limit
 
@@ -260,7 +260,7 @@ LIMIT is the max results to show."
   (let* ((community (lem-get-community-by-name name))
          (id (lem-ui-get-community-id community :string))
          (posts (lem-list-posts id nil limit))) ; no sorting
-    (lem-ui-with-buffer (get-buffer-create"*lem*") 'special-mode t
+    (lem-ui-with-buffer (get-buffer-create"*lem*") 'lem-mode t
       (lem-ui-render-community-header community)
       (lem-ui-render-posts posts nil sort)))) ; no children, ie comments
 
