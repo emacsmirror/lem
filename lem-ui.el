@@ -22,7 +22,7 @@
 
 ;;; Commentary:
 
-;;; nothing yet
+;; Some simple, unadorned, primitive, humble, basic, dashed-off functions for an interface to Lemmy, the federated link-aggregator and forum software. See <joinlemmy.org>.
 
 ;;; Code:
 
@@ -32,6 +32,8 @@
   (if (char-displayable-p ?―)
       (make-string 12 ?―)
     (make-string 12 ?-)))
+
+;;; UTILITIES
 
 (defcustom lem-ui-symbols
   '((reply     . ("💬" . "R"))
@@ -61,6 +63,29 @@ NAME is not part of the symbol table, '?' is returned."
         (cdr symbol))
     "?"))
 
+(defun lem-ui-font-lock-comment (str)
+  ""
+  (propertize str
+              'face font-lock-comment-face))
+
+(defun lem-ui-thing-json ()
+  ""
+  ;; FIXME up scotty, also just use 'json always then doesn't matter.
+  (or
+   (get-text-property (point) 'comment-json)
+   (get-text-property (point) 'post-json)))
+
+(defun lem-ui-id-from-json (slot json &optional string)
+  "Return id as a string, from sub SLOT in JSON.
+SLOT is a symbol, either 'post or 'comment."
+  ;; FIXME up scotty
+  (let ((num (alist-get 'id
+                        (alist-get slot json))))
+    (if string
+        (number-to-string num)
+      num)))
+
+;;; ENTRYPOINT
 (defun lem ()
   "Open lem, a Lemmy client.
 Load current user's instance posts."
@@ -69,6 +94,7 @@ Load current user's instance posts."
     (lem-login-set-token))
   (lem-ui-view-instance "Top"))
 
+;;; MACRO
 (defmacro lem-ui-with-buffer (buffer mode-fun other-window &rest body)
   "Evaluate BODY in a new or existing buffer called BUFFER.
 MODE-FUN is called to set the major mode.
@@ -85,6 +111,10 @@ than `switch-to-buffer'."
          (switch-to-buffer ,buffer))
        ,@body)))
 
+;;; INSTANCE
+
+;; TODO: Optional: load posts or comments, and load Local, All, or Subscribed
+;; (communities)
 (defun lem-ui-view-instance (&optional sort) ; limit
   "View posts of current user's home instance.
 SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
@@ -102,16 +132,22 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
   ;; TODO: interactive search functionality, discover stuff from home view.
   )
 
-(defun lem-ui-view-community (name &optional sort limit)
-  "View community with NAME, sorting by SORT.
-SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
-  (let* ((community (lem-get-community-by-name name))
-         (id (lem-ui-get-community-id community :string))
-         (posts (lem-list-posts id nil limit))) ; no sorting
-    (lem-ui-with-buffer (get-buffer-create"*lem*") 'special-mode t
-      (lem-ui-render-community-header community)
-      (lem-ui-render-posts posts nil sort)))) ; no children, ie comments
+;;; POSTS
 
+(defun lem-ui-view-post-at-point ()
+  ""
+  (interactive)
+  (let* ((post (lem-ui-thing-json))
+         (id (lem-ui-id-from-json 'post post :string)))
+    (lem-ui-view-post id)))
+
+(defun lem-ui-view-post (id &optional sort limit)
+  ""
+  (let* ((post-view (lem-get-post id))
+         (post (alist-get 'post_view post-view)))
+    (lem-ui-with-buffer (get-buffer-create"*lem-post*") 'special-mode t
+      (lem-ui-render-post post :children sort)
+      (goto-char (point-min))))) ; limit
 (defun lem-ui-top-byline (name score timestamp)
   "Format a top byline for post with NAME, SCORE and TIMESTAMP."
   ;; TODO: name link to user page, etc.
@@ -189,6 +225,20 @@ Used for communities posts or instance posts."
             list)
       (goto-char (point-min)))))
 
+;;; COMMUNITIES
+
+(defun lem-ui-view-community (name &optional sort limit)
+  "View community with NAME, sorting by SORT.
+SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
+  (interactive)
+  (let* ((community (lem-get-community-by-name name))
+         (id (lem-ui-get-community-id community :string))
+         (posts (lem-list-posts id nil limit))) ; no sorting
+    (lem-ui-with-buffer (get-buffer-create"*lem*") 'special-mode t
+      (lem-ui-render-community-header community)
+      (lem-ui-render-posts posts nil sort)))) ; no children, ie comments
+
+
 (defun lem-ui-get-community-id (community &optional string)
   "Returns ID of COMMUNITY as a string."
   (let ((id
@@ -198,11 +248,6 @@ Used for communities posts or instance posts."
     (if string
         (number-to-string id)
       id)))
-
-(defun lem-ui-font-lock-comment (str)
-  ""
-  (propertize str
-              'face font-lock-comment-face))
 
 (defun lem-ui-render-community-header (community)
   ""
@@ -246,47 +291,7 @@ Used for communities posts or instance posts."
               lem-ui-horiz-bar
               "\n"))))
 
-(defun lem-ui-view-community (name &optional sort limit)
-  "View community with NAME, sorting by SORT.
-SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
-  (let* ((community (lem-get-community-by-name name))
-         (id (lem-ui-get-community-id community :string))
-         (posts (lem-list-posts id nil limit))) ; no sorting
-    (lem-ui-with-buffer (get-buffer-create"*lem*") 'special-mode t
-      (lem-ui-render-community-header community)
-      (lem-ui-render-posts posts nil sort)))) ; no children, ie comments
-
-(defun lem-ui-thing-json ()
-  ""
-  ;; FIXME up scotty
-  (or
-   (get-text-property (point) 'comment-json)
-   (get-text-property (point) 'post-json)))
-
-(defun lem-ui-id-from-json (slot json &optional string)
-  "Return id as a string, from sub SLOT in JSON.
-SLOT is a symbol, either 'post or 'comment."
-  ;; FIXME up scotty
-  (let ((num (alist-get 'id
-                        (alist-get slot json))))
-    (if string
-        (number-to-string num)
-      num)))
-
-(defun lem-ui-view-post-at-point ()
-  ""
-  (interactive)
-  (let* ((post (lem-ui-thing-json))
-         (id (lem-ui-id-from-json 'post post :string)))
-    (lem-ui-view-post id)))
-
-(defun lem-ui-view-post (id &optional sort limit)
-  ""
-  (let* ((post-view (lem-get-post id))
-         (post (alist-get 'post_view post-view)))
-    (lem-ui-with-buffer (get-buffer-create"*lem-post*") 'special-mode t
-      (lem-ui-render-post post :children sort)
-      (goto-char (point-min))))) ; limit
+;;; REPLIES
 
 (defun lem-ui-reply-simple ()
   "Reply to post or comment at point
@@ -303,6 +308,8 @@ Simple means we just read a string."
     (when response
       (let-alist response
         (message "Comment created: %s" .comment_view.comment.content)))))
+
+;;; COMMENTS
 
 (defun lem-ui-render-comment (comment &optional children sort)
   "Render single COMMENT.
