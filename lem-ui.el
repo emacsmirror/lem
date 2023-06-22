@@ -113,14 +113,15 @@ than `switch-to-buffer'."
 
 ;;; INSTANCE
 
-;; TODO: Optional: load posts or comments, and load Local, All, or Subscribed
-;; (communities)
-(defun lem-ui-view-instance (&optional sort) ; limit
+;; TODO: toggle posts or comments, and cycle Local, All, or Subscribed
+(defun lem-ui-view-instance (&optional sort type) ; limit
   "View posts of current user's home instance.
-SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
-  (let ((posts (lem-get-instance-posts)))
+SORT can be \"New\", \"Hot\", \"Old\", or \"Top\".
+TYPE is one of \"All\" \"Community\" \"Local\" or
+\"Subscribed\"."
+  (let ((posts (lem-get-instance-posts nil type))) ; no sort here, its below
     (lem-ui-with-buffer (get-buffer-create"*lem*") 'special-mode t
-      (lem-ui-render-posts posts nil sort))))
+      (lem-ui-render-posts posts nil sort)))) ; no children
 
 (defun lem-ui-list-subscriptions ()
   ""

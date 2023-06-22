@@ -43,6 +43,12 @@
 
 ;;; Code:
 
+;;; NB, to filter listings, use "TYPE_": https://join-lemmy.org/api/enums/ListingType.html.
+;; All/Local/Community/Subscribed.
+
+;; To sort listings, use SORT: https://join-lemmy.org/api/enums/SortType.html
+;; `Active`, `Hot`, `New`, `Old`, `TopDay`, `TopWeek`,`TopMonth`, `TopYear`, `TopAll`, `MostComments`, `NewComments`.
+
 (require 'fedi)
 (require 'persist)
 
@@ -86,11 +92,18 @@ taglines.")
 
 ;; (lem-instance)
 
-(lem-request "get" "get-instance-posts" "post/list"
-             nil
-             "Returns a list of posts.")
+(lem-request "get" "get-instance-posts"
+  "post/list"
+  (&optional sort type) ; limit page saved_only
+  "Returns a list of posts.
+TYPE can be one of \"All\" \"Comments\" \"Communities\" \"Posts\"
+\"Url\" or \"Users\"."
+  `(
+    ;; TODO: have the macro handle optional args:
+    ,(when sort `("sort" . ,sort))
+    ,(when type `("type_" . ,type))))
 
-;; (setq lem-test-inst-posts (lem-get-instance-posts))
+;; (setq lem-test-inst-posts (lem-get-instance-posts nil "Subscribed"))
 
 (defun lem-get-federated-instances ()
   "Return a list of federated instances of the current instance.
@@ -111,8 +124,8 @@ lists.
 TYPE can be one of \"All\" \"Comments\" \"Communities\" \"Posts\"
 \"Url\" or \"Users\".
 COMMUNITY-ID and CREATOR-ID are numbers.
-LISTING-TYPE is one of \"all\" \"community\" \"local\" or
-\"subscribed\".
+LISTING-TYPE is one of \"All\" \"Community\" \"Local\" or
+\"Subscribed\".
 LIMIT and PAGE are numbers."
   `(("q" . ,query)
     ("type_" . ,(or type "All")) ; default
@@ -280,20 +293,24 @@ Returns a post_view, a community_view, moderators, and online count."
 
 ;; (setq lem-test-post (lem-get-post "1341246"))
 
-(lem-request "get" "list-posts"
-  "post/list" (community-id &optional sort limit) ;page type
+;; TODO: list-posts by COMMUNITY-NAME.
+;; NB: "To get posts for a federated community by name, use name@instance.tld."
+(lem-request "get" "list-posts-community"
+  "post/list" (community-id &optional sort limit type) ; page
   "Get posts of community with COMMUNITY_ID.
-Sort can be \"New\", \"Hot\", \"Old\", or \"Top\".
+SORT can be `Active`, `Hot`, `New`, `Old`, `TopDay`, `TopWeek`,
+`TopMonth`, `TopYear`, `TopAll`, `MostComments`, `NewComments`.
 LIMIT is the amount of results to return.
+TYPE can be \"All\" \"Community\" \"Local\" or
+\"Subscribed\".
 Retuns a list of posts objects."
-  ;;  `Active`, `Hot`, `New`, `Old`, `TopDay`, `TopWeek`, `TopMonth`,
-  ;;  `TopYear`, `TopAll`, `MostComments`, `NewComments`"
   `(("community_id" . ,community-id)
     ,(when sort `("sort" . ,sort))
-    ,(when limit `("limit" . ,limit))))
+    ,(when limit `("limit" . ,limit))
+    ,(when type `("type_" . ,type))))
 ;; ("page" . ,page)))
 
-;; (setq lem-test-posts (lem-list-posts "14856"))
+;; (setq lem-test-posts (lem-list-posts-community "14856"))
 
 ;; https://join-lemmy.org/api/interfaces/CreatePost.html
 (lem-request "post" "create-post"
