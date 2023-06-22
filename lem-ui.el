@@ -64,12 +64,12 @@ NAME is not part of the symbol table, '?' is returned."
     "?"))
 
 (defun lem-ui-font-lock-comment (str)
-  ""
+  "Font lock comment face STR."
   (propertize str
               'face font-lock-comment-face))
 
 (defun lem-ui-thing-json ()
-  ""
+  "Get json of thing at point, comment, or post."
   ;; FIXME up scotty, also just use 'json always then doesn't matter.
   (or
    (get-text-property (point) 'comment-json)
@@ -77,7 +77,8 @@ NAME is not part of the symbol table, '?' is returned."
 
 (defun lem-ui-id-from-json (slot json &optional string)
   "Return id as a string, from sub SLOT in JSON.
-SLOT is a symbol, either 'post or 'comment."
+SLOT is a symbol, either 'post or 'comment.
+STRING means return as string, else return number."
   ;; FIXME up scotty
   (let ((num (alist-get 'id
                         (alist-get slot json))))
@@ -108,6 +109,7 @@ than `switch-to-buffer'."
 
 (defun lem-ui-set-buffer-spec (sort type) ; endpoint etc.
   "Set `lem-ui-buffer-spec' for the current buffer.
+SORT is the sorting used.
 TYPE is the Lemmy ListingType, one of \"All\" \"Community\"
 \"Local\" or \"Subscribed\"."
   (setq lem-ui-buffer-spec
@@ -129,7 +131,7 @@ TYPE is one of \"All\" \"Community\" \"Local\" or
 
 ;; TODO refactor to also handle sort:
 (defun lem-ui-cycle-instance-view-type ()
-  ""
+  "Cycle instance view between view listing types."
   (interactive)
   (let ((type (plist-get lem-ui-buffer-spec :type))
         (sort (plist-get lem-ui-buffer-spec :sort)))
@@ -141,31 +143,34 @@ TYPE is one of \"All\" \"Community\" \"Local\" or
            (lem-ui-view-instance sort "All")))))
 
 (defun lem-ui-list-subscriptions ()
-  ""
+  "."
   ;; TODO list subscriptions. Not in API yet? get-person-by-name doesn't contain
   )
 
 (defun lem-ui-search ()
-  ""
+  "."
   ;; TODO: interactive search functionality, discover stuff from home view.
   )
 
 ;;; POSTS
 
 (defun lem-ui-view-post-at-point ()
-  ""
+  "."
   (interactive)
   (let* ((post (lem-ui-thing-json))
          (id (lem-ui-id-from-json 'post post :string)))
     (lem-ui-view-post id)))
 
 (defun lem-ui-view-post (id &optional sort limit)
-  ""
+  "View post with ID.
+SORT.
+LIMIT."
   (let* ((post-view (lem-get-post id))
          (post (alist-get 'post_view post-view)))
     (lem-ui-with-buffer (get-buffer-create"*lem-post*") 'special-mode t
       (lem-ui-render-post post :children sort)
       (goto-char (point-min))))) ; limit
+
 (defun lem-ui-top-byline (name score timestamp)
   "Format a top byline for post with NAME, SCORE and TIMESTAMP."
   ;; TODO: name link to user page, etc.
@@ -189,7 +194,7 @@ ID is the item's id."
 (defun lem-ui-render-post (post &optional children sort)
   "Render single POST.
 Optionally render its CHILDREN.
-Sort can be \"New\", \"Hot\", \"Old\", or \"Top\"."
+SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
   (let-alist post
     ;; (lem-ui-with-buffer (get-buffer-create"*lem*") 'special-mode t
     ;; (with-current-buffer (get-buffer-create "*lem*")
@@ -233,7 +238,9 @@ Sort can be \"New\", \"Hot\", \"Old\", or \"Top\"."
 
 (defun lem-ui-render-posts (posts &optional children sort)
   "Render a list of abbreviated posts POSTS.
-Used for communities posts or instance posts."
+Used for communities posts or instance posts.
+CHILDREN means also show post comments.
+SORT is the kind of sorting to use."
   (let ((list (alist-get 'posts posts)))
     ;; (lem-ui-with-buffer "*lem*" 'special-mode t
     ;; (lem-ui-render-post (car list)))))
@@ -247,7 +254,8 @@ Used for communities posts or instance posts."
 
 (defun lem-ui-view-community (name &optional sort limit)
   "View community with NAME, sorting by SORT.
-SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
+SORT can be \"New\", \"Hot\", \"Old\", or \"Top\".
+LIMIT is the max results to show."
   (interactive)
   (let* ((community (lem-get-community-by-name name))
          (id (lem-ui-get-community-id community :string))
@@ -258,7 +266,8 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
 
 
 (defun lem-ui-get-community-id (community &optional string)
-  "Returns ID of COMMUNITY as a string."
+  "Return ID of COMMUNITY.
+If STRING, return one, else number."
   (let ((id
          (alist-get 'id
                     (alist-get 'community
@@ -269,7 +278,7 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
 
 ;; TODO: make this generic, for instance and post also:
 (defun lem-ui-render-community-header (community)
-  ""
+  "Render header details for COMMUNITY."
   (with-current-buffer (get-buffer-create "*lem*")
     (let-alist (alist-get 'community_view community)
       (insert
@@ -313,7 +322,7 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
 ;;; REPLIES
 
 (defun lem-ui-reply-simple ()
-  "Reply to post or comment at point
+  "Reply to post or comment at point.
 Simple means we just read a string."
   (interactive)
   (let* ((json (lem-ui-thing-json))
@@ -333,7 +342,7 @@ Simple means we just read a string."
 (defun lem-ui-render-comment (comment &optional children sort)
   "Render single COMMENT.
 Optionally render its CHILDREN.
-Sort can be \"New\", \"Hot\", \"Old\", or \"Top\"."
+SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
   (let-alist comment
     ;; (lem-ui-with-buffer "*lem*" 'special-mode t
     ;; (with-current-buffer (get-buffer-create "*lem*")
