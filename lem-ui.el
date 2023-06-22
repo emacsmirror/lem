@@ -5,7 +5,7 @@
 ;; Version: 0.1
 ;; URL: https://codeberg.org/martianh/lem
 ;; Package-Requires: ((emacs "27.1") (fedi "0.1"))
-;; Keywords: multimedia, multimedia
+;; Keywords: multimedia, comm, web, fediverse
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 
 ;;; Code:
 
-(require 'lem)
+(require 'lem-requests)
 
 (defvar lem-ui-horiz-bar
   (if (char-displayable-p ?―)
@@ -84,15 +84,6 @@ SLOT is a symbol, either 'post or 'comment."
     (if string
         (number-to-string num)
       num)))
-
-;;; ENTRYPOINT
-(defun lem ()
-  "Open lem, a Lemmy client.
-Load current user's instance posts."
-  (interactive)
-  (unless lem-auth-token
-    (lem-login-set-token))
-  (lem-ui-view-instance "Top" "All")) ; add customize defaults
 
 ;;; MACRO
 (defmacro lem-ui-with-buffer (buffer mode-fun other-window &rest body)
@@ -276,6 +267,7 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
         (number-to-string id)
       id)))
 
+;; TODO: make this generic, for instance and post also:
 (defun lem-ui-render-community-header (community)
   ""
   (with-current-buffer (get-buffer-create "*lem*")
