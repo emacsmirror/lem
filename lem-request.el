@@ -178,10 +178,12 @@ discussion_languages, default_post_language."
 
 ;; (setq lem-community-test (lem-get-community-by-name "lemel"))
 
-(lem-request "get" "get-communities" "community/list"
-  () "Returns a list of community objects.")
+(lem-request "get" "list-communities" "community/list"
+  (&optional type- sort limit page)
+  "Returns a list of community objects."
+  (type- sort limit page))
 
-;; (lem-get-communities)
+;; (lem-list-communities "Subscribed")
 
 (lem-request "post" "follow-community" "community/follow"
   (community-id)
