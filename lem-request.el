@@ -76,8 +76,8 @@ See `fedi-request'."
                 man-params))
      ,json ,headers))
 
-;;; INSTANCE
-(lem-request "get" "instance" "site"
+;;; INSTANCES
+(lem-request "get" "get-instance" "site"
   ()
   "Get instance details.
 Returns a site_view, admins list, online count, version, my_user,
@@ -86,24 +86,27 @@ taglines.")
 
 ;; (lem-instance)
 
+(lem-request "get" "get-site-metadata" "post/site_metadata"
+  (url)
+  "Get site metadata for URL, any Lemmy instance."
+  (url))
+
+;; (lem-get-site-metadata "https://lemmy.world")
+
 (defun lem-get-instance-posts (&optional type sort limit)
   ""
   (lem-get-posts type sort limit))
 
 ;; (setq lem-test-inst-posts (lem-get-instance-posts "Subscribed"))
 
-(defun lem-get-federated-instances ()
-  "Return a list of federated instances of the current instance.
-Returns a list of linked, list of allowed, list of blocked."
-  (let ((inst (setq lem-inst (lem-instance))))
-    (alist-get 'federated_instances inst)))
+(lem-request "get" "get-federated-instances" "federated_instances")
 
 ;; (lem-get-federated-instances)
 
 ;;; SEARCH
 (lem-request "get" "search" "search"
   (q &optional type- listing-type community-name community-id) ;  creator-id
-  ;; listing-type limit page sort)
+  ;; limit page sort)
   "Search for QUERY.
 TYPE must be a member of `lem-search-types'. Defaults to All.
 COMMUNITY-ID and CREATOR-ID are numbers.
@@ -333,8 +336,7 @@ Returns a post_report_view."
 
 ;;; COMMENTS
 ;; <https://join-lemmy.org/api/interfaces/GetComments.html>
-;; Comment listing types are All, Subscribed, Community
-;; You can use either community_id or community_name as an id. To get posts for a federated community by name, use name@instance.tld .
+;; To get posts for a federated community by name, use name@instance.tld .
 
 (lem-request "get" "get-comment" "comment"
   (id)
