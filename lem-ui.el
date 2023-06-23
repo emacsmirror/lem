@@ -226,15 +226,18 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
       'post-json post))
     (when (and children
                (< 0 .counts.comments))
-      (let* ((id (number-to-string .post.id))
-             (comms (lem-get-post-comments id nil sort))
-             (list (alist-get 'comments comms)))
-        (mapc (lambda (x)
-                (lem-ui-render-comment x :children sort))
-              list)))))
+      (lem-ui-render-children .post.id sort))))
 ;; (unless (equal (buffer-name (current-buffer)) "*lem*")
 ;;   (switch-to-buffer-other-window "*lem*")
 ;;   (goto-char (point-min)))))
+
+(defun lem-ui-render-children (id sort)
+  (let* ((id (number-to-string id))
+         (comments (lem-get-post-comments id nil sort))
+         (list (alist-get 'comments comments)))
+    (mapc (lambda (x)
+            (lem-ui-render-comment x :children sort))
+          list)))
 
 (defun lem-ui-render-posts (posts &optional children sort)
   "Render a list of abbreviated posts POSTS.
@@ -368,7 +371,7 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
     (when (and children
                (< 0 .counts.child_count))
       (let* ((comms (setq lem-post-comments
-                          (lem-get-post-comments (number-to-string .post.id)
+                          (lem-get-post-comments nil ; (number-to-string .post.id)
                                                  (number-to-string .comment.id)
                                                  sort)))
              (list (setq lem-post-comments-list

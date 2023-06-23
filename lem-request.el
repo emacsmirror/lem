@@ -332,8 +332,12 @@ Returns a post_report_view."
   :json)
 
 ;;; COMMENTS
-(lem-request "get" "get-comment"
-  "comment" (id)
+;; <https://join-lemmy.org/api/interfaces/GetComments.html>
+;; Comment listing types are All, Subscribed, Community
+;; You can use either community_id or community_name as an id. To get posts for a federated community by name, use name@instance.tld .
+
+(lem-request "get" "get-comment" "comment"
+  (id)
   "Get comment with ID.
 Returns a comment_view, recipient_ids, and form_id."
   `(("id" . ,id)))
@@ -359,19 +363,20 @@ Returns a comment_view, recipient_ids, and form_id."
 ;;     (format "Comment created: %s" comment)))
 
 (lem-request "get" "get-post-comments" "comment/list"
-  (post-id &optional parent-id sort)
+  (&optional post-id parent-id sort)
   ;; limit max_depth page saved_only type_
   "Get the comments of post with POST-ID.
 Sort can be \"New\", \"Hot\", \"Old\", or \"Top\".
 Returns a list of comment objects."
-  `(("post_id" . ,post-id)
-    ,(when sort `("sort" . ,sort))
-    ,(when parent-id `("parent_id" . ,parent-id))))
+  `(,(when post-id `("post_id" . ,post-id))
+    ,(when parent-id `("parent_id" . ,parent-id))
+    ,(when sort `("sort" . ,sort))))
 
 ;; (setq lem-test-comments (lem-get-post-comments "1341246"))
+;; (setq lem-test-comments (lem-get-post-comments nil "1410245"))
 ;; (setq lem-test-comments (lem-get-post-comments "1235982"))
 ;; (lem-get-post-comments "1235982" "651145") ; nil first arg breaks
-
+;; (lem-get-post-comments nil "651145")
 
 (lem-request "get" "get-community-comments" "comment/list"
   (&optional community-id community-name sort) ; limit
@@ -385,6 +390,13 @@ Returns a list of comment objects."
 
 ;; (lem-get-community-comments "96200")
 ;; (lem-get-community-comments nil "emacs") ; nil first arg works
+
+;; TODO: make a base fun like so?
+;; (lem-request "get" "get-comments" "comment/list"
+;;   (&optional community_id community_name limit max_depth page
+;;              parent_id post_id saved_only sort type_ community-id)
+;;   "Get comments, for community, post, or parent comment.")
+
 
 (lem-request "put" "edit-comment" "comment"
   (id new-str)
