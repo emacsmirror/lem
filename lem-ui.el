@@ -107,11 +107,11 @@ than `switch-to-buffer'."
 (defvar-local lem-ui-buffer-spec nil
   "A plist containing details about the current lem buffer.")
 
-(defun lem-ui-set-buffer-spec (sort type) ; endpoint etc.
+(defun lem-ui-set-buffer-spec (sort listing-type) ; endpoint etc.
   "Set `lem-ui-buffer-spec' for the current buffer.
 SORT is the sorting used.
-TYPE is the Lemmy ListingType, one of \"All\" \"Community\"
-\"Local\" or \"Subscribed\"."
+LISTING-TYPE is one of \"All\" \"Community\" \"Local\" or
+\"Subscribed\"."
   (setq lem-ui-buffer-spec
         `(:sort ,sort
                 :type ,type)))

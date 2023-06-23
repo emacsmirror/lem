@@ -90,14 +90,12 @@ taglines.")
 ;; (lem-instance)
 
 (lem-request "get" "get-instance-posts" "post/list"
-  (&optional sort type) ; limit page saved_only
+  (&optional sort listing-type) ; limit page saved_only
   "Returns a list of posts.
-TYPE can be one of \"All\" \"Comments\" \"Communities\" \"Posts\"
-\"Url\" or \"Users\"."
-  `(
-    ;; TODO: have the macro handle optional args:
+LISTING-TYPE must be a member of `lem-listing-types'."
+  `(; TODO: have the macro handle optional args:
     ,(when sort `("sort" . ,sort))
-    ,(when type `("type_" . ,type))))
+    ,(when listing-type `("type_" . ,listing-type))))
 
 ;; (setq lem-test-inst-posts (lem-get-instance-posts nil "Subscribed"))
 
@@ -111,21 +109,19 @@ Returns a list of linked, list of allowed, list of blocked."
 
 ;;; SEARCH
 (lem-request "get" "search" "search"
-  (query &optional type community-name community-id) ;  creator-id
+  (query &optional type listing-type community-name community-id) ;  creator-id
   ;; listing-type limit page sort)
   "Search for QUERY.
-TYPE can be one of \"All\" \"Comments\" \"Communities\" \"Posts\"
-\"Url\" or \"Users\". Defaults to All.
+TYPE must be a member of `lem-search-types'. Defaults to All.
 COMMUNITY-ID and CREATOR-ID are numbers.
-LISTING-TYPE is one of \"All\" \"Community\" \"Local\" or
-\"Subscribed\".
+LISTING-TYPE must be a member of `lem-listing-types'.
 LIMIT and PAGE are numbers."
   `(("q" . ,query)
-    ("type_" . ,(or type "All")) ; default
+    ("type_" . ,(or search-type "All")) ; default
     ("community_name" . ,community-name)
     ("community_id" . ,community-id)
-    ("creator_id" . ,creator-id)))
-;; ("listing-type" . ,listing-type))) ; ??? listing-type + type_?
+    ("creator_id" . ,creator-id)
+    ("listing-type" . ,listing-type)))
 
 ;; (lem-search "emacs" nil "emacs")
 
@@ -256,21 +252,36 @@ Returns a post_view, a community_view, moderators, and online count."
 
 ;; (setq lem-test-post (lem-get-post "1341246"))
 
+(lem-request "get" "get-posts" "post/list"
+  (&optional community-id community-name limit sort type) ; page saved_only
+  "List posts for the args provided.
+SORT must be a member of `lem-sort-types'.
+LISTING-TYPE must be member of `lem-listing-types'.
+LIMIT is the amount of results to return.
+COMMUNITY-ID and COMMUNITY-NAME are the community to get posts from.
+Without either arg, get instance posts."
+  `(
+    ,(when type `("type_" . ,type))
+    ,(when sort `("sort" . ,sort))
+    ,(when limit `("limit" . ,limit))
+    ,(when community_id `("community_id" . ,community-id))
+    ,(when community_name `("community_id" . ,community-name))))
+
+;; (lem-get-posts nil nil nil )
+
 ;; TODO: list-posts by COMMUNITY-NAME.
 ;; NB: "To get posts for a federated community by name, use name@instance.tld."
 (lem-request "get" "list-posts-community" "post/list"
-  (community-id &optional sort limit type) ; page
+  (community-id &optional sort limit listing-type) ; page
   "Get posts of community with COMMUNITY_ID.
-SORT can be `Active`, `Hot`, `New`, `Old`, `TopDay`, `TopWeek`,
-`TopMonth`, `TopYear`, `TopAll`, `MostComments`, `NewComments`.
+SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return.
-TYPE can be \"All\" \"Community\" \"Local\" or
-\"Subscribed\".
+LISTING-TYPE must be member of `lem-listing-types'.
 Retuns a list of posts objects."
   `(("community_id" . ,community-id)
     ,(when sort `("sort" . ,sort))
     ,(when limit `("limit" . ,limit))
-    ,(when type `("type_" . ,type))))
+    ,(when listing-type `("type_" . ,listing-type))))
 ;; ("page" . ,page)))
 
 ;; (setq lem-test-posts (lem-list-posts-community "14856"))
@@ -358,11 +369,30 @@ Returns a comment_view, recipient_ids, and form_id."
 ;;   (when comment
 ;;     (format "Comment created: %s" comment)))
 
+(lem-request "get" "get-comments" "comment/list"
+  (&optional post-id parent-id listing-type
+             sort
+             limit
+             ;; page saved_only
+             community-id community-name)
+  "SORT must be a member of `lem-sort-types'.
+LISTING-TYPE must be member of `lem-listing-types'.
+LIMIT is the amount of results to return.
+COMMUNITY-ID and COMMUNITY-NAME are the community to get posts from.
+Without any id or name, get instance comments."
+  `(,(when post-id ("post_id" . ,post-id))
+    ,(when parent-id ("parent_id" . ,parent-id))
+    ,(when listing-type `("type_" . ,listing-type))
+    ,(when sort `("sort" . ,sort))
+    ,(when limit `("limit" . ,limit))
+    ,(when community-id ("comminuty_id" . ,community-id))
+    ,(when community-name ("community_name" . ,community-name))))
+
 (lem-request "get" "get-post-comments" "comment/list"
   (post-id &optional parent-id sort)
   ;; limit max_depth page saved_only type_
   "Get the comments of post with POST-ID.
-Sort can be \"New\", \"Hot\", \"Old\", or \"Top\".
+SORT must be a member of `lem-sort-types'.
 Returns a list of comment objects."
   `(("post_id" . ,post-id)
     ,(when sort `("sort" . ,sort))
@@ -377,7 +407,8 @@ Returns a list of comment objects."
   (&optional community-id community-name sort) ; limit
   ;; max_depth page saved_only type_
   "Get comments for community with COMMUNITY-ID.
-Sort can be \"New\", \"Hot\", \"Old\", or \"Top\".
+SORT must be a member of `lem-sort-types'.
+COMMUNITY-ID and COMMUNITY-NAME are the community to get posts from.
 Returns a list of comment objects."
   `(("comminuty_id" . ,community-id)
     ("sort" . ,sort)
