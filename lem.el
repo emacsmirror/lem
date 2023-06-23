@@ -96,7 +96,47 @@ Load current user's instance posts."
          (json (lem-login name password)))
     (setq lem-auth-token (alist-get 'jwt json)))) ;
 
+;;; RANDOMS
 
+(defun lem-list-posts-community-by-id (community-id
+                                       &optional type sort limit)
+  ""
+  (lem-get-posts type sort limit community-id))
+
+
+(defun lem-list-posts-community-by-name (community-name
+                                         &optional type sort limit)
+  ""
+  (lem-get-posts type sort limit nil community-name))
+
+
+(defun lem-get-post-comments (post-id &optional type sort limit) ; page saved_only
+  ""
+  (lem-get-comments post-id nil type sort limit))
+
+;; (lem-get-post-comments "1235982" "All")
+
+(defun lem-get-comment-children (parent-id &optional type sort limit) ; page saved_only
+  ""
+  (lem-get-comments nil parent-id type sort limit))
+
+(defun lem-get-community-comments-by-id (community-id &optional type sort limit) ; page saved_only
+  ""
+  (lem-get-comments nil nil type sort limit community-id))
+
+(defun lem-get-community-comments-by-name
+    (community-name &optional type sort limit) ; page saved_only
+  ""
+  (lem-get-comments nil nil type sort limit nil community-name))
+
+(defun lem-get-instance-posts (&optional type sort limit)
+  ""
+  (lem-get-posts type sort limit))
+
+;; (setq lem-test-inst-posts (lem-get-instance-posts "Subscribed"))
+
+
+;;; MODE
 (define-derived-mode lem-mode special-mode "lem"
   "Major mode for Lemmy, the federated link-aggregator and forum."
   :group 'lem
