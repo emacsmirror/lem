@@ -89,15 +89,11 @@ taglines.")
 
 ;; (lem-instance)
 
-(lem-request "get" "get-instance-posts" "post/list"
-  (&optional sort listing-type) ; limit page saved_only
-  "Returns a list of posts.
-LISTING-TYPE must be a member of `lem-listing-types'."
-  `(; TODO: have the macro handle optional args:
-    ,(when sort `("sort" . ,sort))
-    ,(when listing-type `("type_" . ,listing-type))))
+(defun lem-get-instance-posts (&optional type sort limit)
+  ""
+  (lem-get-posts type sort limit))
 
-;; (setq lem-test-inst-posts (lem-get-instance-posts nil "Subscribed"))
+;; (setq lem-test-inst-posts (lem-get-instance-posts "Subscribed"))
 
 (defun lem-get-federated-instances ()
   "Return a list of federated instances of the current instance.
@@ -269,22 +265,16 @@ Without either arg, get instance posts."
 
 ;; (lem-get-posts nil nil nil )
 
-;; TODO: list-posts by COMMUNITY-NAME.
-;; NB: "To get posts for a federated community by name, use name@instance.tld."
-(lem-request "get" "list-posts-community" "post/list"
-  (community-id &optional sort limit listing-type) ; page
-  "Get posts of community with COMMUNITY_ID.
-SORT must be a member of `lem-sort-types'.
-LIMIT is the amount of results to return.
-LISTING-TYPE must be member of `lem-listing-types'.
-Retuns a list of posts objects."
-  `(("community_id" . ,community-id)
-    ,(when sort `("sort" . ,sort))
-    ,(when limit `("limit" . ,limit))
-    ,(when listing-type `("type_" . ,listing-type))))
-;; ("page" . ,page)))
+(defun lem-list-posts-community-by-id (community-id
+                                       &optional type sort limit)
+  ""
+  (lem-get-posts type sort limit community-id))
 
-;; (setq lem-test-posts (lem-list-posts-community "14856"))
+
+(defun lem-list-posts-community-by-name (community-name
+                                         &optional type sort limit)
+  ""
+  (lem-get-posts type sort limit nil community-name))
 
 ;; https://join-lemmy.org/api/interfaces/CreatePost.html
 (lem-request "post" "create-post" "post"
@@ -388,34 +378,30 @@ Without any id or name, get instance comments."
     ,(when community-id ("comminuty_id" . ,community-id))
     ,(when community-name ("community_name" . ,community-name))))
 
-(lem-request "get" "get-post-comments" "comment/list"
-  (post-id &optional parent-id sort)
-  ;; limit max_depth page saved_only type_
-  "Get the comments of post with POST-ID.
-SORT must be a member of `lem-sort-types'.
-Returns a list of comment objects."
-  `(("post_id" . ,post-id)
-    ,(when sort `("sort" . ,sort))
-    ,(when parent-id `("parent_id" . ,parent-id))))
+(defun lem-get-post-comments (post-id &optional type sort limit) ; page saved_only
+  ""
+  (lem-get-comments post-id nil type sort limit))
 
 ;; (setq lem-test-comments (lem-get-post-comments "1341246"))
 ;; (setq lem-test-comments (lem-get-post-comments "1235982"))
 ;; (lem-get-post-comments "1235982" "651145") ; nil first arg breaks
 
+(defun lem-get-comment-children (parent-id &optional type sort limit) ; page saved_only
+  ""
+  (lem-get-comments nil parent-id type sort limit))
 
-(lem-request "get" "get-community-comments" "comment/list"
-  (&optional community-id community-name sort) ; limit
-  ;; max_depth page saved_only type_
-  "Get comments for community with COMMUNITY-ID.
-SORT must be a member of `lem-sort-types'.
-COMMUNITY-ID and COMMUNITY-NAME are the community to get posts from.
-Returns a list of comment objects."
-  `(("comminuty_id" . ,community-id)
-    ("sort" . ,sort)
-    ("community_name" . ,community-name)))
+(defun lem-get-community-comments-by-id (community-id &optional type sort limit) ; page saved_only
+  ""
+  (lem-get-comments nil nil type sort limit community-id))
 
-;; (lem-get-community-comments "96200")
-;; (lem-get-community-comments nil "emacs") ; nil first arg works
+
+(defun lem-get-community-comments-by-name
+    (community-name &optional type sort limit) ; page saved_only
+  ""
+  (lem-get-comments nil nil type sort limit nil community-name))
+
+;; (lem-get-community-comments-by-id "96200")
+;; (lem-get-community-comments-by-name "emacs")
 
 (lem-request "put" "edit-comment" "comment"
   (id new-str)
