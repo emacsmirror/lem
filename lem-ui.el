@@ -26,7 +26,7 @@
 
 ;;; Code:
 
-(require 'lem-requests)
+(require 'lem-request)
 
 (defvar lem-ui-horiz-bar
   (if (char-displayable-p ?―)
@@ -109,22 +109,20 @@ than `switch-to-buffer'."
 
 (defun lem-ui-set-buffer-spec (sort listing-type) ; endpoint etc.
   "Set `lem-ui-buffer-spec' for the current buffer.
-SORT is the sorting used.
-LISTING-TYPE is one of \"All\" \"Community\" \"Local\" or
-\"Subscribed\"."
+SORT must be a member of `lem-sort-types'.
+LISTING-TYPE must be member of `lem-listing-types'."
   (setq lem-ui-buffer-spec
-        `(:sort ,sort
-                :type ,type)))
+        `(:sort ,sort :listing-type ,listing-type)))
 
 ;;; INSTANCE
 
 ;; TODO: toggle posts or comments, and cycle Local, All, or Subscribed
-(defun lem-ui-view-instance (&optional sort type) ; limit
+(defun lem-ui-view-instance (&optional sort type limit)
   "View posts of current user's home instance.
-SORT can be \"New\", \"Hot\", \"Old\", or \"Top\".
-TYPE is one of \"All\" \"Community\" \"Local\" or
-\"Subscribed\"."
-  (let ((posts (lem-get-instance-posts nil type))) ; no sort here, its below
+SORT must be a member of `lem-sort-types'.
+LISTING-TYPE must be member of `lem-listing-types'.
+LIMIT is the amount of results to return."
+  (let ((posts (lem-get-instance-posts type nil limit))) ; no sort here, its below
     (lem-ui-with-buffer (get-buffer-create"*lem*") 'lem-mode nil
       (lem-ui-render-posts posts nil sort)
       (lem-ui-set-buffer-spec sort type)))) ; no children
@@ -194,10 +192,8 @@ ID is the item's id."
 (defun lem-ui-render-post (post &optional children sort)
   "Render single POST.
 Optionally render its CHILDREN.
-SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
+SORT must be a member of `lem-sort-types'."
   (let-alist post
-    ;; (lem-ui-with-buffer (get-buffer-create"*lem*") 'special-mode t
-    ;; (with-current-buffer (get-buffer-create "*lem*")
     (insert
      (propertize
       (concat
@@ -227,8 +223,8 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
     (when (and children
                (< 0 .counts.comments))
       (let* ((id (number-to-string .post.id))
-             (comms (lem-get-post-comments id nil sort))
-             (list (alist-get 'comments comms)))
+             (comments (lem-get-post-comments id nil sort))
+             (list (alist-get 'comments comments)))
         (mapc (lambda (x)
                 (lem-ui-render-comment x :children sort))
               list)))))
@@ -242,8 +238,6 @@ Used for communities posts or instance posts.
 CHILDREN means also show post comments.
 SORT is the kind of sorting to use."
   (let ((list (alist-get 'posts posts)))
-    ;; (lem-ui-with-buffer "*lem*" 'special-mode t
-    ;; (lem-ui-render-post (car list)))))
     (with-current-buffer (get-buffer-create "*lem*")
       (mapc (lambda (x)
               (lem-ui-render-post x children sort))
@@ -344,8 +338,6 @@ Simple means we just read a string."
 Optionally render its CHILDREN.
 SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
   (let-alist comment
-    ;; (lem-ui-with-buffer "*lem*" 'special-mode t
-    ;; (with-current-buffer (get-buffer-create "*lem*")
     (insert
      (propertize
       (concat
@@ -367,19 +359,37 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
       'comment-json comment))
     (when (and children
                (< 0 .counts.child_count))
-      (let* ((comms (setq lem-post-comments
-                          (lem-get-post-comments (number-to-string .post.id)
-                                                 (number-to-string .comment.id)
-                                                 sort)))
+      (let* ((comments
+              (setq lem-post-comments
+                    (lem-get-comment-children
+                     ;; (lem-get-post (number-to-string .post.id)
+                     (number-to-string .comment.id)
+                     nil sort)))
              (list (setq lem-post-comments-list
-                         (alist-get 'comments comms))))
+                         (alist-get 'comments comments))))
         ;; FIXME: comment children recursion is broken:
-        ;; (mapc (lambda (x)
-        ;;         (lem-ui-render-comment x :children
-        ;;                                ;; nil
-        ;;                                sort))
-        (cdr list)))))
+        (mapc (lambda (x)
+                (lem-ui-render-comment x :children
+                                       ;; nil
+                                       sort))
+              (setq lem-cmt-cdr-list (cdr list)))))))
 ;;)
+
+
+;; redundant but trying to work threading out.
+(defun lem-ui-get-comment-children-at-point (&optional type sort limit)
+  ""
+  (interactive)
+  (let* ((json (lem-ui-thing-json))
+         (id (lem-ui-id-from-json 'comment json :string))
+         (children
+          (setq lem-test-children
+                (alist-get 'comments
+                           (lem-get-comment-children id type sort limit)))))
+    (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
+      ;; (with-current-buffer (get-buffer-create "*lem-post*")
+      (cl-loop for child in children
+               do (lem-ui-render-comment child nil sort)))))
 
 ;; (setq lem-post-comments (lem-get-post-comments "1235982" "651145" "New"))
 ;; (setq lem-post-comments (lem-get-post-comments "1235982" nil "New"))
