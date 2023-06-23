@@ -314,14 +314,21 @@ Returns a post_view."
 
 ;; (lem-edit-post 1341246 "blaodh" "trep")
 
-(append (list (cons "auth" ,lem-auth-token)) `(("fo" . t)))
+(lem-request "post" "delete-post" "post/delete"
+  (post-id)
+  ""
+  (post-id)
+  (("deleted" . t))
+  :json)
+
+;; (lem-delete-post 1341246)
 
 (lem-request "post" "report-post" "post/report"
-  (id reason)
+  (post-id reason)
   "Report post with ID to instance moderator, giving REASON, a string.
 Returns a post_report_view."
-  `(("post_id" . ,id)
-    ("reason" . ,reason))
+  (post-id reason)
+  nil
   :json)
 
 ;;; COMMENTS
