@@ -188,7 +188,7 @@ discussion_languages, default_post_language."
   "Follow a community with COMMUNITY-ID.
 Returns a community_view and discussion_languages."
   (community-id)
-  `(("follow" . t))
+  (("follow" . t))
   :json)
 
 ;; (lem-follow-community 14711)
@@ -225,7 +225,7 @@ Returns a community_view and discussion_languages."
   "Delete community with COMMUNITY-ID, a number.
 Returns a community_view and discussion_languages."
   (community-id)
-  `(("deleted" . t))
+  (("deleted" . t))
   :json)
 
 ;; (lem-delete-community 98302)
