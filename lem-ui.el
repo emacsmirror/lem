@@ -228,12 +228,12 @@ SORT must be a member of `lem-sort-types'."
 ;;   (goto-char (point-min)))))
 
 (defun lem-ui-render-children (id sort)
+  "ID SORT."
   (let* ((id (number-to-string id))
          (comments (lem-get-post-comments id nil sort))
          (list (alist-get 'comments comments)))
-    (mapc (lambda (x)
-            (lem-ui-render-comment x :children sort))
-          list)))
+    (cl-loop for x in list
+             do (lem-ui-render-comment x :children sort))))
 
 (defun lem-ui-render-posts (posts &optional children sort)
   "Render a list of abbreviated posts POSTS.
@@ -242,9 +242,8 @@ CHILDREN means also show post comments.
 SORT is the kind of sorting to use."
   (let ((list (alist-get 'posts posts)))
     (with-current-buffer (get-buffer-create "*lem*")
-      (mapc (lambda (x)
-              (lem-ui-render-post x children sort))
-            list)
+      (cl-loop for x in list
+               do (lem-ui-render-post x children sort))
       (goto-char (point-min)))))
 
 ;;; COMMUNITIES
@@ -384,17 +383,18 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
              (list (setq lem-post-comments-list
                          (alist-get 'comments comments))))
         ;; FIXME: comment children recursion is broken:
-        (mapc (lambda (x)
-                (lem-ui-render-comment x :children
-                                       ;; nil
-                                       sort))
-              (setq lem-cmt-cdr-list (cdr list)))))))
+        (cl-loop for x in (setq lem-cmt-cdr-list (cdr list))
+                 (lem-ui-render-comment x :children
+                                        ;; nil
+                                        sort))))))
 ;;)
 
 
 ;; redundant but trying to work threading out.
 (defun lem-ui-get-comment-children-at-point (&optional type sort limit)
-  ""
+  "TYPE.
+SORT
+LIMIT."
   (interactive)
   (let* ((json (lem-ui-thing-json))
          (id (lem-ui-id-from-json 'comment json :string))
