@@ -248,6 +248,18 @@ SORT is the kind of sorting to use."
       (goto-char (point-min)))))
 
 ;;; COMMUNITIES
+(defun lem-ui-render-subscribed-communities ()
+  "Render the communities subscribed to by the logged in user."
+  (interactive)
+  (let* ((json (lem-list-communities "Subscribed"))
+         (list (alist-get 'communities json))
+         (buffer "*lem-subscribed-communities*"))
+    (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode t
+      (cl-loop for c in list
+               for id = (alist-get 'id (alist-get 'community c))
+               for view = (lem-get-community-by-id (number-to-string id))
+               do (lem-ui-render-community-header view buffer))
+      (goto-char (point-min)))))
 
 (defun lem-ui-view-community (name &optional sort limit)
   "View community with NAME, sorting by SORT.
@@ -274,9 +286,10 @@ If STRING, return one, else number."
       id)))
 
 ;; TODO: make this generic, for instance and post also:
-(defun lem-ui-render-community-header (community)
-  "Render header details for COMMUNITY."
-  (with-current-buffer (get-buffer-create "*lem*")
+(defun lem-ui-render-community-header (community &optional buffer)
+  "Render header details for COMMUNITY.
+BUFFER is the one to render in, a string."
+  (with-current-buffer (get-buffer-create (or buffer "*lem*"))
     (let-alist (alist-get 'community_view community)
       (insert
        (propertize
@@ -314,7 +327,7 @@ If STRING, return one, else number."
                          mods " | ")
               "\n"
               lem-ui-horiz-bar
-              "\n"))))
+              "\n\n"))))
 
 ;;; REPLIES
 
