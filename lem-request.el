@@ -43,13 +43,6 @@
 
 ;;; Code:
 
-;; NB, to filter listings, use "TYPE_": All/Local/Community/Subscribed.
-;; https://join-lemmy.org/api/enums/ListingType.html.
-
-;; To sort listings, use SORT: `Active`, `Hot`, `New`, `Old`, `TopDay`,
-;; `TopWeek`,`TopMonth`, `TopYear`, `TopAll`, `MostComments`, `NewComments`.
-;; https://join-lemmy.org/api/enums/SortType.html
-
 (require 'fedi)
 
 (defvar fedi-http--api-version)
@@ -63,7 +56,7 @@
 ;;; MACRO
 (defmacro lem-request
     (method name endpoint
-            &optional args docstring params json headers unauthorized)
+            &optional args docstring params man-params json headers unauthorized)
   "Create http request function NAME, using http METHOD, for ENDPOINT.
 ARGS are for the function.
 PARAMS is an alist of form parameters to send with the request.
@@ -75,9 +68,13 @@ the name of your package.
 See `fedi-request'."
   (declare (debug t)
            (indent 3))
-  `(fedi-request ,method
-       ,name ,endpoint ,args ,docstring ,params
-       (unless ,unauthorized `(("auth" . ,lem-auth-token))) ,json ,headers))
+  `(fedi-request ,method ,name ,endpoint
+     ,args ,docstring ,params
+     ;; add auth param to manual-params:
+     ,(unless unauthorized
+        (append '`(("auth" . ,lem-auth-token))
+                man-params))
+     ,json ,headers))
 
 ;;; INSTANCE
 (lem-request "get" "instance" "site"
@@ -105,45 +102,40 @@ Returns a list of linked, list of allowed, list of blocked."
 
 ;;; SEARCH
 (lem-request "get" "search" "search"
-  (query &optional type listing-type community-name community-id) ;  creator-id
+  (q &optional type- listing-type community-name community-id) ;  creator-id
   ;; listing-type limit page sort)
   "Search for QUERY.
 TYPE must be a member of `lem-search-types'. Defaults to All.
 COMMUNITY-ID and CREATOR-ID are numbers.
 LISTING-TYPE must be a member of `lem-listing-types'.
 LIMIT and PAGE are numbers."
-  `(("q" . ,query)
-    ("type_" . ,(or search-type "All")) ; default
-    ("community_name" . ,community-name)
-    ("community_id" . ,community-id)
-    ("creator_id" . ,creator-id)
-    ("listing-type" . ,listing-type)))
+  (q type- listing-type community-name community-id)) ;  creator-id
 
-;; (lem-search "emacs" nil "emacs")
+;; (lem-search "emacs" "Posts")
 
 ;;; AUTH
 (lem-request "post" "login" "user/login"
-  (name password)
+  (username-or-email password)
   "Log in to `fedi-instance-url' with NAME and PASSWORD."
-  `(("username_or_email" . ,name)
-    ("password" . ,password))
+  (username-or-email password)
+  nil
   :json nil :unauthed)
 
 ;;; USERS
 (lem-request "get" "get-person-by-id" "user"
-  (id)
+  (person-id)
   "Get person with ID.
 Returns a person_view, comments, posts, moderates objects."
-  `(("person_id" . ,id)))
+  (person-id))
 
 ;; (lem-get-person-by-id "8511")
 ;; (lem-get-person-by-id "899775")
 
 (lem-request "get" "get-person-by-name" "user"
-  (name)
+  (username)
   "Get person with NAME.
 Returns a person_view, comments, posts, moderates objects."
-  `(("username" . ,name)))
+  (username))
 
 ;; (setq lem-user-me (lem-get-person-by-name "blawsybogsy"))
 
@@ -151,20 +143,21 @@ Returns a person_view, comments, posts, moderates objects."
 
 ;;; NOTIFS
 (lem-request "get" "get-mentions" "user/mention"
-  () ; (&optional unread-only)
+  (&optional unread-only)
   "Get mentions for the current user.
 Returns a mentions list."
-  `(("unread_only" . "true")))
+  (unread-only))
 
+;; (lem-get-mentions "true")
 ;; (lem-get-mentions)
 
 (lem-request "get" "get-replies" "user/replies"
-  () ; (&optional unread-only)
+  (&optional unread-only)
   "Get replies for the current user.
 Returns a replies list."
-  `(("unread_only" . "true")))
+  (unread-only))
 
-;; (lem-get-replies)
+;; (lem-get-replies "true")
 
 ;;; COMMUNITIES
 (lem-request "get" "get-community-by-id" "community"
@@ -172,7 +165,7 @@ Returns a replies list."
   "Get community with ID.
 Returns a community_view, site, moderators, online count,
 discussion_languages, default_post_language."
-  `(("id" . ,id)))
+  (id))
 
 ;; (lem-get-community-by-id "96200")
 
@@ -181,7 +174,7 @@ discussion_languages, default_post_language."
   "Get community with NAME.
 Returns a community_view, site, moderators, online count,
 discussion_languages, default_post_language."
-  `(("name" . ,name)))
+  (name))
 
 ;; (setq lem-community-test (lem-get-community-by-name "lemel"))
 
@@ -194,8 +187,8 @@ discussion_languages, default_post_language."
   (community-id)
   "Follow a community with COMMUNITY-ID.
 Returns a community_view and discussion_languages."
-  `(("community_id" . ,community-id)
-    ("follow" . t))
+  (community-id)
+  `(("follow" . t))
   :json)
 
 ;; (lem-follow-community 14711)
@@ -214,6 +207,7 @@ Returns a community_view and discussion_languages."
         icon nsfw mods-only-post)
   "Create a community with NAME.
 Returns a community_view and discussion_languages."
+  nil ;; TODO
   `(("name" . ,name)
     ("title" . ,title)
     ("banner" . ,banner)
@@ -230,11 +224,13 @@ Returns a community_view and discussion_languages."
   (community-id)
   "Delete community with COMMUNITY-ID, a number.
 Returns a community_view and discussion_languages."
-  `(("community_id" . ,community-id)
-    ("deleted" . t))
+  (community-id)
+  `(("deleted" . t))
   :json)
 
 ;; (lem-delete-community 98302)
+
+;; (lem-get-community-by-id "98302")
 
 ;; TODO: block community
 ;; TODO: hide community
@@ -244,25 +240,23 @@ Returns a community_view and discussion_languages."
   (id)
   "Get post with ID.
 Returns a post_view, a community_view, moderators, and online count."
-  `(("id" . ,id)))
+  (id))
 
 ;; (setq lem-test-post (lem-get-post "1341246"))
 
 (lem-request "get" "get-posts" "post/list"
-  (&optional type sort limit community-id community-name) ; page saved_only
+  (&optional type- sort limit community-id community-name) ; page saved_only
   "List posts for the args provided.
+TYPE- must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
-LISTING-TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return.
 COMMUNITY-ID and COMMUNITY-NAME are the community to get posts from.
 Without either arg, get instance posts."
-  `(,(when type `("type_" . ,type))
-    ,(when sort `("sort" . ,sort))
-    ,(when limit `("limit" . ,limit))
-    ,(when community-id `("community_id" . ,community-id))
-    ,(when community-name `("community_name" . ,community-name))))
+  (type- sort limit community-id community-name))
 
-;; (lem-get-posts nil nil nil )
+;; (lem-get-posts "All")
+;; (lem-get-posts "Subscribed" "Active")
+;; (lem-get-posts "Local" "Hot" "2")
 
 (defun lem-list-posts-community-by-id (community-id
                                        &optional type sort limit)
@@ -282,13 +276,8 @@ Without either arg, get instance posts."
 BODY is the post's content. URL is its link.
 NSFW and HONEYPOT not yet implemented.
 Returns a post_view."
-  `(("community_id" . ,community-id)
-    ("name" . ,name)
-    ("body" . ,body)
-    ("url" . ,url)
-    ("nsfw" . ,nsfw)
-    ("honeypot" . ,honeypot)
-    ("language_id" . ,language-id))
+  (name community-id body url nsfw honeypot language-id)
+  nil
   :json)
 
 ;; (lem-create-post "tootle on" 96200 "hooley-dooley") ; always cross-posts?
@@ -305,23 +294,23 @@ Returns a post_view."
   "Like post with POST-ID.
 SCORE is a number, either 0, 1 to upvote, and -1 to downvote.
 Returns a post_view."
-  `(("post_id" . ,post-id)
-    ("score" . ,score))
+  (post-id score)
+  nil
   :json)
 
 ;; (lem-like-post 1341246 1)
 
 (lem-request "put" "edit-post" "post"
-  (id new-name &optional new-body new-url) ; nsfw url lang-id
+  (post-id name &optional body url) ; nsfw url lang-id
   "Edit post with ID, giving it a NEW-NAME, and NEW-BODY and NEW-URL.
 Returns a post_view."
-  `(("post_id" . ,id)
-    ("name" . ,new-name)
-    ("body" . ,new-body)
-    ("url" . ,new-url))
+  (post-id name body url) ; nsfw url lang-id
+  nil
   :json)
 
 ;; (lem-edit-post 1341246 "blaodh" "trep")
+
+(append (list (cons "auth" ,lem-auth-token)) `(("fo" . t)))
 
 (lem-request "post" "report-post" "post/report"
   (id reason)
@@ -340,7 +329,7 @@ Returns a post_report_view."
   (id)
   "Get comment with ID.
 Returns a comment_view, recipient_ids, and form_id."
-  `(("id" . ,id)))
+  (id))
 
 ;; (lem-get-comment "765662")
 
@@ -349,9 +338,8 @@ Returns a comment_view, recipient_ids, and form_id."
   "Create a comment on post POST-ID, with CONTENT.
 PARENT-ID is the parent comment to reply to.
 Returns a comment_view, recipient_ids, and form_id."
-  `(("post_id" . ,post-id)
-    ("content" . ,content)
-    ("parent_id" . ,parent-id))
+  (post-id content parent-id)
+  nil
   :json)
 
 ;; (lem-create-comment 1341246 "replying via lem.el")
@@ -363,7 +351,7 @@ Returns a comment_view, recipient_ids, and form_id."
 ;;     (format "Comment created: %s" comment)))
 
 (lem-request "get" "get-comments" "comment/list"
-  (&optional post-id parent-id listing-type sort limit
+  (&optional post-id parent-id type- sort limit
              ;; page saved_only
              community-id community-name)
   "SORT must be a member of `lem-sort-types'.
@@ -371,22 +359,15 @@ LISTING-TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return.
 COMMUNITY-ID and COMMUNITY-NAME are the community to get posts from.
 Without any id or name, get instance comments."
-  `(,(when post-id `("post_id" . ,post-id))
-    ,(when parent-id `("parent_id" . ,parent-id))
-    ,(when listing-type `("type_" . ,listing-type))
-    ,(when sort `("sort" . ,sort))
-    ,(when limit `("limit" . ,limit))
-    ,(when community-id `("comminuty_id" . ,community-id))
-    ,(when community-name `("community_name" . ,community-name))))
+  (post-id parent-id type- sort limit
+           ;; page saved_only
+           community-id community-name))
 
 (defun lem-get-post-comments (post-id &optional type sort limit) ; page saved_only
   ""
   (lem-get-comments post-id nil type sort limit))
 
-;; (setq lem-test-comments (lem-get-post-comments "1341246"))
-;; (setq lem-test-comments (lem-get-post-comments nil "1410245"))
-;; (setq lem-test-comments (lem-get-post-comments "1235982"))
-;; (lem-get-post-comments "1235982" "651145") ; nil first arg breaks
+;; (lem-get-post-comments "1235982" "All")
 
 (defun lem-get-comment-children (parent-id &optional type sort limit) ; page saved_only
   ""
@@ -396,7 +377,6 @@ Without any id or name, get instance comments."
   ""
   (lem-get-comments nil nil type sort limit community-id))
 
-
 (defun lem-get-community-comments-by-name
     (community-name &optional type sort limit) ; page saved_only
   ""
@@ -405,53 +385,45 @@ Without any id or name, get instance comments."
 ;; (lem-get-community-comments-by-id "96200")
 ;; (lem-get-community-comments-by-name "emacs")
 
-;; TODO: make a base fun like so?
-;; (lem-request "get" "get-comments" "comment/list"
-;;   (&optional community_id community_name limit max_depth page
-;;              parent_id post_id saved_only sort type_ community-id)
-;;   "Get comments, for community, post, or parent comment.")
-
-
 (lem-request "put" "edit-comment" "comment"
-  (id new-str)
+  (comment-id content)
   "Edit comment with ID, providing content NEW-STR.
 To get the old text for editing, you first need to fetch the comment.
   Returns a comment_view, recipient_ids, and form_id."
-  `(("comment_id" . ,id)
-    ("content" . ,new-str))
+  (comment-id content)
+  nil
   :json)
 
 ;; (lem-edit-comment 765662 "tasdfl;k")
 
 (lem-request "post" "report-comment" "comment/report"
-  (id reason)
+  (comment-id reason)
   "Report comment with ID to instance moderator, giving REASON, a string.
 Returns comment_report_view."
-  `(("comment_id" . ,id)
-    ("reason" . ,reason))
+  (comment-id reason)
+  nil
   :json)
 
-;; (lem-report-comment 765662 "test")
+;; (lem-report-comment 765662 "test") ; broken
 
 ;;; PRIVATE MESSAGES
 (lem-request "get" "get-private-messages" "private_message/list"
-  ()
+  (&optional unread-only)
   "Get private messages for the current user.
 Returns private_messages."
-  `(("unread_only" . "true")))
+  (unread-only))
 
-;; (lem-get-private-messages)
+;; (lem-get-private-messages "true")
 
 (lem-request "post" "send-private-message" "private_message"
   (content recipient-id)
   "Sent a private message CONTENT to user with RECIPIENT-ID.
 Returns a private_message_view."
-  `(("content" . ,content)
-    ("recipient_id" . ,recipient-id))
+  (content recipient-id)
+  nil
   :json)
 
 ;; (lem-send-private-message "test" 899775)
-
 
 ;; (lem-create-comment 1235982 "test" :json)
 ;; (setq lem-post-comments (lem-get-post-comments "1235982"))
