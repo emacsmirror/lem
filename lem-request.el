@@ -249,19 +249,18 @@ Returns a post_view, a community_view, moderators, and online count."
 ;; (setq lem-test-post (lem-get-post "1341246"))
 
 (lem-request "get" "get-posts" "post/list"
-  (&optional community-id community-name limit sort type) ; page saved_only
+  (&optional type sort limit community-id community-name) ; page saved_only
   "List posts for the args provided.
 SORT must be a member of `lem-sort-types'.
 LISTING-TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return.
 COMMUNITY-ID and COMMUNITY-NAME are the community to get posts from.
 Without either arg, get instance posts."
-  `(
-    ,(when type `("type_" . ,type))
+  `(,(when type `("type_" . ,type))
     ,(when sort `("sort" . ,sort))
     ,(when limit `("limit" . ,limit))
-    ,(when community_id `("community_id" . ,community-id))
-    ,(when community_name `("community_id" . ,community-name))))
+    ,(when community-id `("community_id" . ,community-id))
+    ,(when community-name `("community_name" . ,community-name))))
 
 ;; (lem-get-posts nil nil nil )
 
@@ -360,9 +359,7 @@ Returns a comment_view, recipient_ids, and form_id."
 ;;     (format "Comment created: %s" comment)))
 
 (lem-request "get" "get-comments" "comment/list"
-  (&optional post-id parent-id listing-type
-             sort
-             limit
+  (&optional post-id parent-id listing-type sort limit
              ;; page saved_only
              community-id community-name)
   "SORT must be a member of `lem-sort-types'.
@@ -370,13 +367,13 @@ LISTING-TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return.
 COMMUNITY-ID and COMMUNITY-NAME are the community to get posts from.
 Without any id or name, get instance comments."
-  `(,(when post-id ("post_id" . ,post-id))
-    ,(when parent-id ("parent_id" . ,parent-id))
+  `(,(when post-id `("post_id" . ,post-id))
+    ,(when parent-id `("parent_id" . ,parent-id))
     ,(when listing-type `("type_" . ,listing-type))
     ,(when sort `("sort" . ,sort))
     ,(when limit `("limit" . ,limit))
-    ,(when community-id ("comminuty_id" . ,community-id))
-    ,(when community-name ("community_name" . ,community-name))))
+    ,(when community-id `("comminuty_id" . ,community-id))
+    ,(when community-name `("community_name" . ,community-name))))
 
 (defun lem-get-post-comments (post-id &optional type sort limit) ; page saved_only
   ""
