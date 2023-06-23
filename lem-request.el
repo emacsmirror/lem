@@ -226,9 +226,17 @@ Returns a community_view and discussion_languages."
 
 ;; (lem-delete-community 98302)
 
-;; (lem-get-community-by-id "98302")
 
 ;; TODO: block community
+(lem-request "post" "block-community" "community/block"
+  (community-id)
+  "Block community with COMMUNITY-ID"
+  (community-id)
+  (("block" . t))
+  :json)
+
+;; (lem-block-community 96200)
+
 ;; TODO: hide community
 
 ;;; POSTS
