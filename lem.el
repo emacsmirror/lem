@@ -26,6 +26,7 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'persist)
 ;; (require 'lem-request)
 ;; (require 'lem-ui)
@@ -43,25 +44,29 @@
     "Local" "Subscribed"))
 
 (defun lem-listing-type-p (str)
+  "Non-nil if STR is in `lem-listing-types'."
   (cl-member str lem-listing-types :test 'equal))
 
 (defconst lem-sort-types
   '("Active" "Hot" "New" "Old" "TopDay" "TopWeek" "TopMonth" "TopYear" "TopAll"
     "MostComments" "NewComments" "TopHour" "TopSixHour" "TopTwelveHour"))
 
-(defun lem-sort-types (str)
+(defun lem-sort-type-p (str)
+  "Non-nil if STR is in `lem-sort-types'."
   (cl-member str lem-sort-types :test 'equal))
 
 (defconst lem-comment-sort-types
   '("Hot" "Top" "New" "Old"))
 
-(defun lem-comment-sort-types (str)
+(defun lem-comment-sort-type-p (str)
+  "Non-nil if STR is in `lem-comment-sort-types'."
   (cl-member str lem-comment-sort-types :test 'equal))
 
 (defconst lem-search-types
   '("All" "Comments" "Posts" "Communities" "Users" "Url"))
 
-(defun lem-search-types (str)
+(defun lem-search-type-p (str)
+  "Non-nil if STR is in `lem-search-types'."
   (cl-member str lem-search-types :test 'equal))
 
 ;;; CUSTOMIZE
