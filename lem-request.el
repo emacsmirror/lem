@@ -207,15 +207,9 @@ Returns a community_view and discussion_languages."
         icon nsfw mods-only-post)
   "Create a community with NAME.
 Returns a community_view and discussion_languages."
-  nil ;; TODO
-  `(("name" . ,name)
-    ("title" . ,title)
-    ("banner" . ,banner)
-    ("description" . ,description)
-    ("discussion_languages" . ,discussion-languages)
-    ("nsfw" . ,nsfw)
-    ("icon" . ,icon)
-    ("posting_restricted_to_mods" . ,mods-only-post))
+  (name title banner description discussion-languages
+        icon nsfw posting-restricted-to-mods)
+  nil
   :json)
 
 ;; (lem-create-community "communeity" "com")
