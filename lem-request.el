@@ -407,6 +407,26 @@ To get the old text for editing, you first need to fetch the comment.
 
 ;; (lem-edit-comment 765662 "tasdfl;k")
 
+(lem-request "post" "like-comment" "comment/like"
+  (comment-id score)
+  "Like comment with COMMENT-ID.
+SCORE is a number, either 0, 1 to upvote, and -1 to downvote.
+Returns a comment_view."
+  (comment-id score)
+  nil
+  :json)
+
+;; (lem-like-comment 765662 1)
+
+(lem-request "post" "delete-comment" "comment/delete"
+  (comment-id)
+  ""
+  (comment-id)
+  (("deleted" . t))
+  :json)
+
+;; (lem-delete-comment 765662)
+
 (lem-request "post" "report-comment" "comment/report"
   (comment-id reason)
   "Report comment with ID to instance moderator, giving REASON, a string.
