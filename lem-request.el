@@ -39,7 +39,95 @@
 
 ;; TODO: consider returning only the value of the objects returned, else
 ;; probably every request has to be followed by an (alist-get 'object object)
-;; call
+;; call. But some return a list of objects.
+
+;; Lemmy API methods list:
+;; addAdmin
+;; addModToCommunity
+;; approveRegistrationApplication
+;; banFromCommunity
+;; banPerson
+;; blockCommunity DONE
+;; blockPerson
+;; changePassword
+;; createComment DONE
+;; createCommentReport
+;; createCommunity DONE
+;; createCustomEmoji
+;; createPost DONE
+;; createPostReport
+;; createPrivateMessage DONE
+;; createPrivateMessageReport
+;; createSite
+;; deleteAccount
+;; deleteComment DONE
+;; deleteCommunity DONE
+;; deleteCustomEmoji
+;; deletePost DONE
+;; deletePrivateMessage
+;; distinguishComment
+;; editComment DONE
+;; editCommunity TODO
+;; editCustomEmoji
+;; editPost DONE
+;; editPrivateMessage TODO
+;; editSite
+;; featurePost
+;; followCommunity DONE
+;; getBannedPersons
+;; getCaptcha
+;; getComment DONE
+;; getComments DONE
+;; getCommunity DONE
+;; getFederatedInstances DONE
+;; getModlog
+;; getPersonDetails
+;; getPersonMentions
+;; getPost DONE
+;; getPosts DONE
+;; getPrivateMessages DONE
+;; getReplies DONE
+;; getReportCount
+;; getSite
+;; getSiteMetadata DONE
+;; getUnreadCount
+;; getUnreadRegistrationApplicationCount
+;; leaveAdmin
+;; likeComment DONE
+;; likePost DONE
+;; listCommentReports
+;; listCommunities DONE
+;; listPostReports
+;; listPrivateMessageReports
+;; listRegistrationApplications
+;; lockPost
+;; login DONE
+;; markAllAsRead
+;; markCommentReplyAsRead
+;; markPersonMentionAsRead
+;; markPostAsRead
+;; markPrivateMessageAsRead
+;; passwordChangeAfterReset
+;; passwordReset
+;; purgeComment
+;; purgeCommunity
+;; purgePerson
+;; purgePost
+;; register
+;; removeComment
+;; removeCommunity
+;; removePost
+;; resolveCommentReport
+;; resolveObject
+;; resolvePostReport
+;; resolvePrivateMessageReport
+;; saveComment
+;; savePost
+;; saveUserSettings
+;; search DONE
+;; transferCommunity
+;; uploadImage
+;; verifyEmail
 
 ;;; Code:
 
