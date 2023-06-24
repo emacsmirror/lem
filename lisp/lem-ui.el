@@ -120,6 +120,7 @@ LISTING-TYPE must be member of `lem-listing-types'."
         `(:sort ,sort :listing-type ,listing-type)))
 
 (defun lem-ui-get-buffer-spec (key)
+  "Return value of KEY in `lem-ui-buffer-spec'."
   (plist-get lem-ui-buffer-spec key))
 
 ;;; INSTANCE
@@ -128,7 +129,7 @@ LISTING-TYPE must be member of `lem-listing-types'."
 (defun lem-ui-view-instance (&optional type sort limit)
   "View posts of current user's home instance.
 SORT must be a member of `lem-sort-types'.
-LISTING-TYPE must be member of `lem-listing-types'.
+TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return."
   (let ((posts (lem-get-instance-posts type nil limit))) ; no sort here, its below
     (lem-ui-with-buffer (get-buffer-create"*lem*") 'lem-mode nil
@@ -169,7 +170,7 @@ LIMIT is the amount of results to return."
 
 ;; TODO add view fun to buffer-spec
 (defun lem-ui-sort-or-type (sort-or-type view-fun)
-  ""
+  "Reload current view, setting SORT-OR-TYPE, with VIEW-FUN."
   (let* ((type (lem-ui-get-buffer-spec :listing-type))
          (sort (lem-ui-get-buffer-spec :sort))
          (list (if (equal sort-or-type "type")
@@ -182,10 +183,12 @@ LIMIT is the amount of results to return."
       (funcall view-fun type choice))))
 
 (defun lem-ui-choose-sort ()
+  "Read a sort type and load it."
   (interactive)
   (lem-ui-sort-or-type "sort" 'lem-ui-view-instance))
 
 (defun lem-ui-choose-type ()
+  "Read a listing-type type and load it.
   (interactive)
   (lem-ui-sort-or-type "type" 'lem-ui-view-instance))
 
@@ -215,7 +218,8 @@ LIMIT."
 
 (defun lem-ui-top-byline (name score timestamp
                                &optional community community-url)
-  "Format a top byline for post with NAME, SCORE and TIMESTAMP."
+  "Format a top byline for post with NAME, SCORE and TIMESTAMP.
+COMMUNITY and COMMUNITY-URL are those of the community the item belongs to."
   ;; TODO: name link to user page, etc.
   (propertize (concat
                name
@@ -342,7 +346,7 @@ SORT is the kind of sorting to use."
     (lem-ui-view-community community id)))
 
 (defun lem-ui-view-community (community id &optional sort limit)
-  "View community with ID, sorting by SORT.
+  "View COMMUNITY, which is JSON, with ID, sorting by SORT.
 SORT can be \"New\", \"Hot\", \"Old\", or \"Top\".
 LIMIT is the max results to show."
   (let* ((posts (lem-get-posts nil nil limit id))) ; no sorting
