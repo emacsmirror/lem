@@ -118,6 +118,9 @@ LISTING-TYPE must be member of `lem-listing-types'."
   (setq lem-ui-buffer-spec
         `(:sort ,sort :listing-type ,listing-type)))
 
+(defun lem-ui-get-buffer-spec (key)
+  (plist-get lem-ui-buffer-spec key))
+
 ;;; INSTANCE
 
 ;; TODO: toggle posts or comments, and cycle Local, All, or Subscribed
@@ -131,10 +134,12 @@ LIMIT is the amount of results to return."
       (lem-ui-render-posts posts nil sort nil :trim)
       (lem-ui-set-buffer-spec type sort)))) ; no children
 
+;;; VIEWS SORTING AND TYPES
+;; TODO: make the view functions generic in these functions
 (defun lem-ui-cycle-view-type ()
   "Cycle view between `lem-listing-types'."
   (interactive)
-  (let ((type (plist-get lem-ui-buffer-spec :listing-type))
+  (let ((type (lem-ui-get-buffer-spec :listing-type))
         (sort (plist-get lem-ui-buffer-spec :sort)))
     (cond ((equal type "All")
            (lem-ui-view-instance "Local" sort))
@@ -146,7 +151,7 @@ LIMIT is the amount of results to return."
 (defun lem-ui-cycle-sort ()
   "Cycle view between some `lem-sort-types'."
   (interactive)
-  (let ((type (plist-get lem-ui-buffer-spec :listing-type))
+  (let ((type (lem-ui-get-buffer-spec :listing-type))
         (sort (plist-get lem-ui-buffer-spec :sort)))
     (cond ((equal sort "Top")
            (lem-ui-view-instance type "Active")
@@ -160,6 +165,28 @@ LIMIT is the amount of results to return."
            (lem-ui-view-instance type "TopAll"))
           ((equal sort "TopAll")
            (lem-ui-view-instance type "Active")))))
+
+;; TODO add view fun to buffer-spec
+(defun lem-ui-sort-or-type (sort-or-type view-fun)
+  ""
+  (let* ((type (lem-ui-get-buffer-spec :listing-type))
+         (sort (lem-ui-get-buffer-spec :sort))
+         (list (if (equal sort-or-type "type")
+                   lem-listing-types
+                 lem-sort-types))
+         (choice (completing-read (format "View by %s" sort-or-type)
+                                  list nil :match)))
+    (if (equal sort-or-type "type")
+        (funcall view-fun choice sort)
+      (funcall view-fun type choice))))
+
+(defun lem-ui-choose-sort ()
+  (interactive)
+  (lem-ui-sort-or-type "sort" 'lem-ui-view-instance))
+
+(defun lem-ui-choose-type ()
+  (interactive)
+  (lem-ui-sort-or-type "type" 'lem-ui-view-instance))
 
 (defun lem-ui-search ()
   "."
