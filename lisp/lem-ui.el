@@ -323,6 +323,14 @@ SORT is the kind of sorting to use."
                do (lem-ui-render-community-header community buffer))
       (goto-char (point-min)))))
 
+(defun lem-ui-subscribe-to-community-at-point ()
+  ""
+  (interactive)
+  (let* ((json (lem-ui-thing-json))
+         (id (lem-ui-id-from-json 'community json)))
+    ;; TODO: needs feedback!
+    (lem-follow-community id)))
+
 (defun lem-ui-view-community-at-point ()
   "."
   (interactive)
