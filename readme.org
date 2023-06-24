@@ -35,3 +35,54 @@ See =lem-login= and =lem-login-set-token=. Lemmy seems to just require an =auth=
 - [ ] rich compose interface (from mastodon.el)
 - [ ] working full comment threads
 - [ ] search
+
+* lem commands index
+#+BEGIN_SRC emacs-lisp :results table :colnames '("Binding" "Command" "Description") :exports results
+  (let ((rows))
+    (mapatoms
+     (lambda (symbol)
+       (when (and (string-match "^lem"
+                                (symbol-name symbol))
+                  (commandp symbol))
+         (let* ((doc (car
+                      (split-string
+                       (or (documentation symbol t) "")
+                       "\n")))
+                ;; add more keymaps here
+                ;; some keys are in sub 'keymap keys inside a map
+                (maps (list lem-mode-map))
+                (binding-code
+                 (let ((keys (where-is-internal symbol maps nil nil (command-remapping symbol))))
+                   ;; just take first 2 bindings:
+                   (if (> (length keys) 2)
+                       (list (car keys) (cadr keys))
+                     keys)))
+                (binding-str (if binding-code
+                                 (mapconcat #'help--key-description-fontified
+                                            binding-code ", ")
+                               "")))
+           (push `(,binding-str ,symbol ,doc) rows)
+           rows))))
+    (sort rows (lambda (x y) (string-lessp (cadr x) (cadr y)))))
+#+END_SRC
+
+#+RESULTS:
+| Binding | Command                                | Description                                                    |
+|---------+----------------------------------------+----------------------------------------------------------------|
+|         | lem                                    | Open lem, a Lemmy client.                                      |
+|         | lem-login-set-token                    | Login for user NAME with PASSWORD.                             |
+|         | lem-mode                               | Major mode for Lemmy, the federated link-aggregator and forum. |
+|         | lem-ui-choose-sort                     |                                                                |
+|         | lem-ui-choose-type                     |                                                                |
+| C-c C-c | lem-ui-cycle-instance-view-type        | Cycle instance view between view listing types.                |
+|         | lem-ui-cycle-sort                      | Cycle view between some `lem-sort-types'.                      |
+|         | lem-ui-cycle-view-type                 | Cycle view between `lem-listing-types'.                        |
+|         | lem-ui-get-comment-children-at-point   | TYPE.                                                          |
+|         | lem-ui-list-subscriptions              | .                                                              |
+|         | lem-ui-render-subscribed-communities   | Render the communities subscribed to by the logged in user.    |
+|         | lem-ui-reply-simple                    | Reply to post or comment at point.                             |
+|         | lem-ui-subscribe-to-community-at-point |                                                                |
+|         | lem-ui-view-communities                | View communities, subscribed to by the logged in user.         |
+|         | lem-ui-view-community-at-point         | .                                                              |
+|         | lem-ui-view-post-at-point              | .                                                              |
+|         | lem-ui-view-subscribed-communities     | View the communities subscribed to by the logged in user.      |
