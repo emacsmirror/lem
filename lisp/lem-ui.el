@@ -49,6 +49,7 @@
     (private   . ("🔒" . "[followers]"))
     (direct    . ("✉" . "[direct]"))
     (edited    . ("✍" . "[edited]"))
+    (person    . ("👤" . "[people]"))
     (replied   . ("⬇" . "↓"))
     (reply-bar . ("┃" . "|")))
   "A set of symbols (and fallback strings) to be used in timeline.
@@ -320,7 +321,7 @@ SORT is the kind of sorting to use."
                for id = (alist-get 'id (alist-get 'community c))
                for view = (lem-get-community-by-id (number-to-string id))
                for community = (alist-get 'community_view view)
-               do (lem-ui-render-community-header community buffer))
+               do (lem-ui-render-community-header community buffer :stats))
       (goto-char (point-min)))))
 
 (defun lem-ui-subscribe-to-community-at-point ()
@@ -359,7 +360,7 @@ If STRING, return one, else number."
       id)))
 
 ;; TODO: make this generic, for instance and post also:
-(defun lem-ui-render-community-header (community &optional buffer)
+(defun lem-ui-render-community-header (community &optional buffer stats)
   "Render header details for COMMUNITY.
 BUFFER is the one to render in, a string."
   ;; (let ((community (alist-get 'community_view community-view)))
@@ -382,12 +383,12 @@ BUFFER is the one to render in, a string."
          lem-ui-horiz-bar
          "\n")
         'community-json community))
-      ;; .community.id
-      ;; .counts.subscribers
-      ;; .counts.posts
-      ;; .counts.comments
-      ;; ;; ...
-      )
+      ;; stats:
+      (when stats
+        (lem-ui-render-community-stats .counts.subscribers
+                                       .counts.posts
+                                       .counts.comments)))
+    ;; mods:
     (let* ((mods-list (alist-get 'moderators community))
            (mods (mapcar (lambda (x)
                            (let-alist (alist-get 'moderator x)
@@ -401,6 +402,17 @@ BUFFER is the one to render in, a string."
               "\n"
               lem-ui-horiz-bar
               "\n\n"))))
+
+(defun lem-ui-render-community-stats (subscribers posts comments)
+  ;; TODO: get symbols for these
+  (let ((s (number-to-string subscribers))
+        (s-sym (lem-ui-symbol 'person))
+        (p (number-to-string posts))
+        (p-sym (lem-ui-symbol 'direct))
+        (c (number-to-string comments))
+        (c-sym (lem-ui-symbol 'reply)))
+    (insert
+     (format "%s %s | %s %s | %s %s\n" s-sym s p-sym p c-sym c))))
 
 ;;; REPLIES
 
