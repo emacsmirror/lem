@@ -311,7 +311,6 @@ BUFFER is the one to render in, a string."
          "\n")
         'community-json community))
       ;; .community.id
-
       ;; .counts.subscribers
       ;; .counts.posts
       ;; .counts.comments
@@ -387,11 +386,9 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
                          (alist-get 'comments comments))))
         ;; FIXME: comment children recursion is broken:
         (cl-loop for x in (setq lem-cmt-cdr-list (cdr list))
-                 (lem-ui-render-comment x :children
-                                        ;; nil
-                                        sort))))))
-;;)
-
+                 do (lem-ui-render-comment x :children
+                                           ;; nil
+                                           sort))))))
 
 ;; redundant but trying to work threading out.
 (defun lem-ui-get-comment-children-at-point (&optional type sort limit)
