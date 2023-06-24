@@ -117,6 +117,7 @@ comment, post, community or person."
   (declare (debug 'body)
            (indent 1))
   `(let* ((json (lem-ui-thing-json))
+          ;; TODO: make generic by getting THING from JSON
           (id (lem-ui-id-from-json ,thing json :string)))
      ,body))
 
@@ -237,14 +238,21 @@ LIMIT is the amount of results to return."
   (lem-ui-with-id 'post
     (lem-ui-view-post id)))
 
-(defun lem-ui-like-comment-at-point ()
+(defun lem-ui-like-comment-at-point (&optional dislike)
   ""
   (interactive)
-  (lem-ui-with-id 'comment
+  (lem-ui-with-id 'comment ; FIXME: make generic so this works for posts
     ;; TODO: feedback needed!
     (lem-like-comment
      (string-to-number id) ; this sucks: we convert and convert back.
-     1)))
+     (if dislike
+         -1
+       1))))
+
+(defun lem-ui-dislike-comment-at-point ()
+  "."
+  (interactive)
+  (lem-ui-like-comment-at-point :dislike))
 
 (defun lem-ui-view-post (id &optional sort limit)
   "View post with ID.
