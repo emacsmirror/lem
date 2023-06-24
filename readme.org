@@ -15,3 +15,23 @@ See =lem-login= and =lem-login-set-token=. Lemmy seems to just require an =auth=
 * dependency
 
 =lem= depends on [[https://codeberg.org/martianh/fedi.el][fedi.el]], a library to make writing a library of API requests easier.
+
+* TODOS (UI layer)
+
+- [X] view instance
+- [X] list communities
+- [X] view community
+- [X] view post and comments
+- [X] adjust listing type and sort for views
+- [X] buffer macro
+- [X] simple reply
+- [X] subscribe to community
+- [ ] buffer naming/separation
+- [ ] pagination
+- [ ] complete implementing of limit
+- [ ] rich text rendering of content and bylines
+- [ ] tabstop logic (from mastodon.el)
+- [ ] timestamp logic (from mastodon.el)
+- [ ] rich compose interface (from mastodon.el)
+- [ ] working full comment threads
+- [ ] search
