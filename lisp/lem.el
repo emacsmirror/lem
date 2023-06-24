@@ -86,7 +86,7 @@ Load current user's instance posts."
   (interactive)
   (unless lem-auth-token
     (lem-login-set-token))
-  (lem-ui-view-instance "Top" "All")) ; add customize defaults
+  (lem-ui-view-instance "All" "Top")) ; add customize defaults
 
 (defun lem-login-set-token ()
   "Login for user NAME with PASSWORD."
