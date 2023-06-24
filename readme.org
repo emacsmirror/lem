@@ -25,20 +25,23 @@ See =lem-login= and =lem-login-set-token=. Lemmy seems to just require an =auth=
 - [X] view instance
 - [X] list communities
 - [X] view community
+- [X] view user
+- [X] list users
 - [X] view post and comments
 - [X] adjust listing type and sort for views
 - [X] buffer macro
 - [X] simple reply
+- [X] simple private message
 - [X] subscribe to community
 - [X] search by type: user, community, post, comment, all
-- [ ] buffer naming/separation
+- [ ] proper buffer naming/separation
 - [ ] pagination
-- [ ] complete implementing of limit
+- [ ] finish implementing limit
 - [ ] rich text rendering of content and bylines
-- [ ] tabstop logic (from mastodon.el)
+- [ ] tabstop navigation logic (from mastodon.el)
 - [ ] timestamp logic (from mastodon.el)
 - [ ] rich compose interface (from mastodon.el)
-- [ ] working full comment threads
+- [ ] working full comment threads!
 - [ ] =~/.authinfo.gpg=
   
 * lem commands index
@@ -77,17 +80,20 @@ See =lem-login= and =lem-login-set-token=. Lemmy seems to just require an =auth=
 |         | lem                                    | Open lem, a Lemmy client.                                      |
 |         | lem-login-set-token                    | Login for user NAME with PASSWORD.                             |
 |         | lem-mode                               | Major mode for Lemmy, the federated link-aggregator and forum. |
-|         | lem-ui-choose-sort                     |                                                                |
-|         | lem-ui-choose-type                     |                                                                |
+|         | lem-ui-choose-sort                     | Read a sort type and load it.                                  |
+|         | lem-ui-choose-type                     | Read a listing-type type and load it.                          |
 | C-c C-c | lem-ui-cycle-instance-view-type        | Cycle instance view between view listing types.                |
 |         | lem-ui-cycle-sort                      | Cycle view between some `lem-sort-types'.                      |
 |         | lem-ui-cycle-view-type                 | Cycle view between `lem-listing-types'.                        |
 |         | lem-ui-get-comment-children-at-point   | TYPE.                                                          |
 |         | lem-ui-list-subscriptions              | .                                                              |
+|         | lem-ui-message-user-at-point           | Send private message to user at point.                         |
 |         | lem-ui-render-subscribed-communities   | Render the communities subscribed to by the logged in user.    |
 |         | lem-ui-reply-simple                    | Reply to post or comment at point.                             |
-|         | lem-ui-subscribe-to-community-at-point |                                                                |
+|         | lem-ui-search                          | Do a search for one of the types in `lem-search-types'.        |
+|         | lem-ui-subscribe-to-community-at-point | .                                                              |
 |         | lem-ui-view-communities                | View communities, subscribed to by the logged in user.         |
 |         | lem-ui-view-community-at-point         | .                                                              |
 |         | lem-ui-view-post-at-point              | .                                                              |
 |         | lem-ui-view-subscribed-communities     | View the communities subscribed to by the logged in user.      |
+|         | lem-ui-view-user-at-point              | View user at point.                                            |
