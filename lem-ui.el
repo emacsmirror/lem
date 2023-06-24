@@ -7,6 +7,10 @@
 ;; Package-Requires: ((emacs "27.1") (fedi "0.1"))
 ;; Keywords: multimedia, comm, web, fediverse
 
+;; This file is not part of GNU Emacs.
+
+;; This file is part of lem.el.
+
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or

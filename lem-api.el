@@ -1,4 +1,4 @@
-;;; lem-request.el --- Basics for a lemmy client library -*- lexical-binding: t; -*-
+;;; lem-api.el --- Basics for a lemmy client library -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2023  martian hiatus
 ;; Author: martian hiatus <martianhiatus [a t] riseup [d o t] net>
@@ -6,6 +6,10 @@
 ;; URL: https://codeberg.org/martianh/lem
 ;; Package-Requires: ((emacs "27.1") (fedi "0.1"))
 ;; Keywords: multimedia, multimedia
+
+;; This file is not part of GNU Emacs.
+
+;; This file is part of lem.el.
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -22,7 +26,7 @@
 
 ;;; Commentary:
 
-;; Basic requests functions for a Lemmy client library.
+;; Basic API functions for a Lemmy client library.
 
 ;; All functions return parsed JSON.
 
