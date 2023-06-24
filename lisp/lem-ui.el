@@ -237,13 +237,22 @@ LIMIT is the amount of results to return."
   (lem-ui-with-id 'post
     (lem-ui-view-post id)))
 
+(defun lem-ui-like-comment-at-point ()
+  ""
+  (interactive)
+  (lem-ui-with-id 'comment
+    ;; TODO: feedback needed!
+    (lem-like-comment
+     (string-to-number id) ; this sucks: we convert and convert back.
+     1)))
+
 (defun lem-ui-view-post (id &optional sort limit)
   "View post with ID.
 SORT.
 LIMIT."
   (let* ((post-view (lem-get-post id))
          (post (alist-get 'post_view post-view)))
-    (lem-ui-with-buffer (get-buffer-create"*lem-post*") 'lem-mode t
+    (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode t
       (lem-ui-render-post post :children sort :community)
       (goto-char (point-min))))) ; limit
 
