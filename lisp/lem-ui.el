@@ -76,7 +76,8 @@ NAME is not part of the symbol table, '?' is returned."
   ;; FIXME up scotty, also just use 'json always then doesn't matter.
   (or
    (get-text-property (point) 'comment-json)
-   (get-text-property (point) 'post-json)))
+   (get-text-property (point) 'post-json)
+   (get-text-property (point) 'community-json)))
 
 (defun lem-ui-id-from-json (slot json &optional string)
   "Return id as a string, from sub SLOT in JSON.
@@ -181,14 +182,24 @@ LIMIT."
   (let* ((post-view (lem-get-post id))
          (post (alist-get 'post_view post-view)))
     (lem-ui-with-buffer (get-buffer-create"*lem-post*") 'lem-mode t
-      (lem-ui-render-post post :children sort)
+      (lem-ui-render-post post :children sort :community)
       (goto-char (point-min))))) ; limit
 
-(defun lem-ui-top-byline (name score timestamp)
+(defun lem-ui-top-byline (name score timestamp
+                               &optional community community-url)
   "Format a top byline for post with NAME, SCORE and TIMESTAMP."
   ;; TODO: name link to user page, etc.
   (propertize (concat
-               name " | "
+               name
+               (when community (concat " to "
+                                       ;; TODO: link to community:
+                                       (propertize community
+                                                   'shr-url community-url
+                                                   'button t
+                                                   'category 'shr
+                                                   'follow-link t
+                                                   'mouse-face 'highlight)))
+               " | "
                (lem-ui-symbol 'favourite)
                (number-to-string score) " | "
                timestamp)
@@ -204,7 +215,9 @@ ID is the item's id."
                               (number-to-string id))
                       'face font-lock-comment-face)))
 
-(defun lem-ui-render-post (post &optional children sort)
+(defun lem-ui-render-post (post &optional children sort community trim)
+  ;; NB trim both in instance and community views
+  ;; NB show community info in instance and in post views
   "Render single POST.
 Optionally render its CHILDREN.
 SORT must be a member of `lem-sort-types'."
@@ -215,16 +228,21 @@ SORT must be a member of `lem-sort-types'."
        "\n"
        (lem-ui-top-byline .creator.name
                           .counts.score
-                          .post.published)
+                          .post.published
+                          (when community .community.name)
+                          (when community .community.actor_id))
        "\n"
        (propertize .post.name
                    'face '(:weight bold))
        "\n"
        (if .post.url
-           (propertize .post.url
-                       'face '(:underline t))
+           (concat (propertize .post.url
+                               'face '(:underline t))
+                   "\n\n")
          "")
-       (or .post.body "") ;; cap it for list views
+       (if .post.body
+           (when trim (string-limit .post.body 400))
+         "")
        "\n"
        (lem-ui-bt-byline .counts.comments .post.id)
        "\n"
@@ -250,7 +268,7 @@ SORT must be a member of `lem-sort-types'."
     (cl-loop for x in list
              do (lem-ui-render-comment x :children sort))))
 
-(defun lem-ui-render-posts (posts &optional children sort)
+(defun lem-ui-render-posts (posts &optional children sort community trim)
   "Render a list of abbreviated posts POSTS.
 Used for communities posts or instance posts.
 CHILDREN means also show post comments.
@@ -258,12 +276,12 @@ SORT is the kind of sorting to use."
   (let ((list (alist-get 'posts posts)))
     (with-current-buffer (get-buffer-create "*lem*")
       (cl-loop for x in list
-               do (lem-ui-render-post x children sort))
+               do (lem-ui-render-post x children sort community trim))
       (goto-char (point-min)))))
 
 ;;; COMMUNITIES
-(defun lem-ui-render-subscribed-communities ()
-  "Render the communities subscribed to by the logged in user."
+(defun lem-ui-view-subscribed-communities ()
+  "View the communities subscribed to by the logged in user."
   (interactive)
   (let* ((json (lem-list-communities "Subscribed"))
          (list (alist-get 'communities json))
@@ -272,21 +290,25 @@ SORT is the kind of sorting to use."
       (cl-loop for c in list
                for id = (alist-get 'id (alist-get 'community c))
                for view = (lem-get-community-by-id (number-to-string id))
-               do (lem-ui-render-community-header view buffer))
+               for community = (alist-get 'community_view view)
+               do (lem-ui-render-community-header community buffer))
       (goto-char (point-min)))))
 
-(defun lem-ui-view-community (name &optional sort limit)
-  "View community with NAME, sorting by SORT.
+(defun lem-ui-view-community-at-point ()
+  "."
+  (interactive)
+  (let* ((community (lem-ui-thing-json))
+         (id (lem-ui-id-from-json 'community community :string)))
+    (lem-ui-view-community community id)))
+
+(defun lem-ui-view-community (community id &optional sort limit)
+  "View community with ID, sorting by SORT.
 SORT can be \"New\", \"Hot\", \"Old\", or \"Top\".
 LIMIT is the max results to show."
-  (interactive)
-  (let* ((community (lem-get-community-by-name name))
-         (id (lem-ui-get-community-id community :string))
-         (posts (lem-list-posts id nil limit))) ; no sorting
+  (let* ((posts (lem-get-posts nil nil limit id))) ; no sorting
     (lem-ui-with-buffer (get-buffer-create"*lem*") 'lem-mode t
       (lem-ui-render-community-header community)
       (lem-ui-render-posts posts nil sort)))) ; no children, ie comments
-
 
 (defun lem-ui-get-community-id (community &optional string)
   "Return ID of COMMUNITY.
@@ -303,8 +325,9 @@ If STRING, return one, else number."
 (defun lem-ui-render-community-header (community &optional buffer)
   "Render header details for COMMUNITY.
 BUFFER is the one to render in, a string."
+  ;; (let ((community (alist-get 'community_view community-view)))
   (with-current-buffer (get-buffer-create (or buffer "*lem*"))
-    (let-alist (alist-get 'community_view community)
+    (let-alist community
       (insert
        (propertize
         (concat
