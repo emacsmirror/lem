@@ -110,7 +110,7 @@ than `switch-to-buffer'."
 (defvar-local lem-ui-buffer-spec nil
   "A plist containing details about the current lem buffer.")
 
-(defun lem-ui-set-buffer-spec (sort listing-type) ; endpoint etc.
+(defun lem-ui-set-buffer-spec (listing-type sort) ; endpoint etc.
   "Set `lem-ui-buffer-spec' for the current buffer.
 SORT must be a member of `lem-sort-types'.
 LISTING-TYPE must be member of `lem-listing-types'."
@@ -120,33 +120,45 @@ LISTING-TYPE must be member of `lem-listing-types'."
 ;;; INSTANCE
 
 ;; TODO: toggle posts or comments, and cycle Local, All, or Subscribed
-(defun lem-ui-view-instance (&optional sort type limit)
+(defun lem-ui-view-instance (&optional type sort limit)
   "View posts of current user's home instance.
 SORT must be a member of `lem-sort-types'.
 LISTING-TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return."
   (let ((posts (lem-get-instance-posts type nil limit))) ; no sort here, its below
     (lem-ui-with-buffer (get-buffer-create"*lem*") 'lem-mode nil
-      (lem-ui-render-posts posts nil sort)
-      (lem-ui-set-buffer-spec sort type)))) ; no children
+      (lem-ui-render-posts posts nil sort nil :trim)
+      (lem-ui-set-buffer-spec type sort)))) ; no children
 
-;; TODO refactor to also handle sort:
-(defun lem-ui-cycle-instance-view-type ()
-  "Cycle instance view between view listing types."
+(defun lem-ui-cycle-view-type ()
+  "Cycle view between `lem-listing-types'."
   (interactive)
-  (let ((type (plist-get lem-ui-buffer-spec :type))
+  (let ((type (plist-get lem-ui-buffer-spec :listing-type))
         (sort (plist-get lem-ui-buffer-spec :sort)))
     (cond ((equal type "All")
-           (lem-ui-view-instance sort "Local"))
+           (lem-ui-view-instance "Local" sort))
           ((equal type "Local")
-           (lem-ui-view-instance sort "Subscribed"))
+           (lem-ui-view-instance "Subscribed" sort))
           ((equal type "Subscribed")
-           (lem-ui-view-instance sort "All")))))
+           (lem-ui-view-instance "All" sort)))))
 
-(defun lem-ui-list-subscriptions ()
-  "."
-  ;; TODO list subscriptions. Not in API yet? get-person-by-name doesn't contain
-  )
+(defun lem-ui-cycle-sort ()
+  "Cycle view between some `lem-sort-types'."
+  (interactive)
+  (let ((type (plist-get lem-ui-buffer-spec :listing-type))
+        (sort (plist-get lem-ui-buffer-spec :sort)))
+    (cond ((equal sort "Top")
+           (lem-ui-view-instance type "Active")
+           (equal sort "Active")
+           (lem-ui-view-instance type "Hot"))
+          ((equal sort "Hot")
+           (lem-ui-view-instance type "New"))
+          ((equal sort "New")
+           (lem-ui-view-instance type "TopDay"))
+          ((equal sort "TopDay")
+           (lem-ui-view-instance type "TopAll"))
+          ((equal sort "TopAll")
+           (lem-ui-view-instance type "Active")))))
 
 (defun lem-ui-search ()
   "."
