@@ -30,6 +30,7 @@ See =lem-login= and =lem-login-set-token=. Lemmy seems to just require an =auth=
 - [X] buffer macro
 - [X] simple reply
 - [X] subscribe to community
+- [X] search by type: user, community, post, comment, all
 - [ ] buffer naming/separation
 - [ ] pagination
 - [ ] complete implementing of limit
@@ -38,7 +39,7 @@ See =lem-login= and =lem-login-set-token=. Lemmy seems to just require an =auth=
 - [ ] timestamp logic (from mastodon.el)
 - [ ] rich compose interface (from mastodon.el)
 - [ ] working full comment threads
-- [ ] search
+- [ ] =~/.authinfo.gpg=
   
 * lem commands index
 #+BEGIN_SRC emacs-lisp :results table :colnames '("Binding" "Command" "Description") :exports results
