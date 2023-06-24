@@ -76,13 +76,14 @@ NAME is not part of the symbol table, '?' is returned."
   "Get json of thing at point, comment, or post."
   ;; FIXME up scotty, also just use 'json always then doesn't matter.
   (or
+   (get-text-property (point) 'user-json)
    (get-text-property (point) 'comment-json)
    (get-text-property (point) 'post-json)
    (get-text-property (point) 'community-json)))
 
 (defun lem-ui-id-from-json (slot json &optional string)
   "Return id as a string, from sub SLOT in JSON.
-SLOT is a symbol, either 'post or 'comment.
+SLOT is a symbol, either post, comment, user, or community.
 STRING means return as string, else return number."
   ;; FIXME up scotty
   (let ((num (alist-get 'id
@@ -200,15 +201,22 @@ LIMIT is the amount of results to return."
                    types-list nil :match))
 
 (defun lem-ui-search ()
-  "."
+  "Do a search for one of the types in `lem-search-types'."
   (interactive)
-  (let ((type (lem-ui-read-type "Search type: " lem-search-types))
-        ;; LISTING/SORT doesn't make sense for all search types, eg users!:
-        (listing-type (lem-ui-read-type "Listing type: " lem-listing-types))
-        (sort (lem-ui-read-type "Sort by: " lem-sort-types))
-        (query (read-string "Query: ")))
-    ;; TODO: handle all search args: community, page, limit
-    (lem-search query type listing-type sort)))
+  (let* ((type (lem-ui-read-type "Search type: " lem-search-types))
+         ;; LISTING/SORT doesn't make sense for all search types, eg users!:
+         (listing-type (lem-ui-read-type "Listing type: " lem-listing-types))
+         (sort (lem-ui-read-type "Sort by: " lem-sort-types))
+         (query (read-string "Query: "))
+         ;; TODO: handle all search args: community, page, limit
+         (response (lem-search query type listing-type sort)))
+    ;; TODO: render other responses:
+    (cond ((equal type "Users")
+           (let ((users (alist-get 'users response))
+                 ;; TODO: refactor as lem-ui-render-users
+                 (buf (get-buffer-create "*lem-users*")))
+             (lem-ui-with-buffer buf 'lem-mode nil
+               (lem-ui-render-users users)))))))
 
 ;;; POSTS
 
@@ -518,19 +526,32 @@ LIMIT."
 ;; (setq lem-post-comments (lem-get-post-comments "1235982" nil "New"))
 
 ;;; USERS
+
+;; TODO: render-users
+
+(defun lem-ui-render-users (json)
+  "JSON."
+  (let ((users (alist-get 'users json)))
+    (cl-loop for user in json
+             do (lem-ui-render-user user))))
+
 (defun lem-ui-render-user (json)
   "Render user with data JSON."
   (let-alist json
-    (insert (number-to-string .person.id) " "
-            (propertize .person.name
-                        'face '(:weight bold)) " "
-            .person.actor_id
-            "\n"
-            (number-to-string .counts.post_count) " "
-            (number-to-string .counts.comment_count) ;
-            "\n"
-            lem-ui-horiz-bar
-            "\n")))
+    (insert
+     (propertize
+      (concat
+       (number-to-string .person.id) " "
+       (propertize .person.name
+                   'face '(:weight bold)) " "
+       .person.actor_id
+       "\n"
+       (number-to-string .counts.post_count) " "
+       (number-to-string .counts.comment_count) ;
+       "\n"
+       lem-ui-horiz-bar
+       "\n")
+      'user-json json))))
 
 (defun lem-ui-view-user (id)
   "View user with ID."
@@ -556,6 +577,13 @@ LIMIT."
            (upcase name)
            "\n " lem-ui-horiz-bar "\n\n")
    'face 'success))
+
+(defun lem-ui-view-user-at-point ()
+  "View user at point."
+  (interactive)
+  (let* ((json (lem-ui-thing-json))
+         (id (lem-ui-id-from-json 'person json :string)))
+    (lem-ui-view-user id)))
 
 (provide 'lem-ui)
 ;;; lem-ui.el ends here

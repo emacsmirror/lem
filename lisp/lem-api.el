@@ -202,7 +202,7 @@ LIMIT is the amount of results to return."
   (q &optional type- listing-type sort limit page community-name community-id) ;  creator-id
   ;; limit page sort)
   "Search for QUERY.
-TYPE must be a member of `lem-search-types'. Defaults to All.
+TYPE- must be a member of `lem-search-types'. Defaults to All.
 COMMUNITY-ID and CREATOR-ID are numbers.
 LISTING-TYPE must be a member of `lem-listing-types'.
 LIMIT and PAGE are numbers."
