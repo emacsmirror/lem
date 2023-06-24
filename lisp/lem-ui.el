@@ -517,5 +517,45 @@ LIMIT."
 ;; (setq lem-post-comments (lem-get-post-comments "1235982" "651145" "New"))
 ;; (setq lem-post-comments (lem-get-post-comments "1235982" nil "New"))
 
+;;; USERS
+(defun lem-ui-render-user (json)
+  "Render user with data JSON."
+  (let-alist json
+    (insert (number-to-string .person.id) " "
+            (propertize .person.name
+                        'face '(:weight bold)) " "
+            .person.actor_id
+            "\n"
+            (number-to-string .counts.post_count) " "
+            (number-to-string .counts.comment_count) ;
+            "\n"
+            lem-ui-horiz-bar
+            "\n")))
+
+(defun lem-ui-view-user (id)
+  "View user with ID."
+  (let ((json (lem-get-person-by-id id))
+        (buf (get-buffer-create "*lem-user*")))
+    (lem-ui-with-buffer buf 'lem-mode nil
+      (let-alist json
+        (setq lem-test-user json)
+        (lem-ui-render-user .person_view)
+        .posts
+        .comments
+        (insert (lem-ui-format-heading "posts"))
+        (lem-ui-render-posts json ;(assoc 'posts json) ;.posts
+                             buf nil)
+        (insert (lem-ui-format-heading "comments"))
+        (lem-ui-render-comment (car .comments)) ; TODO map render comments
+        (goto-char (point-min))))))
+
+(defun lem-ui-format-heading (name)
+  "Format a heading for NAME."
+  (propertize
+   (concat "\n " lem-ui-horiz-bar "\n "
+           (upcase name)
+           "\n " lem-ui-horiz-bar "\n\n")
+   'face 'success))
+
 (provide 'lem-ui)
 ;;; lem-ui.el ends here
