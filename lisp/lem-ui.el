@@ -188,7 +188,7 @@ LIMIT is the amount of results to return."
   (lem-ui-sort-or-type "sort" 'lem-ui-view-instance))
 
 (defun lem-ui-choose-type ()
-  "Read a listing-type type and load it.
+  "Read a listing-type type and load it."
   (interactive)
   (lem-ui-sort-or-type "type" 'lem-ui-view-instance))
 
@@ -368,7 +368,8 @@ If STRING, return one, else number."
 ;; TODO: make this generic, for instance and post also:
 (defun lem-ui-render-community-header (community &optional buffer stats)
   "Render header details for COMMUNITY.
-BUFFER is the one to render in, a string."
+BUFFER is the one to render in, a string.
+STATS are the community's stats to print."
   ;; (let ((community (alist-get 'community_view community-view)))
   (with-current-buffer (get-buffer-create (or buffer "*lem*"))
     (let-alist community
