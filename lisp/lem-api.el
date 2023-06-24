@@ -84,7 +84,7 @@
 ;; getCommunity DONE
 ;; getFederatedInstances DONE
 ;; getModlog
-;; getPersonDetails
+;; getPersonDetails DONE
 ;; getPersonMentions
 ;; getPost DONE
 ;; getPosts DONE
@@ -218,21 +218,23 @@ LIMIT and PAGE are numbers."
   nil
   :json nil :unauthed)
 
-;;; USERS
-(lem-request "get" "get-person-by-id" "user"
-  (person-id)
+;;; USERS / PERSON
+(lem-request "get" "get-person" "user"
+  (&optional username person-id community-id sort limit page) ; saved_only
   "Get person with ID.
 Returns a person_view, comments, posts, moderates objects."
-  (person-id))
+  (username person-id community-id sort limit page))
+
+(defun lem-api-get-person-by-id (person-id) ; &optionals
+  ""
+  (lem-get-person nil person-id))
+
+(defun lem-api-get-person-by-name (username)
+  ""
+  (lem-get-person username))
 
 ;; (lem-get-person-by-id "8511")
 ;; (lem-get-person-by-id "899775")
-
-(lem-request "get" "get-person-by-name" "user"
-  (username)
-  "Get person with NAME.
-Returns a person_view, comments, posts, moderates objects."
-  (username))
 
 ;; (setq lem-user-me (lem-get-person-by-name "blawsybogsy"))
 
