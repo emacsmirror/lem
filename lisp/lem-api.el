@@ -199,16 +199,39 @@ LIMIT is the amount of results to return."
 
 ;;; SEARCH
 (lem-request "get" "search" "search"
-  (q &optional type- listing-type community-name community-id) ;  creator-id
+  (q &optional type- listing-type sort limit page community-name community-id) ;  creator-id
   ;; limit page sort)
   "Search for QUERY.
 TYPE must be a member of `lem-search-types'. Defaults to All.
 COMMUNITY-ID and CREATOR-ID are numbers.
 LISTING-TYPE must be a member of `lem-listing-types'.
 LIMIT and PAGE are numbers."
-  (q type- listing-type community-name community-id)) ;  creator-id
+  (q type- listing-type sort limit page community-name community-id)) ;  creator-id
 
 ;; (lem-search "emacs" "Posts")
+(defun lem-api-search (q type)
+  "TYPE must be a member of `lem-search-types'. Defaults to All."
+  (lem-search q type ))
+
+(defun lem-api-search-users
+    (q &optional type- listing-type sort limit page community-name community-id) ;  creator-id
+  ""
+  (lem-api-search q "Users" listing-type sort limit page community-name community-id))
+
+(defun lem-api-search-posts
+    (q &optional type- listing-type sort limit page community-name community-id) ;  creator-id
+  ""
+  (lem-search q "Posts" listing-type sort limit page community-name community-id))
+
+(defun lem-api-search-communities
+    (q &optional type- listing-type sort limit page community-name community-id) ;  creator-id
+  ""
+  (lem-search q "Communities" listing-type sort limit page community-name community-id))
+
+(defun lem-api-search-comments
+    (q &optional type- listing-type sort limit page community-name community-id) ;  creator-id
+  ""
+  (lem-search q "Comments" listing-type sort limit page community-name community-id))
 
 ;;; AUTH
 (lem-request "post" "login" "user/login"

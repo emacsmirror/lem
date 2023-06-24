@@ -192,10 +192,21 @@ LIMIT is the amount of results to return."
   (interactive)
   (lem-ui-sort-or-type "type" 'lem-ui-view-instance))
 
+(defun lem-ui-read-type (prompt types-list)
+  ""
+  (completing-read prompt
+                   types-list nil :match))
+
 (defun lem-ui-search ()
   "."
-  ;; TODO: interactive search functionality, discover stuff from home view.
-  )
+  (interactive)
+  (let ((type (lem-ui-read-type "Search type: " lem-search-types))
+        ;; LISTING/SORT doesn't make sense for all search types, eg users!:
+        (listing-type (lem-ui-read-type "Listing type: " lem-listing-types))
+        (sort (lem-ui-read-type "Sort by: " lem-sort-types))
+        (query (read-string "Query: ")))
+    ;; TODO: handle all search args: community, page, limit
+    (lem-search query type listing-type sort)))
 
 ;;; POSTS
 
