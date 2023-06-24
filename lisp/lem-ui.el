@@ -330,16 +330,24 @@ SORT must be a member of `lem-sort-types'."
       'post-json post))
     (when (and children
                (< 0 .counts.comments))
-      (lem-ui-render-children .post.id sort))))
-;; (unless (equal (buffer-name (current-buffer)) "*lem*")
-;;   (switch-to-buffer-other-window "*lem*")
-;;   (goto-char (point-min)))))
+      (lem-ui-render-children .post.id "All" sort)))) ; NB: type All, make arg?
 
-(defun lem-ui-render-children (id sort)
+(defun lem-ui-get-comment-path (comment &optional string)
+  "Get path value from COMMENT.
+Return a number, unless STRING"
+  (alist-get 'path
+             (alist-get 'comment comment)))
+
+(defun lem-ui-render-children (id &optional type sort)
   "ID SORT."
   (let* ((id (number-to-string id))
-         (comments (lem-get-post-comments id nil sort))
-         (list (alist-get 'comments comments)))
+         (comments (lem-get-post-comments id type sort))
+         (list (alist-get 'comments comments))
+         ;; path isn't numbers to sort, it's more like a decimal separated hierarchy of comment ids!
+         ;; (sorted (sort list (lambda (x y)
+         ;;                      (< (lem-ui-get-comment-path x)
+         ;;                         (lem-ui-get-comment-path y))))))
+    (setq lem-sorted sorted)
     (cl-loop for x in list
              do (lem-ui-render-comment x :children sort))))
 
