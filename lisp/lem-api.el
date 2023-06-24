@@ -259,23 +259,14 @@ Returns a replies list."
 ;; (lem-get-replies "true")
 
 ;;; COMMUNITIES
-(lem-request "get" "get-community-by-id" "community"
-  (id)
-  "Get community with ID.
+(lem-request "get" "get-community" "community"
+  (&optional id name)
+  "Get community with ID or NAME.
 Returns a community_view, site, moderators, online count,
 discussion_languages, default_post_language."
-  (id))
+  (id name))
 
-;; (lem-get-community-by-id "96200")
-
-(lem-request "get" "get-community-by-name" "community"
-  (name)
-  "Get community with NAME.
-Returns a community_view, site, moderators, online count,
-discussion_languages, default_post_language."
-  (name))
-
-;; (setq lem-community-test (lem-get-community-by-name "lemel"))
+;; (lem-get-community nil "96200")
 
 (lem-request "get" "list-communities" "community/list"
   (&optional type- sort limit page)

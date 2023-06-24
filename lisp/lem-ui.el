@@ -325,7 +325,7 @@ SORT is the kind of sorting to use."
     (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode t
       (cl-loop for c in list
                for id = (alist-get 'id (alist-get 'community c))
-               for view = (lem-get-community-by-id (number-to-string id))
+               for view = (lem-get-community (number-to-string id) nil)
                for community = (alist-get 'community_view view)
                do (lem-ui-render-community-header community buffer :stats))
       (goto-char (point-min)))))
