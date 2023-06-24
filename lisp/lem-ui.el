@@ -131,10 +131,12 @@ LISTING-TYPE must be member of `lem-listing-types'."
 SORT must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return."
-  (let ((posts (lem-get-instance-posts type nil limit))) ; no sort here, its below
-    (lem-ui-with-buffer (get-buffer-create"*lem*") 'lem-mode nil
-      (lem-ui-render-posts posts nil sort nil :trim)
-      (lem-ui-set-buffer-spec type sort)))) ; no children
+  (let ((posts (lem-get-instance-posts type nil limit)) ; no sort here, its below
+        (buf (get-buffer-create "*lem*")))
+    (lem-ui-with-buffer buf 'lem-mode nil
+      (lem-ui-render-posts posts buf nil sort nil :trim)
+      (lem-ui-set-buffer-spec type sort) ; no children
+      (goto-char (point-min)))))
 
 ;;; VIEWS SORTING AND TYPES
 ;; TODO: make the view functions generic in these functions
@@ -262,7 +264,8 @@ ID is the item's id."
   ;; NB trim both in instance and community views
   ;; NB show community info in instance and in post views
   "Render single POST.
-Optionally render its CHILDREN.
+Optionally render its CHILDREN. Optionally render post's COMMUNITY.
+Optionally TRIM post length.
 SORT must be a member of `lem-sort-types'."
   (let-alist post
     (insert
@@ -311,16 +314,16 @@ SORT must be a member of `lem-sort-types'."
     (cl-loop for x in list
              do (lem-ui-render-comment x :children sort))))
 
-(defun lem-ui-render-posts (posts &optional children sort community trim)
-  "Render a list of abbreviated posts POSTS.
-Used for communities posts or instance posts.
+(defun lem-ui-render-posts (posts &optional buffer children sort community trim)
+  "Render a list of abbreviated posts POSTS in BUFFER.
+Used for instance, communities, posts, and users.
 CHILDREN means also show post comments.
 SORT is the kind of sorting to use."
-  (let ((list (alist-get 'posts posts)))
-    (with-current-buffer (get-buffer-create "*lem*")
+  (let ((list (alist-get 'posts posts))
+        (buf (or buffer (get-buffer-create "*lem*"))))
+    (with-current-buffer buf
       (cl-loop for x in list
-               do (lem-ui-render-post x children sort community trim))
-      (goto-char (point-min)))))
+               do (lem-ui-render-post x children sort community trim)))))
 
 ;;; COMMUNITIES
 (defun lem-ui-view-communities (&optional type sort)
@@ -360,10 +363,12 @@ SORT is the kind of sorting to use."
   "View COMMUNITY, which is JSON, with ID, sorting by SORT.
 SORT can be \"New\", \"Hot\", \"Old\", or \"Top\".
 LIMIT is the max results to show."
-  (let* ((posts (lem-get-posts nil nil limit id))) ; no sorting
-    (lem-ui-with-buffer (get-buffer-create"*lem*") 'lem-mode t
+  (let* ((posts (lem-get-posts nil nil limit id)) ; no sorting
+         (buf (get-buffer-create"*lem*")))
+    (lem-ui-with-buffer buf 'lem-mode t
       (lem-ui-render-community-header community)
-      (lem-ui-render-posts posts nil sort)))) ; no children, ie comments
+      (lem-ui-render-posts posts buf nil sort) ; no children
+      (goto-char (point-min)))))
 
 (defun lem-ui-get-community-id (community &optional string)
   "Return ID of COMMUNITY.
