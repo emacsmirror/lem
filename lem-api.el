@@ -185,6 +185,12 @@ taglines.")
 
 ;; (lem-get-site-metadata "https://lemmy.world")
 
+(defun lem-get-instance-posts (&optional type sort limit)
+  ""
+  (lem-get-posts type sort limit))
+
+;; (setq lem-test-inst-posts (lem-get-instance-posts "Subscribed"))
+
 (lem-request "get" "get-federated-instances" "federated_instances")
 
 ;; (lem-get-federated-instances)
@@ -351,6 +357,17 @@ Without either arg, get instance posts."
 ;; (lem-get-posts "Subscribed" "Active")
 ;; (lem-get-posts "Local" "Hot" "2")
 
+(defun lem-list-posts-community-by-id (community-id
+                                       &optional type sort limit)
+  ""
+  (lem-get-posts type sort limit community-id))
+
+
+(defun lem-list-posts-community-by-name (community-name
+                                         &optional type sort limit)
+  ""
+  (lem-get-posts type sort limit nil community-name))
+
 ;; https://join-lemmy.org/api/interfaces/CreatePost.html
 (lem-request "post" "create-post" "post"
   (name community-id &optional body url nsfw honeypot language-id)
@@ -450,6 +467,25 @@ Without any id or name, get instance comments."
   (post-id parent-id type- sort limit
            ;; page saved_only
            community-id community-name))
+
+(defun lem-get-post-comments (post-id &optional type sort limit) ; page saved_only
+  ""
+  (lem-get-comments post-id nil type sort limit))
+
+;; (lem-get-post-comments "1235982" "All")
+
+(defun lem-get-comment-children (parent-id &optional type sort limit) ; page saved_only
+  ""
+  (lem-get-comments nil parent-id type sort limit))
+
+(defun lem-get-community-comments-by-id (community-id &optional type sort limit) ; page saved_only
+  ""
+  (lem-get-comments nil nil type sort limit community-id))
+
+(defun lem-get-community-comments-by-name
+    (community-name &optional type sort limit) ; page saved_only
+  ""
+  (lem-get-comments nil nil type sort limit nil community-name))
 
 ;; (lem-get-community-comments-by-id "96200")
 ;; (lem-get-community-comments-by-name "emacs")
