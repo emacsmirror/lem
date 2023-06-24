@@ -73,7 +73,7 @@ NAME is not part of the symbol table, '?' is returned."
               'face font-lock-comment-face))
 
 (defun lem-ui-thing-json ()
-  "Get json of thing at point, comment, or post."
+  "Get json of thing at point, comment, post, community or user."
   ;; FIXME up scotty, also just use 'json always then doesn't matter.
   (or
    (get-text-property (point) 'user-json)
@@ -92,7 +92,7 @@ STRING means return as string, else return number."
         (number-to-string num)
       num)))
 
-;;; MACRO
+;;; MACROS
 (defmacro lem-ui-with-buffer (buffer mode-fun other-window &rest body)
   "Evaluate BODY in a new or existing buffer called BUFFER.
 MODE-FUN is called to set the major mode.
@@ -108,6 +108,17 @@ than `switch-to-buffer'."
            (switch-to-buffer-other-window ,buffer)
          (switch-to-buffer ,buffer))
        ,@body)))
+
+
+(defmacro lem-ui-with-id (thing body)
+  "Call BODY after fetching ID of THING (at point), a symbol.
+Thing can be anything handled by `lem-ui-thing-json', currently:
+comment, post, community or person."
+  (declare (debug 'body)
+           (indent 1))
+  `(let* ((json (lem-ui-thing-json))
+          (id (lem-ui-id-from-json ,thing json :string)))
+     ,body))
 
 ;;; BUFFER DETAILS
 (defvar-local lem-ui-buffer-spec nil
@@ -223,8 +234,7 @@ LIMIT is the amount of results to return."
 (defun lem-ui-view-post-at-point ()
   "."
   (interactive)
-  (let* ((post (lem-ui-thing-json))
-         (id (lem-ui-id-from-json 'post post :string)))
+  (lem-ui-with-id 'post
     (lem-ui-view-post id)))
 
 (defun lem-ui-view-post (id &optional sort limit)
@@ -353,18 +363,16 @@ SORT is the kind of sorting to use."
       (goto-char (point-min)))))
 
 (defun lem-ui-subscribe-to-community-at-point ()
-  ""
+  "."
   (interactive)
-  (let* ((json (lem-ui-thing-json))
-         (id (lem-ui-id-from-json 'community json)))
+  (lem-ui-with-id 'community
     ;; TODO: needs feedback!
     (lem-follow-community id)))
 
 (defun lem-ui-view-community-at-point ()
   "."
   (interactive)
-  (let* ((community (lem-ui-thing-json))
-         (id (lem-ui-id-from-json 'community community :string)))
+  (lem-ui-with-id 'community
     (lem-ui-view-community community id)))
 
 (defun lem-ui-view-community (community id &optional sort limit)
@@ -511,16 +519,15 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
 SORT
 LIMIT."
   (interactive)
-  (let* ((json (lem-ui-thing-json))
-         (id (lem-ui-id-from-json 'comment json :string))
-         (children
-          (setq lem-test-children
-                (alist-get 'comments
-                           (lem-get-comment-children id type sort limit)))))
-    (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
-      ;; (with-current-buffer (get-buffer-create "*lem-post*")
-      (cl-loop for child in children
-               do (lem-ui-render-comment child nil sort)))))
+  (lem-ui-with-id 'comment
+    (let* ((children
+            (setq lem-test-children
+                  (alist-get 'comments
+                             (lem-get-comment-children id type sort limit)))))
+      (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
+        ;; (with-current-buffer (get-buffer-create "*lem-post*")
+        (cl-loop for child in children
+                 do (lem-ui-render-comment child nil sort))))))
 
 ;; (setq lem-post-comments (lem-get-post-comments "1235982" "651145" "New"))
 ;; (setq lem-post-comments (lem-get-post-comments "1235982" nil "New"))
@@ -581,9 +588,15 @@ LIMIT."
 (defun lem-ui-view-user-at-point ()
   "View user at point."
   (interactive)
-  (let* ((json (lem-ui-thing-json))
-         (id (lem-ui-id-from-json 'person json :string)))
+  (lem-ui-with-id 'person
     (lem-ui-view-user id)))
+
+(defun lem-ui-message-user-at-point ()
+  "Send private message to user at point."
+  (interactive)
+  (lem-ui-with-id 'person
+    (let ((message (read-string "Private message: ")))
+      (lem-send-private-message message id))))
 
 (provide 'lem-ui)
 ;;; lem-ui.el ends here
