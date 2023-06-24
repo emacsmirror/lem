@@ -34,6 +34,7 @@ See =lem-login= and =lem-login-set-token=. Lemmy seems to just require an =auth=
 - [X] simple private message
 - [X] subscribe to community
 - [X] search by type: user, community, post, comment, all
+- [ ] update current buffer
 - [ ] proper buffer naming/separation
 - [ ] pagination
 - [ ] finish implementing limit

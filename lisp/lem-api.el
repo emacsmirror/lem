@@ -499,6 +499,7 @@ SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return."
   (lem-get-comments post-id nil type sort limit))
 
+;; (lem-get-post-comments "1485706" "All")
 ;; (lem-get-post-comments "1235982" "All")
 
 (defun lem-api-get-comment-children (parent-id &optional type sort limit) ; page saved_only
