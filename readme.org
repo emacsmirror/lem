@@ -1,12 +1,16 @@
 * lem
 
-=lem= is an Emacs client library for Lemmy, the federated link-aggregator. For information about Lemmy, see [[http://joinlemmy.org][joinlemmy.org]].
+=lem= is an Emacs client library and interface for Lemmy, the federated link-aggregator. For information about Lemmy, see [[http://joinlemmy.org][joinlemmy.org]].
 
-All functions make requests and return JSON data pased into Elisp.
+=lem-api.el= is the API requests layer. All functions make requests and return JSON data pased into Elisp.
 
-The idea is that it's then possible to write different frontends so users can read lemmy posts in whatever forms they like. Possibilities are notmuch, gnus, md4rd, elfeed, or a standalone rendering option more like mastodon.el.
+The idea is that it's then possible to write different frontends so users can read lemmy posts in whatever forms they like. Possibilities are notmuch, gnus, md4rd, elfeed, or a standalone rendering option more like =mastodon.el=.
 
-Currently, most of the basic endpoints are implemented, but not all parameters for each endpoint. 
+Currently, most of the basic endpoints are implemented, and most but not all parameters for each endpoint. There is an active todo list of endpoints in the file.
+
+New endpoints are trivial to add with the =lem-request= macro.
+
+=lem-ui.el= is our own basic interface layer. It's new and necro, but coming along. Takes some inspiration from =mastodon.el=, as that's what I know.
 
 * Logging in
 
@@ -35,7 +39,7 @@ See =lem-login= and =lem-login-set-token=. Lemmy seems to just require an =auth=
 - [ ] rich compose interface (from mastodon.el)
 - [ ] working full comment threads
 - [ ] search
-
+  
 * lem commands index
 #+BEGIN_SRC emacs-lisp :results table :colnames '("Binding" "Command" "Description") :exports results
   (let ((rows))
