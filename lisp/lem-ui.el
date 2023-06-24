@@ -4,7 +4,6 @@
 ;; Author: martian hiatus <martianhiatus [a t] riseup [d o t] net>
 ;; Version: 0.1
 ;; URL: https://codeberg.org/martianh/lem
-;; Package-Requires: ((emacs "27.1") (fedi "0.1"))
 ;; Keywords: multimedia, comm, web, fediverse
 
 ;; This file is not part of GNU Emacs.

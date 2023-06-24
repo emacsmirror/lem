@@ -1,9 +1,14 @@
 ;;; lem-search.el --- Search functions for lem.el    -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2023  martian hiatus
-
 ;; Author: martian hiatus <martianhiatus [a t] riseup [d o t] net>
 ;; Keywords: comm
+;; URL: https://codeberg.org/martianh/lem
+;; Keywords: multimedia, comm, web, fediverse
+
+;; This file is not part of GNU Emacs.
+
+;; This file is part of lem.el.
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by

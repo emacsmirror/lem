@@ -4,7 +4,6 @@
 ;; Author: martian hiatus <martianhiatus [a t] riseup [d o t] net>
 ;; Version: 0.1
 ;; URL: https://codeberg.org/martianh/lem
-;; Package-Requires: ((emacs "27.1") (fedi "0.1"))
 ;; Keywords: multimedia, multimedia
 
 ;; This file is not part of GNU Emacs.
@@ -185,8 +184,11 @@ taglines.")
 
 ;; (lem-get-site-metadata "https://lemmy.world")
 
-(defun lem-get-instance-posts (&optional type sort limit)
-  ""
+(defun lem-api-get-instance-posts (&optional type sort limit)
+  "List posts for the current instance.
+TYPE must be member of `lem-listing-types'.
+SORT must be a member of `lem-sort-types'.
+LIMIT is the amount of results to return."
   (lem-get-posts type sort limit))
 
 ;; (setq lem-test-inst-posts (lem-get-instance-posts "Subscribed"))
@@ -357,15 +359,21 @@ Without either arg, get instance posts."
 ;; (lem-get-posts "Subscribed" "Active")
 ;; (lem-get-posts "Local" "Hot" "2")
 
-(defun lem-list-posts-community-by-id (community-id
-                                       &optional type sort limit)
-  ""
+(defun lem-api-list-posts-community-by-id (community-id
+                                           &optional type sort limit)
+  "List posts for COMMUNITY-ID.
+TYPE must be member of `lem-listing-types'.
+SORT must be a member of `lem-sort-types'.
+LIMIT is the amount of results to return."
   (lem-get-posts type sort limit community-id))
 
 
-(defun lem-list-posts-community-by-name (community-name
-                                         &optional type sort limit)
-  ""
+(defun lem-api-list-posts-community-by-name (community-name
+                                             &optional type sort limit)
+  "List posts for COMMUNITY-NAME.
+TYPE must be member of `lem-listing-types'.
+SORT must be a member of `lem-sort-types'.
+LIMIT is the amount of results to return."
   (lem-get-posts type sort limit nil community-name))
 
 ;; https://join-lemmy.org/api/interfaces/CreatePost.html
@@ -468,23 +476,35 @@ Without any id or name, get instance comments."
            ;; page saved_only
            community-id community-name))
 
-(defun lem-get-post-comments (post-id &optional type sort limit) ; page saved_only
-  ""
+(defun lem-api-get-post-comments (post-id &optional type sort limit) ; page saved_only
+  "Get comments for POST-ID.
+TYPE must be member of `lem-listing-types'.
+SORT must be a member of `lem-sort-types'.
+LIMIT is the amount of results to return."
   (lem-get-comments post-id nil type sort limit))
 
 ;; (lem-get-post-comments "1235982" "All")
 
-(defun lem-get-comment-children (parent-id &optional type sort limit) ; page saved_only
-  ""
+(defun lem-api-get-comment-children (parent-id &optional type sort limit) ; page saved_only
+  "Get comments for PARENT-ID.
+TYPE must be member of `lem-listing-types'.
+SORT must be a member of `lem-sort-types'.
+LIMIT is the amount of results to return."
   (lem-get-comments nil parent-id type sort limit))
 
-(defun lem-get-community-comments-by-id (community-id &optional type sort limit) ; page saved_only
-  ""
+(defun lem-api-get-community-comments-by-id (community-id &optional type sort limit) ; page saved_only
+  "Get comments for COMMUNITY-ID.
+TYPE must be member of `lem-listing-types'.
+SORT must be a member of `lem-sort-types'.
+LIMIT is the amount of results to return."
   (lem-get-comments nil nil type sort limit community-id))
 
-(defun lem-get-community-comments-by-name
+(defun lem-api-get-community-comments-by-name
     (community-name &optional type sort limit) ; page saved_only
-  ""
+  "Get comments for COMMUNITY-NAME.
+TYPE must be member of `lem-listing-types'.
+SORT must be a member of `lem-sort-types'.
+LIMIT is the amount of results to return."
   (lem-get-comments nil nil type sort limit nil community-name))
 
 ;; (lem-get-community-comments-by-id "96200")
@@ -567,5 +587,5 @@ Returns a private_message_view."
 ;; (lem-create-post "title" 96200 "body text")
 ;; (lem-create-comment 1341246 "another body text 2")
 
-(provide 'lem-request)
-;;; lem-request.el ends here
+(provide 'lem-api)
+;;; lem-api.el ends here

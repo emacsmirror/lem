@@ -3,8 +3,8 @@
 ;; Copyright (C) 2023  martian hiatus and mastodon.el authors
 ;; Author: martian hiatus <martianhiatus [a t] riseup [d o t] net>
 ;; Version: 0.1
+;; Package-Requires: ((emacs "28.1") (fedi "0.1") (persist "0.4"))
 ;; URL: https://codeberg.org/martianh/lem
-;; Package-Requires: ((emacs "27.1") (fedi "0.1"))
 ;; Keywords: multimedia, comm, web, fediverse
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -28,8 +28,8 @@
 
 (require 'cl-lib)
 (require 'persist)
-;; (require 'lem-request)
-;; (require 'lem-ui)
+(require 'lem-request)
+(require 'lem-ui)
 
 ;;; AUTOLOADS
 
