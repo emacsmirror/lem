@@ -307,12 +307,14 @@ SORT is the kind of sorting to use."
       (goto-char (point-min)))))
 
 ;;; COMMUNITIES
-(defun lem-ui-view-subscribed-communities ()
+(defun lem-ui-view-communities (&optional type)
   "View the communities subscribed to by the logged in user."
   (interactive)
-  (let* ((json (lem-list-communities "Subscribed"))
+  (let* ((type (or type (completing-read "View communities: "
+                                         lem-listing-types)))
+         (json (lem-list-communities type))
          (list (alist-get 'communities json))
-         (buffer "*lem-subscribed-communities*"))
+         (buffer (format "*lem-" (downcase type) "-communities*")))
     (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode t
       (cl-loop for c in list
                for id = (alist-get 'id (alist-get 'community c))
