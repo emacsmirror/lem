@@ -305,7 +305,9 @@ SORT must be a member of `lem-sort-types'."
                    "\n\n")
          "")
        (if .post.body
-           (when trim (string-limit .post.body 400))
+           (if trim
+               (string-limit .post.body 400)
+             .post.body)
          "")
        "\n"
        (lem-ui-bt-byline .counts.comments .post.id)
