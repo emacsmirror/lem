@@ -243,18 +243,18 @@ LIMIT and PAGE are numbers."
 
 ;;; USERS / PERSON
 (lem-request "get" "get-person" "user"
-  (&optional username person-id community-id sort limit page) ; saved_only
+  (&optional username person-id sort limit page community-id) ; saved_only
   "Get person with ID.
 Returns a person_view, comments, posts, moderates objects."
-  (username person-id community-id sort limit page))
+  (username person-id sort limit page community-id))
 
 (defun lem-api-get-person-by-id (person-id) ; &optionals
   ""
-  (lem-get-person nil person-id))
+  (lem-get-person nil person-id sort limit page))
 
 (defun lem-api-get-person-by-name (username)
   ""
-  (lem-get-person username))
+  (lem-get-person username nil sort limit page))
 
 ;; (lem-get-person-by-id "8511")
 ;; (lem-get-person-by-id "899775")
