@@ -113,7 +113,8 @@ than `switch-to-buffer'."
 (defmacro lem-ui-with-id (thing body)
   "Call BODY after fetching ID of THING (at point), a symbol.
 Thing can be anything handled by `lem-ui-thing-json', currently:
-comment, post, community or person."
+comment, post, community or person.
+Within this macro call, args JSON and ID are available."
   (declare (debug 'body)
            (indent 1))
   `(let* ((json (lem-ui-thing-json))
@@ -382,7 +383,7 @@ SORT is the kind of sorting to use."
   "."
   (interactive)
   (lem-ui-with-id 'community
-    (lem-ui-view-community community id)))
+    (lem-ui-view-community json id)))
 
 (defun lem-ui-view-community (community id &optional sort limit)
   "View COMMUNITY, which is JSON, with ID, sorting by SORT.
