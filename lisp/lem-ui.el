@@ -261,7 +261,7 @@ LIMIT."
   (let* ((post-view (lem-get-post id))
          (post (alist-get 'post_view post-view)))
     (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode t
-      (lem-ui-render-post post :children sort :community)
+      (lem-ui-render-post post :comments sort :community)
       (goto-char (point-min))))) ; limit
 
 (defun lem-ui-top-byline (name score timestamp
@@ -295,11 +295,11 @@ ID is the item's id."
                               (number-to-string id))
                       'face font-lock-comment-face)))
 
-(defun lem-ui-render-post (post &optional children sort community trim)
+(defun lem-ui-render-post (post &optional comments sort community trim)
   ;; NB trim both in instance and community views
   ;; NB show community info in instance and in post views
   "Render single POST.
-Optionally render its CHILDREN. Optionally render post's COMMUNITY.
+Optionally render its COMMENTS. Optionally render post's COMMUNITY.
 Optionally TRIM post length.
 SORT must be a member of `lem-sort-types'."
   (let-alist post
@@ -336,41 +336,23 @@ SORT must be a member of `lem-sort-types'."
        lem-ui-horiz-bar
        "\n")
       'post-json post))
-    (when (and children
+    (when (and comments
                (< 0 .counts.comments))
-      (lem-ui-render-children .post.id "All" sort)))) ; NB: type All, make arg?
+      (lem-ui-render-comments .post.id "All" sort)))) ; NB: type All, make arg?
 
-(defun lem-ui-get-comment-path (comment &optional string)
-  "Get path value from COMMENT.
-Return a number, unless STRING"
-  (alist-get 'path
-             (alist-get 'comment comment)))
-
-(defun lem-ui-render-children (id &optional type sort)
-  "ID SORT."
-  (let* ((id (number-to-string id))
-         (comments (lem-get-post-comments id type sort))
-         (list (alist-get 'comments comments))
-         ;; path isn't numbers to sort, it's more like a decimal separated hierarchy of comment ids!
-         ;; (sorted (sort list (lambda (x y)
-         ;;                      (< (lem-ui-get-comment-path x)
-         ;;                         (lem-ui-get-comment-path y))))))
-    (setq lem-sorted sorted)
-    (cl-loop for x in list
-             do (lem-ui-render-comment x :children sort))))
-
-(defun lem-ui-render-posts (posts &optional buffer children sort community trim)
+(defun lem-ui-render-posts (posts &optional buffer comments sort community trim)
   "Render a list of abbreviated posts POSTS in BUFFER.
 Used for instance, communities, posts, and users.
-CHILDREN means also show post comments.
+COMMENTS means also show post comments.
 SORT is the kind of sorting to use."
   (let ((list (alist-get 'posts posts))
         (buf (or buffer (get-buffer-create "*lem*"))))
     (with-current-buffer buf
       (cl-loop for x in list
-               do (lem-ui-render-post x children sort community trim)))))
+               do (lem-ui-render-post x comments sort community trim)))))
 
 ;;; COMMUNITIES
+
 (defun lem-ui-view-communities (&optional type sort)
   "View communities, subscribed to by the logged in user."
   (interactive)
@@ -500,9 +482,8 @@ Simple means we just read a string."
 
 ;;; COMMENTS
 
-(defun lem-ui-render-comment (comment &optional children sort)
+(defun lem-ui-render-comment (comment &optional sort)
   "Render single COMMENT.
-Optionally render its CHILDREN.
 SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
   (let-alist comment
     (insert
@@ -523,45 +504,48 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
        ;; (number-to-string .post.community_id) "\n"
        lem-ui-horiz-bar
        "\n")
-      'comment-json comment))
-    (when (and children
-               (< 0 .counts.child_count))
-      (let* ((comments
-              (setq lem-post-comments
-                    (lem-get-comment-children
-                     ;; (lem-get-post (number-to-string .post.id)
-                     (number-to-string .comment.id)
-                     nil sort)))
-             (list (setq lem-post-comments-list
-                         (alist-get 'comments comments))))
-        ;; FIXME: comment children recursion is broken:
-        (cl-loop for x in (setq lem-cmt-cdr-list (cdr list))
-                 do (lem-ui-render-comment x :children
-                                           ;; nil
-                                           sort))))))
+      'comment-json comment))))
 
-;; redundant but trying to work threading out.
-(defun lem-ui-get-comment-children-at-point (&optional type sort limit)
-  "TYPE.
-SORT
-LIMIT."
-  (interactive)
-  (lem-ui-with-id 'comment
-    (let* ((children
-            (setq lem-test-children
-                  (alist-get 'comments
-                             (lem-get-comment-children id type sort limit)))))
-      (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
-        ;; (with-current-buffer (get-buffer-create "*lem-post*")
-        (cl-loop for child in children
-                 do (lem-ui-render-comment child nil sort))))))
+(defun lem-ui-get-comment-path (comment)
+  "Get path value from COMMENT."
+  (alist-get 'path
+             (alist-get 'comment comment)))
+
+(defun lem-ui-split-path (path)
+  ""
+  (split-string path "."))
+
+;; Path: "The path / tree location of a comment, separated by dots, ending with the comment's id. Ex: 0.24.27"
+;; https://github.com/LemmyNet/lemmy/blob/63d3759c481ff2d7594d391ae86e881e2aeca56d/crates/db_schema/src/source/comment.rs#L39
+
+(defun lem-ui-sort-comments (list)
+  ""
+  (cl-loop for c in list
+           for path = (lem-ui-get-comment-path c)
+           for path-split = (lem-ui-split-path path)
+           ;; TODO
+           collect c))
+
+(defun lem-ui-render-comments (post-id &optional type sort)
+  "ID
+TYPE
+SORT."
+  (let* ((post-id (number-to-string post-id))
+         (comments (lem-get-post-comments post-id type sort))
+         (list (alist-get 'comments comments))
+         (sorted (lem-ui-sort-comments list)))
+    ;; path isn't numbers to sort, it's more like a decimal separated hierarchy of comment ids!
+    ;; (sorted (sort list (lambda (x y)
+    ;;                      (< (lem-ui-get-comment-path x)
+    ;;                         (lem-ui-get-comment-path y))))))
+    ;; (setq lem-sorted sorted)
+    (cl-loop for x in sorted
+             do (lem-ui-render-comment x sort))))
 
 ;; (setq lem-post-comments (lem-get-post-comments "1235982" "651145" "New"))
 ;; (setq lem-post-comments (lem-get-post-comments "1235982" nil "New"))
 
 ;;; USERS
-
-;; TODO: render-users
 
 (defun lem-ui-render-users (json)
   "JSON."
