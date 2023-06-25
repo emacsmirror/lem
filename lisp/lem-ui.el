@@ -514,7 +514,7 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
 
 (defun lem-ui-split-path (path)
   ""
-  (split-string path "."))
+  (split-string path "\\."))
 
 ;; Path: "The path / tree location of a comment, separated by dots, ending with the comment's id. Ex: 0.24.27"
 ;; https://github.com/LemmyNet/lemmy/blob/63d3759c481ff2d7594d391ae86e881e2aeca56d/crates/db_schema/src/source/comment.rs#L39
@@ -524,8 +524,8 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
   (cl-loop for c in list
            for path = (lem-ui-get-comment-path c)
            for path-split = (lem-ui-split-path path)
-           ;; TODO
-           collect c))
+           ;; collect c))
+           collect path-split))
 
 (defun lem-ui-render-comments (post-id &optional type sort)
   "ID
@@ -533,14 +533,14 @@ TYPE
 SORT."
   (let* ((post-id (number-to-string post-id))
          (comments (lem-get-post-comments post-id type sort))
-         (list (alist-get 'comments comments))
-         (sorted (lem-ui-sort-comments list)))
+         (list (alist-get 'comments comments)))
+    (setq lem-path-sorted (lem-ui-sort-comments list))
     ;; path isn't numbers to sort, it's more like a decimal separated hierarchy of comment ids!
     ;; (sorted (sort list (lambda (x y)
     ;;                      (< (lem-ui-get-comment-path x)
     ;;                         (lem-ui-get-comment-path y))))))
     ;; (setq lem-sorted sorted)
-    (cl-loop for x in sorted
+    (cl-loop for x in list ; sorted
              do (lem-ui-render-comment x sort))))
 
 ;; (setq lem-post-comments (lem-get-post-comments "1235982" "651145" "New"))
