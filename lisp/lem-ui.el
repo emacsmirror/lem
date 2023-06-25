@@ -74,20 +74,15 @@ NAME is not part of the symbol table, '?' is returned."
 
 (defun lem-ui-thing-json ()
   "Get json of thing at point, comment, post, community or user."
-  ;; FIXME up scotty, also just use 'json always then doesn't matter.
-  (or
-   (get-text-property (point) 'user-json)
-   (get-text-property (point) 'comment-json)
-   (get-text-property (point) 'post-json)
-   (get-text-property (point) 'community-json)))
+  (get-text-property (point) 'json))
 
-(defun lem-ui-id-from-json (slot json &optional string)
-  "Return id as a string, from sub SLOT in JSON.
+(defun lem-ui-id-from-json (key json &optional string)
+  "Return id as a string, from alist KEY in JSON.
 SLOT is a symbol, either post, comment, user, or community.
 STRING means return as string, else return number."
   ;; FIXME up scotty
   (let ((num (alist-get 'id
-                        (alist-get slot json))))
+                        (alist-get key json))))
     (if string
         (number-to-string num)
       num)))
@@ -108,7 +103,6 @@ than `switch-to-buffer'."
            (switch-to-buffer-other-window ,buffer)
          (switch-to-buffer ,buffer))
        ,@body)))
-
 
 (defmacro lem-ui-with-id (thing body)
   "Call BODY after fetching ID of THING (at point), a symbol.
@@ -336,7 +330,7 @@ SORT must be a member of `lem-sort-types'."
        ;; (number-to-string .post.community_id) "\n"
        lem-ui-horiz-bar
        "\n")
-      'post-json post))
+      'json post))
     (when (and comments
                (< 0 .counts.comments))
       (lem-ui-render-comments .post.id "All" sort)))) ; NB: type All, make arg?
@@ -431,7 +425,7 @@ STATS are the community's stats to print."
          "\n"
          lem-ui-horiz-bar
          "\n")
-        'community-json community))
+        'json community))
       ;; stats:
       (when stats
         (lem-ui-render-community-stats .counts.subscribers
@@ -505,7 +499,7 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
        ;; (number-to-string .post.community_id) "\n"
        lem-ui-horiz-bar
        "\n")
-      'comment-json comment))))
+      'json comment))))
 
 (defun lem-ui-get-comment-path (comment)
   "Get path value from COMMENT."
@@ -570,7 +564,7 @@ SORT."
        "\n"
        lem-ui-horiz-bar
        "\n")
-      'user-json json))))
+      'json json))))
 
 (defun lem-ui-view-user (id)
   "View user with ID."
