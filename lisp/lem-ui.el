@@ -386,6 +386,18 @@ ID is the item's id."
                        'face font-lock-comment-face))
    'byline-bottom t))
 
+(defun lem-ui--render-url (url)
+  "Render URL, a plain non-html string."
+  (when url
+    (let ((parsed (url-generic-parse-url url))
+          rendered)
+      (with-temp-buffer
+        (insert "<a href=" url ">" (url-host parsed) "</a>")
+        (shr-render-buffer (current-buffer))
+        (setq rendered (buffer-string))
+        (kill-buffer-and-window))
+      rendered)))
+
 (defun lem-ui-render-post (post &optional comments sort community trim)
   ;; NB trim both in instance and community views
   ;; NB show community info in instance and in post views
@@ -394,49 +406,44 @@ Optionally render its COMMENTS. Optionally render post's COMMUNITY.
 Optionally TRIM post length.
 SORT must be a member of `lem-sort-types'."
   (let-alist post
-    (insert
-     (propertize
-      (concat
-       "\n"
-       (lem-ui-top-byline .creator.name
-                          .counts.score
-                          .post.published
-                          (when community .community.name)
-                          (when community .community.actor_id))
-       "\n"
-       (propertize .post.name
-                   'face '(:weight bold))
-       "\n"
-       (if .post.url
-           (concat (propertize .post.url
-                               'face '(:underline t))
-                   "\n\n")
-         "")
-       (if .post.body
-           (if trim
-               (string-limit .post.body 400)
-             .post.body)
-         "")
-       "\n"
-       (lem-ui-bt-byline .counts.comments .post.id)
-       "\n"
-       ;; properties to add:
-       ;; (number-to-string .post.id) "\n"
-       ;; (number-to-string .post.creator_id) "\n"
-       ;; (number-to-string .post.community_id) "\n"
-       lem-ui-horiz-bar
-       "\n")
-      'json post
-      'id .post.id
-      'community-id .post.community_id
-      'creator-id .creator.id
-      'type (caar post)))
-    (when (and comments
-               (< 0 .counts.comments))
-      (let* ((post-id (number-to-string .post.id))
-             (comments (lem-api-get-post-comments post-id "All" sort))
-             (list (alist-get 'comments comments)))
-        (lem-ui-render-comments list "All" sort))))) ; NB: type All, make arg?
+    (let ((url (lem-ui--render-url .post.url)))
+      (insert
+       (propertize
+        (concat
+         "\n"
+         (lem-ui-top-byline .creator.name
+                            .counts.score
+                            .post.published
+                            (when community .community.name)
+                            (when community .community.actor_id))
+         "\n"
+         (propertize .post.name
+                     'face '(:weight bold))
+         "\n"
+         (if url
+             (concat url "\n\n")
+           "")
+         (if .post.body
+             (if trim
+                 (string-limit .post.body 400)
+               .post.body)
+           "")
+         "\n"
+         (lem-ui-bt-byline .counts.comments .post.id)
+         "\n"
+         lem-ui-horiz-bar
+         "\n")
+        'json post
+        'id .post.id
+        'community-id .post.community_id
+        'creator-id .creator.id
+        'type (caar post)))
+      (when (and comments
+                 (< 0 .counts.comments))
+        (let* ((post-id (number-to-string .post.id))
+               (comments (lem-api-get-post-comments post-id "All" sort))
+               (list (alist-get 'comments comments)))
+          (lem-ui-render-comments list "All" sort)))))) ; NB: type All, make arg?
 
 (defun lem-ui-render-posts (posts &optional buffer comments sort community trim)
   "Render a list of abbreviated posts POSTS in BUFFER.
