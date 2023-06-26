@@ -34,15 +34,19 @@ See =lem-login= and =lem-login-set-token=. Lemmy seems to just require an =auth=
 - [X] simple private message
 - [X] subscribe to community
 - [X] search by type: user, community, post, comment, all
+- [X] prev/next item
+- [-] finish type/sort cycling of views
+- [ ] finish implementing limit
 - [ ] update current buffer
+- [ ] add more to buffer
 - [ ] proper buffer naming/separation
 - [ ] pagination
-- [ ] finish implementing limit
+- [ ] generic like/dislike cmds
 - [ ] rich text rendering of content and bylines
 - [ ] tabstop navigation logic (from mastodon.el)
 - [ ] timestamp logic (from mastodon.el)
 - [ ] rich compose interface (from mastodon.el)
-- [ ] working full comment threads!
+- [ ] comment threads (see #1)
 - [ ] =~/.authinfo.gpg=
   
 * lem commands index
