@@ -131,6 +131,33 @@ LISTING-TYPE must be member of `lem-listing-types'."
   "Return value of KEY in `lem-ui-buffer-spec'."
   (plist-get lem-ui-buffer-spec key))
 
+;;; NAV
+
+(defun lem--goto-pos (fun &optional refresh pos)
+  "Search for toot with FUN.
+If search returns nil, execute REFRESH function.
+Optionally start from POS."
+  (let* ((npos (funcall fun
+                        (or pos (point))
+                        'byline-top
+                        (current-buffer))))
+    (if npos
+        (if (not (get-text-property npos 'byline-top))
+            (lem--goto-pos fun refresh npos)
+          (goto-char npos))
+      ;; force display of help-echo on moving to a toot byline:
+      ;; (lem--message-help-echo))
+      (funcall refresh))))
+
+(defun lem-next-item ()
+  ""
+  (interactive)
+  (lem--goto-pos #'next-single-property-change))
+
+(defun lem-prev-item ()
+  ""
+  (lem--goto-pos #'previous-single-property-change))
+
 ;;; INSTANCE
 
 ;; TODO: toggle posts or comments, and cycle Local, All, or Subscribed
@@ -278,17 +305,21 @@ COMMUNITY and COMMUNITY-URL are those of the community the item belongs to."
                (lem-ui-symbol 'favourite)
                (number-to-string score) " | "
                timestamp)
+              'lem-tab-stop t
+              'byline-top t
               'face font-lock-comment-face))
 
 (defun lem-ui-bt-byline (comments &optional id)
   "Format a bottom byline for a post or comment.
 COMMENTS is the comments count to render.
 ID is the item's id."
-  (format "%s %s | %s" (lem-ui-symbol 'reply)
-          (number-to-string comments)
-          (propertize (concat "id: "
-                              (number-to-string id))
-                      'face font-lock-comment-face)))
+  (propertize
+   (format "%s %s | %s" (lem-ui-symbol 'reply)
+           (number-to-string comments)
+           (propertize (concat "id: "
+                               (number-to-string id))
+                       'face font-lock-comment-face))
+   'byline-bottom t))
 
 (defun lem-ui-render-post (post &optional comments sort community trim)
   ;; NB trim both in instance and community views

@@ -76,6 +76,8 @@
 (defvar lem-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") #'lem-ui-cycle-view-type)
+    (define-key map (kbd "n") #'lem-next-item)
+    (define-key map (kbd "p") #'lem-prev-item)
     ;;;
     map)
   "Keymap for `lem-mode'.")
