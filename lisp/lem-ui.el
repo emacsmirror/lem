@@ -678,7 +678,7 @@ SORT."
 
 (defun lem-ui-view-user (id)
   "View user with ID."
-  (let ((json (lem-get-person-by-id id))
+  (let ((json (lem-api-get-person-by-id id))
         (buf (get-buffer-create "*lem-user*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (let-alist json

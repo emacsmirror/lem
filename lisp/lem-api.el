@@ -248,11 +248,11 @@ LIMIT and PAGE are numbers."
 Returns a person_view, comments, posts, moderates objects."
   (username person-id sort limit page community-id))
 
-(defun lem-api-get-person-by-id (person-id) ; &optionals
+(defun lem-api-get-person-by-id (person-id &optional sort limit page)
   ""
   (lem-get-person nil person-id sort limit page))
 
-(defun lem-api-get-person-by-name (username)
+(defun lem-api-get-person-by-name (username &optional sort limit page)
   ""
   (lem-get-person username nil sort limit page))
 
