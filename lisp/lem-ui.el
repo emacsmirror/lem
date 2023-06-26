@@ -361,7 +361,10 @@ SORT must be a member of `lem-sort-types'."
        ;; (number-to-string .post.community_id) "\n"
        lem-ui-horiz-bar
        "\n")
-      'json post))
+      'json post
+      'id .post.id
+      'community-id .post.community_id
+      'type (caar post)))
     (when (and comments
                (< 0 .counts.comments))
       (lem-ui-render-comments .post.id "All" sort)))) ; NB: type All, make arg?
@@ -456,7 +459,9 @@ STATS are the community's stats to print."
          "\n"
          lem-ui-horiz-bar
          "\n")
-        'json community))
+        'json community
+        'id .community.id
+        'type (caar community)))
       ;; stats:
       (when stats
         (lem-ui-render-community-stats .counts.subscribers
@@ -530,7 +535,10 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
        ;; (number-to-string .post.community_id) "\n"
        lem-ui-horiz-bar
        "\n")
-      'json comment))))
+      'json comment
+      'id .comment.id
+      'comment-id .comment.post_id
+      'type (caar comment)))))
 
 (defun lem-ui-get-comment-path (comment)
   "Get path value from COMMENT."
@@ -595,7 +603,9 @@ SORT."
        "\n"
        lem-ui-horiz-bar
        "\n")
-      'json json))))
+      'json json
+      'id .person.id
+      'type (caar json)))))
 
 (defun lem-ui-view-user (id)
   "View user with ID."
