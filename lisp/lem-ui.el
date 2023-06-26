@@ -84,6 +84,10 @@ STRING means return as string, else return number."
   ;; nor even for 1`lem-ui-with-id'
   (get-text-property (point) 'id))
 
+(defun lem-ui--item-type ()
+  "Return the type property of item at point."
+  (get-text-property (point) 'type))
+
 ;;; MACROS
 (defmacro lem-ui-with-buffer (buffer mode-fun other-window &rest body)
   "Evaluate BODY in a new or existing buffer called BUFFER.
@@ -535,6 +539,8 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
       'json comment
       'id .comment.id
       'comment-id .comment.post_id
+      'community-id .post.community-id
+      'creator-id .creator.id
       'type (caar comment)))))
 
 (defun lem-ui-get-comment-path (comment)
@@ -543,7 +549,7 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
              (alist-get 'comment comment)))
 
 (defun lem-ui-split-path (path)
-  ""
+  "Call split string on PATH with \".\" separator."
   (split-string path "\\."))
 
 ;; Path: "The path / tree location of a comment, separated by dots, ending with the comment's id. Ex: 0.24.27"
@@ -620,6 +626,15 @@ SORT."
         (insert (lem-ui-format-heading "comments"))
         (lem-ui-render-comment (car .comments)) ; TODO map render comments
         (goto-char (point-min))))))
+
+(defun lem-ui-view-item-user ()
+  "View user of item at point."
+  (interactive)
+  (let ((user (get-text-property (point) 'creator-id)))
+    (if user
+        (let ((str (number-to-string user)))
+          (lem-ui-view-user str))
+      (message "No user item at point?"))))
 
 (defun lem-ui-format-heading (name)
   "Format a heading for NAME."
