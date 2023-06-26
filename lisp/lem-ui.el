@@ -240,6 +240,7 @@ LIMIT is the amount of results to return."
         (funcall view-fun choice sort)
       (funcall view-fun type choice))))
 
+;; TODO: make for any current view:
 (defun lem-ui-choose-sort ()
   "Read a sort type and load it."
   (interactive)
@@ -465,7 +466,6 @@ If STRING, return one, else number."
         (number-to-string id)
       id)))
 
-;; TODO: make this generic, for instance and post also:
 (defun lem-ui-render-community-header (community &optional buffer stats)
   "Render header details for COMMUNITY.
 BUFFER is the one to render in, a string.
@@ -513,6 +513,7 @@ STATS are the community's stats to print."
               "\n\n"))))
 
 (defun lem-ui-render-community-stats (subscribers posts comments)
+  "."
   ;; TODO: get symbols for these
   (let ((s (number-to-string subscribers))
         (s-sym (lem-ui-symbol 'person))
@@ -592,7 +593,7 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
 ;; https://github.com/LemmyNet/lemmy/blob/63d3759c481ff2d7594d391ae86e881e2aeca56d/crates/db_schema/src/source/comment.rs#L39
 
 (defun lem-ui-sort-comments (list)
-  ""
+  "LIST."
   (cl-loop for c in list
            for path = (lem-ui-get-comment-path c)
            for path-split = (lem-ui-split-path path)
@@ -600,7 +601,7 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
            collect path-split))
 
 (defun lem-ui-render-comments (post-id &optional type sort)
-  "ID
+  "POST-ID
 TYPE
 SORT."
   (let* ((post-id (number-to-string post-id))
