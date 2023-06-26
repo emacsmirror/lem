@@ -176,7 +176,7 @@ Optionally start from POS."
   "."
   (let ((id (get-text-property (point) 'creator-id)))
     (if id
-        (lem-ui-view-user id)
+        (lem-ui-view-user id 'overview)
       (message "No item at point?"))))
 
 ;;; INSTANCE
@@ -195,39 +195,92 @@ LIMIT is the amount of results to return."
       (goto-char (point-min)))))
 
 ;;; VIEWS SORTING AND TYPES
-;; TODO: make the view functions generic in these functions
 (defun lem-ui-cycle-listing-type ()
   "Cycle view between `lem-listing-types'."
   (interactive)
   (let ((type (lem-ui-get-buffer-spec :listing-type))
-        (sort (plist-get lem-ui-buffer-spec :sort)))
-    (cond ((equal type "All")
-           (funcall (lem-ui-get-buffer-spec :view-fun)
-                    "Local" sort))
-          ((equal type "Local")
-           (funcall (lem-ui-get-buffer-spec :view-fun)
-                    "Subscribed" sort))
-          ((equal type "Subscribed")
-           (funcall (lem-ui-get-buffer-spec :view-fun)
-                    "All" sort)))))
+        (sort (lem-ui-get-buffer-spec :sort))
+        (user-p (eq (lem-ui-get-buffer-spec :view-fun) #'lem-ui-view-user)))
+    (if user-p
+        (let ((id (save-excursion (lem-ui--get-id :string))))
+          (cond ((equal type 'overview)
+                 (funcall (lem-ui-get-buffer-spec :view-fun)
+                          id 'posts sort))
+                ((equal type 'posts)
+                 (funcall (lem-ui-get-buffer-spec :view-fun)
+                          id 'comments sort))
+                ((equal type 'comments)
+                 (funcall (lem-ui-get-buffer-spec :view-fun)
+                          id 'overview sort))
+                (t ; handle nil values
+                 (funcal (lem-ui-get-buffer-spec :view-fun)
+                         id 'overview sort))))
+      (cond ((equal type "All")
+             (funcall (lem-ui-get-buffer-spec :view-fun)
+                      "Local" sort))
+            ((equal type "Local")
+             (funcall (lem-ui-get-buffer-spec :view-fun)
+                      "Subscribed" sort))
+            ((equal type "Subscribed")
+             (funcall (lem-ui-get-buffer-spec :view-fun)
+                      "All" sort))
+            (t ; handle nil values
+             (funcal (lem-ui-get-buffer-spec :view-fun)
+                     "All" sort))))))
 
 (defun lem-ui-cycle-sort ()
-  "Cycle view between some `lem-sort-types'."
+  "Cycle view between some `lem-sort-types'
+If current view is a post, use `lem-comment-sort-types'."
   (interactive)
   (let ((type (lem-ui-get-buffer-spec :listing-type))
-        (sort (plist-get lem-ui-buffer-spec :sort)))
-    (cond ((equal sort "Top")
-           (lem-ui-view-instance type "Active")
-           (equal sort "Active")
-           (lem-ui-view-instance type "Hot"))
-          ((equal sort "Hot")
-           (lem-ui-view-instance type "New"))
-          ((equal sort "New")
-           (lem-ui-view-instance type "TopDay"))
-          ((equal sort "TopDay")
-           (lem-ui-view-instance type "TopAll"))
-          ((equal sort "TopAll")
-           (lem-ui-view-instance type "Active")))))
+        (sort (lem-ui-get-buffer-spec :sort))
+        (post-p (eq (lem-ui-get-buffer-spec :view-fun) #'lem-ui-view-post)))
+    (if post-p
+        (let ((id (save-excursion
+                    (goto-char (point-min))
+                    (lem-ui--get-id :string))))
+          ;; TODO: refactor sort cycling
+          (cond ((equal sort "Hot")
+                 (funcall (lem-ui-get-buffer-spec :view-fun)
+                          id "Top"))
+                ((equal sort "Top")
+                 (funcall (lem-ui-get-buffer-spec :view-fun)
+                          id "New"))
+                ((equal sort "New")
+                 (funcall (lem-ui-get-buffer-spec :view-fun)
+                          id "Old"))
+                ((equal sort "Old")
+                 (funcall (lem-ui-get-buffer-spec :view-fun)
+                          id "New"))
+                (t ; handle nil sort type
+                 (funcall (lem-ui-get-buffer-spec :view-fun)
+                          id "Top"))))
+      (cond ((equal sort "Top")
+             (funcall (lem-ui-get-buffer-spec :view-fun)
+                      type "Active")
+             (equal sort "Active")
+             (funcall (lem-ui-get-buffer-spec :view-fun)
+                      ;; (lem-ui-view-instance
+                      type "Hot"))
+            ((equal sort "Hot")
+             ;; (lem-ui-view-instance
+             (funcall (lem-ui-get-buffer-spec :view-fun)
+                      type "New"))
+            ((equal sort "New")
+             (funcall (lem-ui-get-buffer-spec :view-fun)
+                      ;; (lem-ui-view-instance
+                      type "TopDay"))
+            ((equal sort "TopDay")
+             (funcall (lem-ui-get-buffer-spec :view-fun)
+                      ;; (lem-ui-view-instance
+                      type "TopAll"))
+            ((equal sort "TopAll")
+             (funcall (lem-ui-get-buffer-spec :view-fun)
+                      ;; (lem-ui-view-instance
+                      type "Active"))
+            (t ; handle unsorted/default views
+             (funcall (lem-ui-get-buffer-spec :view-fun)
+                      type "Top"))))))
 
 ;; TODO add view fun to buffer-spec
 (defun lem-ui-sort-or-type (sort-or-type view-fun)
@@ -287,12 +340,13 @@ LIMIT is the amount of results to return."
 
 (defun lem-ui-view-post (id &optional sort limit)
   "View post with ID.
-SORT.
+SORT must be a member of `lem-comment-sort-types.'
 LIMIT."
   (let* ((post-view (lem-get-post id))
          (post (alist-get 'post_view post-view)))
-    (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode t
+    (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
       (lem-ui-render-post post :comments sort :community)
+      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post)
       (goto-char (point-min))))) ; limit
 
 (defun lem-ui-top-byline (name score timestamp
@@ -377,7 +431,10 @@ SORT must be a member of `lem-sort-types'."
       'type (caar post)))
     (when (and comments
                (< 0 .counts.comments))
-      (lem-ui-render-comments .post.id "All" sort)))) ; NB: type All, make arg?
+      (let* ((post-id (number-to-string .post.id))
+             (comments (lem-api-get-post-comments post-id "All" sort))
+             (list (alist-get 'comments comments)))
+        (lem-ui-render-comments list "All" sort))))) ; NB: type All, make arg?
 
 (defun lem-ui-render-posts (posts &optional buffer comments sort community trim)
   "Render a list of abbreviated posts POSTS in BUFFER.
@@ -558,7 +615,7 @@ Simple means we just read a string."
 
 (defun lem-ui-render-comment (comment &optional sort)
   "Render single COMMENT.
-SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
+SORT must be a member of `lem-comment-sort-types'."
   (let-alist comment
     (insert
      (propertize
@@ -605,21 +662,13 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
            ;; collect c))
            collect path-split))
 
-(defun lem-ui-render-comments (post-id &optional type sort)
-  "POST-ID
+(defun lem-ui-render-comments (comments &optional type sort)
+  "COMMENTS
 TYPE
 SORT."
-  (let* ((post-id (number-to-string post-id))
-         (comments (lem-get-post-comments post-id type sort))
-         (list (alist-get 'comments comments)))
-    (setq lem-path-sorted (lem-ui-sort-comments list))
-    ;; path isn't numbers to sort, it's more like a decimal separated hierarchy of comment ids!
-    ;; (sorted (sort list (lambda (x y)
-    ;;                      (< (lem-ui-get-comment-path x)
-    ;;                         (lem-ui-get-comment-path y))))))
-    ;; (setq lem-sorted sorted)
-    (cl-loop for x in list ; sorted
-             do (lem-ui-render-comment x sort))))
+  ;; TODO: build comment tree
+  (cl-loop for x in comments ; sorted
+           do (lem-ui-render-comment x sort)))
 
 ;; (setq lem-post-comments (lem-get-post-comments "1235982" "651145" "New"))
 ;; (setq lem-post-comments (lem-get-post-comments "1235982" nil "New"))
@@ -676,21 +725,27 @@ SORT."
       'id .person.id
       'type (caar json)))))
 
-(defun lem-ui-view-user (id)
+(defun lem-ui-view-user (id &optional view-type sort limit)
   "View user with ID."
   (let ((json (lem-api-get-person-by-id id))
         (buf (get-buffer-create "*lem-user*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (let-alist json
-        (setq lem-test-user json)
+        ;; (setq lem-test-user json)
         (lem-ui-render-user .person_view)
-        .posts
-        .comments
-        (insert (lem-ui-format-heading "posts"))
-        (lem-ui-render-posts json ;(assoc 'posts json) ;.posts
-                             buf nil)
-        (insert (lem-ui-format-heading "comments"))
-        (lem-ui-render-comment (car .comments)) ; TODO map render comments
+        ;; TODO: cycle view-type: Overview, comments, posts
+        (cond ((eq view-type 'posts)
+               (insert (lem-ui-format-heading "posts"))
+               (lem-ui-render-posts json buf nil))
+              ((eq view-type 'comments)
+               (insert (lem-ui-format-heading "comments"))
+               (lem-ui-render-comments .comments))
+              (t ; no arg: overview
+               (insert (lem-ui-format-heading "overview"))
+               ;; TODO: insert mixed comments/posts
+               (lem-ui-render-posts json buf nil)
+               (lem-ui-render-comments .comments)))
+        (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user)
         (goto-char (point-min))))))
 
 (defun lem-ui-view-item-user ()
@@ -699,7 +754,7 @@ SORT."
   (let ((user (get-text-property (point) 'creator-id)))
     (if user
         (let ((str (number-to-string user)))
-          (lem-ui-view-user str))
+          (lem-ui-view-user str 'overview))
       (message "No user item at point?"))))
 
 (defun lem-ui-format-heading (name)
@@ -714,7 +769,7 @@ SORT."
   "View user at point."
   (interactive)
   (lem-ui-with-id
-      (lem-ui-view-user id)))
+      (lem-ui-view-user id 'overview)))
 
 (defun lem-ui-message-user-at-point ()
   "Send private message to user at point."
