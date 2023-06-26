@@ -352,28 +352,66 @@ LIMIT."
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post)
       (goto-char (point-min))))) ; limit
 
+(defvar lem-ui--link-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [return] #'lem-ui--follow-link-at-point)
+    (define-key map [mouse-2] #'lem-ui--follow-link-at-point)
+    (define-key map [follow-link] 'mouse-face)
+    map)
+  "The keymap for link-like things in buffer (except for shr.el generate links).
+This will make the region of text act like like a link with mouse
+highlighting, mouse click action tabbing to next/previous link
+etc.")
+
+(defun lem-ui--follow-link-at-point ()
+  ""
+  (interactive)
+  (let ((id (lem-ui--get-id :string 'id))
+        (creator-id (lem-ui--get-id :string 'creator-id))
+        (community-id (lem-ui--get-id :string 'community-id))
+        (item-type (get-text-property (point) 'lem-tab-stop)))
+    (cond ((eq item-type 'community)
+           (lem-ui-view-community community-id))
+          ((eq item-type 'user)
+           (lem-ui-view-user creator-id)))))
+
 (defun lem-ui-top-byline (name score timestamp
                                &optional community community-url)
   "Format a top byline for post with NAME, SCORE and TIMESTAMP.
 COMMUNITY and COMMUNITY-URL are those of the community the item belongs to."
   ;; TODO: name link to user page, etc.
-  (propertize (concat
-               name
-               (when community (concat " to "
-                                       ;; TODO: link to community:
-                                       (propertize community
-                                                   'shr-url community-url
-                                                   'button t
-                                                   'category 'shr
-                                                   'follow-link t
-                                                   'mouse-face 'highlight)))
-               " | "
-               (lem-ui-symbol 'favourite) " "
-               (number-to-string score) " | "
-               timestamp)
-              'lem-tab-stop t
-              'byline-top t
-              'face font-lock-comment-face))
+  (propertize
+   (concat
+    (propertize name
+                ;; 'shr-url user-url
+                'keymap lem-ui--link-map
+                'button t
+                'category 'shr
+                'follow-link t
+                'mouse-face 'highlight
+                'lem-tab-stop 'user
+                'face 'underline)
+    (when community
+      (concat
+       (propertize " to "
+                   'face font-lock-comment-face)
+       (propertize community
+                   'shr-url community-url
+                   'keymap lem-ui--link-map
+                   'button t
+                   'category 'shr
+                   'follow-link t
+                   'face 'underline
+                   'lem-tab-stop 'community
+                   'mouse-face 'highlight)))
+    (propertize
+     (concat
+      " | "
+      (lem-ui-symbol 'favourite) " "
+      (number-to-string score) " | "
+      timestamp)
+     'face font-lock-comment-face))
+   'byline-top t))
 
 (defun lem-ui-bt-byline (comments &optional id)
   "Format a bottom byline for a post or comment.
