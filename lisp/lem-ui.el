@@ -307,7 +307,7 @@ COMMUNITY and COMMUNITY-URL are those of the community the item belongs to."
                                                    'follow-link t
                                                    'mouse-face 'highlight)))
                " | "
-               (lem-ui-symbol 'favourite)
+               (lem-ui-symbol 'favourite) " "
                (number-to-string score) " | "
                timestamp)
               'lem-tab-stop t
