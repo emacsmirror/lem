@@ -76,8 +76,14 @@
 (defvar lem-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") #'lem-ui-cycle-view-type)
+    (define-key map (kbd "C-c C-s") #'lem-ui-cycle-sort-type)
     (define-key map (kbd "n") #'lem-next-item)
     (define-key map (kbd "p") #'lem-prev-item)
+
+    (define-key map (kbd "RET") #'lem-ui-view-thing-at-point)
+    (define-key map (kbd "C") #'lem-ui-view-community-at-point)
+    (define-key map (kbd "s") #'lem-ui-jump-to-subscribed)
+    (define-key map (kbd "S") #'lem-ui-subscribe-to-community-at-point)
     ;;;
     map)
   "Keymap for `lem-mode'.")
@@ -103,7 +109,8 @@ Load current user's instance posts."
 (define-derived-mode lem-mode special-mode "lem"
   "Major mode for Lemmy, the federated link-aggregator and forum."
   :group 'lem
-  (read-only-mode 1))
+  (read-only-mode 1)
+  (emojify-mode 1))
 
 (provide 'lem)
 ;;; lem.el ends here
