@@ -199,10 +199,10 @@ LIMIT is the amount of results to return."
 (defun lem-ui-cycle-listing-type ()
   "Cycle view between `lem-listing-types'."
   (interactive)
-  (let ((type (lem-ui-get-buffer-spec :listing-type))
-        (sort (lem-ui-get-buffer-spec :sort))
-        (view-fun (lem-ui-get-buffer-spec :view-fun))
-        (user-p (eq view-fun #'lem-ui-view-user)))
+  (let* ((type (lem-ui-get-buffer-spec :listing-type))
+         (sort (lem-ui-get-buffer-spec :sort))
+         (view-fun (lem-ui-get-buffer-spec :view-fun))
+         (user-p (eq view-fun #'lem-ui-view-user)))
     ;; TODO: refactor
     (if user-p
         (let ((id (save-excursion (lem-ui--get-id :string))))
