@@ -122,12 +122,12 @@ Within this macro call, args JSON and ID are available."
 (defvar-local lem-ui-buffer-spec nil
   "A plist containing details about the current lem buffer.")
 
-(defun lem-ui-set-buffer-spec (listing-type sort) ; endpoint etc.
+(defun lem-ui-set-buffer-spec (listing-type sort view-fun) ; endpoint etc.
   "Set `lem-ui-buffer-spec' for the current buffer.
 SORT must be a member of `lem-sort-types'.
 LISTING-TYPE must be member of `lem-listing-types'."
   (setq lem-ui-buffer-spec
-        `(:sort ,sort :listing-type ,listing-type)))
+        `(:sort ,sort :listing-type ,listing-type :view-fun ,view-fun)))
 
 (defun lem-ui-get-buffer-spec (key)
   "Return value of KEY in `lem-ui-buffer-spec'."
@@ -191,22 +191,25 @@ LIMIT is the amount of results to return."
         (buf (get-buffer-create "*lem*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-posts posts buf nil sort nil :trim)
-      (lem-ui-set-buffer-spec type sort) ; no children
+      (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance) ; no children
       (goto-char (point-min)))))
 
 ;;; VIEWS SORTING AND TYPES
 ;; TODO: make the view functions generic in these functions
-(defun lem-ui-cycle-view-type ()
+(defun lem-ui-cycle-listing-type ()
   "Cycle view between `lem-listing-types'."
   (interactive)
   (let ((type (lem-ui-get-buffer-spec :listing-type))
         (sort (plist-get lem-ui-buffer-spec :sort)))
     (cond ((equal type "All")
-           (lem-ui-view-instance "Local" sort))
+           (funcall (lem-ui-get-buffer-spec :view-fun)
+                    "Local" sort))
           ((equal type "Local")
-           (lem-ui-view-instance "Subscribed" sort))
+           (funcall (lem-ui-get-buffer-spec :view-fun)
+                    "Subscribed" sort))
           ((equal type "Subscribed")
-           (lem-ui-view-instance "All" sort)))))
+           (funcall (lem-ui-get-buffer-spec :view-fun)
+                    "All" sort)))))
 
 (defun lem-ui-cycle-sort ()
   "Cycle view between some `lem-sort-types'."
