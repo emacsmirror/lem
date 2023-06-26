@@ -412,7 +412,28 @@ SORT is the kind of sorting to use."
   "."
   (interactive)
   (lem-ui-with-id
-      (lem-ui-view-community json id)))
+      (let ((community (lem-get-community id)))
+        (lem-ui-view-community id))))
+
+(defun lem-ui--communities-alist (communities)
+  "Return an alist of name/description and ID from COMMUNITIES."
+  (cl-loop for item in (alist-get 'communities communities)
+           collect (let-alist item
+                     (cons (concat .community.name " | "
+                                   (string-limit .community.description 40))
+                           (number-to-string .community.id)))))
+
+(defun lem-ui-jump-to-subscribed ()
+  "Prompt for a subscribed community and view it."
+  (interactive)
+  (let* ((communities ;(setq lem-test-c (car (alist-get 'communities
+
+          (lem-list-communities "Subscribed"))
+         (list (lem-ui--community-short-list communities))
+         (choice (completing-read "Jump to community: "
+                                  list))
+         (id (alist-get choice list nil nil #'equal)))
+    (lem-ui-view-community id)))
 
 (defun lem-ui-view-community (id &optional sort limit)
   "View COMMUNITY, which is JSON, with ID, sorting by SORT.
