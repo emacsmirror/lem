@@ -161,6 +161,24 @@ Optionally start from POS."
   (interactive)
   (lem--goto-pos #'previous-single-property-change))
 
+(defun lem-ui-view-thing-at-point ()
+  "View post, community or user at point."
+  (interactive)
+  (let ((type (lem-ui--item-type)))
+    (cond ((eq type 'post)
+           (lem-ui-view-post-at-point))
+          ((eq type 'community)
+           (lem-ui-view-community-at-point))
+          ((eq type 'user)
+           (lem-ui-view-user-at-point)))))
+
+(defun lem-ui-view-item-user-at-point ()
+  "."
+  (let ((id (get-text-property (point) 'creator-id)))
+    (if id
+        (lem-ui-view-user id)
+      (message "No item at point?"))))
+
 ;;; INSTANCE
 
 ;; TODO: toggle posts or comments, and cycle Local, All, or Subscribed
@@ -365,6 +383,7 @@ SORT must be a member of `lem-sort-types'."
       'json post
       'id .post.id
       'community-id .post.community_id
+      'creator-id .creator.id
       'type (caar post)))
     (when (and comments
                (< 0 .counts.comments))
