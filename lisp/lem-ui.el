@@ -157,6 +157,7 @@ Optionally start from POS."
 
 (defun lem-prev-item ()
   ""
+  (interactive)
   (lem--goto-pos #'previous-single-property-change))
 
 ;;; INSTANCE
@@ -538,7 +539,7 @@ SORT can be \"New\", \"Hot\", \"Old\", or \"Top\"."
        "\n")
       'json comment
       'id .comment.id
-      'comment-id .comment.post_id
+      'post-id .comment.post_id
       'community-id .post.community-id
       'creator-id .creator.id
       'type (caar comment)))))
@@ -581,6 +582,15 @@ SORT."
 
 ;; (setq lem-post-comments (lem-get-post-comments "1235982" "651145" "New"))
 ;; (setq lem-post-comments (lem-get-post-comments "1235982" nil "New"))
+
+(defun lem-ui-view-comment-post ()
+  "View post of comment at point."
+  (interactive)
+  (if (not (eq (lem-ui--item-type) 'comment))
+      (message "Not at a comment?")
+    (let* ((post (get-text-property (point) 'post-id))
+           (str (number-to-string post)))
+      (lem-ui-view-post str))))
 
 ;;; USERS
 
