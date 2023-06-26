@@ -281,20 +281,6 @@ LIMIT is the amount of results to return."
   (lem-ui-with-id
       (lem-ui-view-post id)))
 
-(defun lem-ui-like-comment-at-point (&optional dislike)
-  ""
-  (interactive)
-  (lem-ui-with-id ; FIXME: make generic so this works for posts
-      ;; TODO: feedback needed!
-      (lem-like-comment
-       (string-to-number id) ; this sucks: we convert and convert back.
-       (if dislike -1 1))))
-
-(defun lem-ui-dislike-comment-at-point ()
-  "."
-  (interactive)
-  (lem-ui-like-comment-at-point :dislike))
-
 (defun lem-ui-view-post (id &optional sort limit)
   "View post with ID.
 SORT.
@@ -640,6 +626,21 @@ SORT."
     (let* ((post (get-text-property (point) 'post-id))
            (str (number-to-string post)))
       (lem-ui-view-post str))))
+
+(defun lem-ui-like-comment-at-point (&optional dislike)
+  ""
+  (interactive)
+  (lem-ui-with-id ; FIXME: make generic so this works for posts
+      ;; TODO: feedback needed!
+      (lem-like-comment
+       (string-to-number id) ; this sucks: we convert and convert back.
+       (if dislike -1 1))))
+
+(defun lem-ui-dislike-comment-at-point ()
+  "."
+  (interactive)
+  (lem-ui-like-comment-at-point :dislike))
+
 
 ;;; USERS
 
