@@ -6,15 +6,15 @@
 
 The idea is that it's then possible to write different frontends so users can read lemmy posts in whatever forms they like. Possibilities are notmuch, gnus, md4rd, elfeed, or a standalone rendering option more like =mastodon.el=.
 
-Currently, most of the basic endpoints are implemented, and most but not all parameters for each endpoint. There is an active todo list of endpoints in the file.
+Currently, most of the basic endpoints are implemented, and most but not all parameters for each endpoint. There is an active todo list of endpoints in =lem-api.el=.
 
 New endpoints are trivial to add with the =lem-request= macro.
 
-=lem-ui.el= is our own basic interface layer. It's new and necro, but coming along. Takes some inspiration from =mastodon.el=, as that's what I know.
+=lem-ui.el= is our own basic interface layer. It's new and necro, but coming along fast. It takes some inspiration from =mastodon.el=, as that's what I know, and a lot of work has gone into it.
 
 * Logging in
 
-See =lem-login= and =lem-login-set-token=. Lemmy seems to just require an =auth= parameter with a token you receive as a response to logging in. Currently this token is saved to the persistent variable =lem-auth-token=, which is probably not smart, but it's easy.
+See =lem-login= and =lem-login-set-token=. Lemmy seems to just require an =auth= parameter with a token you receive as a response to logging in. Currently this token is saved to the persistent variable =lem-auth-token=, which is probably not smart, but it's easy. Lemmy does not yet have OAuth implemented.
 
 * dependency
 
@@ -35,7 +35,7 @@ See =lem-login= and =lem-login-set-token=. Lemmy seems to just require an =auth=
 - [X] subscribe to community
 - [X] search by type: user, community, post, comment, all
 - [X] prev/next item
-- [-] finish type/sort cycling of views
+- [-] finish cycling of views by sort/listing-type
 - [ ] finish implementing limit
 - [ ] update current buffer
 - [ ] add more to buffer
