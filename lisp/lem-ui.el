@@ -200,86 +200,88 @@ LIMIT is the amount of results to return."
   (interactive)
   (let ((type (lem-ui-get-buffer-spec :listing-type))
         (sort (lem-ui-get-buffer-spec :sort))
-        (user-p (eq (lem-ui-get-buffer-spec :view-fun) #'lem-ui-view-user)))
+        (view-fun (lem-ui-get-buffer-spec :view-fun))
+        (user-p (eq view-fun #'lem-ui-view-user)))
+    ;; TODO: refactor
     (if user-p
         (let ((id (save-excursion (lem-ui--get-id :string))))
           (cond ((equal type 'overview)
-                 (funcall (lem-ui-get-buffer-spec :view-fun)
+                 (funcall view-fun
                           id 'posts sort))
                 ((equal type 'posts)
-                 (funcall (lem-ui-get-buffer-spec :view-fun)
+                 (funcall view-fun
                           id 'comments sort))
                 ((equal type 'comments)
-                 (funcall (lem-ui-get-buffer-spec :view-fun)
+                 (funcall view-fun
                           id 'overview sort))
                 (t ; handle nil values
-                 (funcal (lem-ui-get-buffer-spec :view-fun)
-                         id 'overview sort))))
+                 (funcall view-fun
+                          id 'overview sort))))
       (cond ((equal type "All")
-             (funcall (lem-ui-get-buffer-spec :view-fun)
+             (funcall view-fun
                       "Local" sort))
             ((equal type "Local")
-             (funcall (lem-ui-get-buffer-spec :view-fun)
+             (funcall view-fun
                       "Subscribed" sort))
             ((equal type "Subscribed")
-             (funcall (lem-ui-get-buffer-spec :view-fun)
-                      "All" sort))
-            (t ; handle nil values
-             (funcal (lem-ui-get-buffer-spec :view-fun)
-                     "All" sort))))))
+             (t ; handle nil values
+              (funcall view-fun
+                       "All" sort)))))))
 
 (defun lem-ui-cycle-sort ()
   "Cycle view between some `lem-sort-types'
 If current view is a post, use `lem-comment-sort-types'."
   (interactive)
-  (let ((type (lem-ui-get-buffer-spec :listing-type))
-        (sort (lem-ui-get-buffer-spec :sort))
-        (post-p (eq (lem-ui-get-buffer-spec :view-fun) #'lem-ui-view-post)))
+  (let* ((type (lem-ui-get-buffer-spec :listing-type))
+         (sort (lem-ui-get-buffer-spec :sort))
+         (view-fun (lem-ui-get-buffer-spec :view-fun))
+         (post-p (eq view-fun #'lem-ui-view-post)))
+    ;; TODO: errors on user view (unneeded?)
     (if post-p
         (let ((id (save-excursion
                     (goto-char (point-min))
                     (lem-ui--get-id :string))))
           ;; TODO: refactor sort cycling
           (cond ((equal sort "Hot")
-                 (funcall (lem-ui-get-buffer-spec :view-fun)
+                 (funcall view-fun
                           id "Top"))
                 ((equal sort "Top")
-                 (funcall (lem-ui-get-buffer-spec :view-fun)
+                 (funcall view-fun
                           id "New"))
                 ((equal sort "New")
-                 (funcall (lem-ui-get-buffer-spec :view-fun)
+                 (funcall view-fun
                           id "Old"))
                 ((equal sort "Old")
-                 (funcall (lem-ui-get-buffer-spec :view-fun)
+                 (funcall view-fun
                           id "New"))
                 (t ; handle nil sort type
-                 (funcall (lem-ui-get-buffer-spec :view-fun)
+                 (funcall view-fun
                           id "Top"))))
       (cond ((equal sort "Top")
-             (funcall (lem-ui-get-buffer-spec :view-fun)
+             (funcall view-fun
                       type "Active")
              (equal sort "Active")
-             (funcall (lem-ui-get-buffer-spec :view-fun)
+             (funcall view-fun
                       ;; (lem-ui-view-instance
                       type "Hot"))
             ((equal sort "Hot")
              ;; (lem-ui-view-instance
-             (funcall (lem-ui-get-buffer-spec :view-fun)
+             (funcall view-fun
                       type "New"))
             ((equal sort "New")
-             (funcall (lem-ui-get-buffer-spec :view-fun)
+             (funcall view-fun
                       ;; (lem-ui-view-instance
                       type "TopDay"))
             ((equal sort "TopDay")
-             (funcall (lem-ui-get-buffer-spec :view-fun)
+             (funcall view-fun
                       ;; (lem-ui-view-instance
                       type "TopAll"))
             ((equal sort "TopAll")
-             (funcall (lem-ui-get-buffer-spec :view-fun)
+             (funcall view-fun
                       ;; (lem-ui-view-instance
                       type "Active"))
             (t ; handle unsorted/default views
-             (funcall (lem-ui-get-buffer-spec :view-fun)
+             (funcall view-fun
                       type "Top"))))))
 
 ;; TODO add view fun to buffer-spec
