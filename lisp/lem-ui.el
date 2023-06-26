@@ -715,11 +715,16 @@ SORT."
       (concat
        (number-to-string .person.id) " "
        (propertize .person.name
-                   'face '(:weight bold)) " "
+                   'face '(:weight bold))
+       " "
        .person.actor_id
        "\n"
-       (number-to-string .counts.post_count) " "
-       (number-to-string .counts.comment_count) ;
+       (lem-ui-symbol 'direct) " " ; FIXME: we need a post symbol
+       (number-to-string .counts.post_count) " | "
+       (lem-ui-symbol 'reply) " "
+       (number-to-string .counts.comment_count)
+       " | "
+       "joined: " .person.published
        "\n"
        lem-ui-horiz-bar
        "\n")
