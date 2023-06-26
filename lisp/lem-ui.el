@@ -76,11 +76,12 @@ NAME is not part of the symbol table, '?' is returned."
   "Get json of thing at point, comment, post, community or user."
   (get-text-property (point) 'json))
 
-(defun lem-ui--get-id (&optional string)
+(defun lem-ui--get-id (&optional string type)
   "Return id as a string, from alist KEY in JSON.
 SLOT is a symbol, either post, comment, user, or community.
-STRING means return as string, else return number."
-  (let ((id (get-text-property (point) 'id)))
+STRING means return as string, else return number.
+TYPE is the name of the ID property to get."
+  (let ((id (get-text-property (point) (or type 'id))))
     (if string
         (number-to-string id)
       id)))
@@ -190,7 +191,7 @@ LIMIT is the amount of results to return."
   (let ((posts (lem-get-instance-posts type nil limit)) ; no sort here, its below
         (buf (get-buffer-create "*lem*")))
     (lem-ui-with-buffer buf 'lem-mode nil
-      (lem-ui-render-posts posts buf nil sort nil :trim)
+      (lem-ui-render-posts posts buf nil sort :community :trim)
       (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance) ; no children
       (goto-char (point-min)))))
 
