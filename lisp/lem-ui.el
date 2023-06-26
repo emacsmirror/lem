@@ -414,14 +414,17 @@ SORT is the kind of sorting to use."
   (lem-ui-with-id
       (lem-ui-view-community json id)))
 
-(defun lem-ui-view-community (community id &optional sort limit)
+(defun lem-ui-view-community (id &optional sort limit)
   "View COMMUNITY, which is JSON, with ID, sorting by SORT.
 SORT can be \"New\", \"Hot\", \"Old\", or \"Top\".
 LIMIT is the max results to show."
-  (let* ((posts (lem-get-posts nil nil limit id)) ; no sorting
+  (let* ((community (lem-get-community id))
+         (view (alist-get 'community_view community))
+         ;; TODO: do we need this also?:
+         (posts (lem-get-posts nil nil limit id)) ; no sorting
          (buf (get-buffer-create"*lem*")))
     (lem-ui-with-buffer buf 'lem-mode t
-      (lem-ui-render-community-header community)
+      (lem-ui-render-community-header view)
       (lem-ui-render-posts posts buf nil sort) ; no children
       (goto-char (point-min)))))
 
@@ -495,14 +498,12 @@ STATS are the community's stats to print."
      (format "%s %s | %s %s | %s %s\n" s-sym s p-sym p c-sym c))))
 
 (defun lem-ui-view-item-community ()
-  "."
+  "View community of item at point."
   (interactive)
   (let ((id (get-text-property (point) 'community-id)))
     (if id
-        (let* ((str (number-to-string id))
-               (community (alist-get 'community_view
-                                     (lem-get-community str))))
-          (lem-ui-view-community community str))
+        (let* ((str (number-to-string id)))
+          (lem-ui-view-community str))
       ("Not item at point?"))))
 
 ;;; REPLIES
