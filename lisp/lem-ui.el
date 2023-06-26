@@ -450,7 +450,7 @@ LIMIT is the max results to show."
          (posts (lem-get-posts nil nil limit id)) ; no sorting
          (buf (get-buffer-create"*lem*")))
     (lem-ui-with-buffer buf 'lem-mode t
-      (lem-ui-render-community-header view)
+      (lem-ui-render-community-header view nil :stats)
       (lem-ui-render-posts posts buf nil sort) ; no children
       (goto-char (point-min)))))
 
