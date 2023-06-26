@@ -106,7 +106,7 @@ than `switch-to-buffer'."
          (switch-to-buffer ,buffer))
        ,@body)))
 
-(defmacro lem-ui-with-id (thing body)
+(defmacro lem-ui-with-id (body)
   "Call BODY after fetching ID of THING (at point), a symbol.
 Thing can be anything handled by `lem-ui-thing-json', currently:
 comment, post, community or person.
@@ -115,7 +115,7 @@ Within this macro call, args JSON and ID are available."
            (indent 1))
   `(let* ((json (lem-ui-thing-json))
           ;; TODO: make generic by getting THING from JSON
-          (id (lem-ui--get-id ,thing json :string)))
+          (id (lem-ui--get-id :string)))
      ,body))
 
 ;;; BUFFER DETAILS
@@ -260,19 +260,17 @@ LIMIT is the amount of results to return."
 (defun lem-ui-view-post-at-point ()
   "."
   (interactive)
-  (lem-ui-with-id 'post
-    (lem-ui-view-post id)))
+  (lem-ui-with-id
+      (lem-ui-view-post id)))
 
 (defun lem-ui-like-comment-at-point (&optional dislike)
   ""
   (interactive)
-  (lem-ui-with-id 'comment ; FIXME: make generic so this works for posts
-    ;; TODO: feedback needed!
-    (lem-like-comment
-     (string-to-number id) ; this sucks: we convert and convert back.
-     (if dislike
-         -1
-       1))))
+  (lem-ui-with-id ; FIXME: make generic so this works for posts
+      ;; TODO: feedback needed!
+      (lem-like-comment
+       (string-to-number id) ; this sucks: we convert and convert back.
+       (if dislike -1 1))))
 
 (defun lem-ui-dislike-comment-at-point ()
   "."
@@ -406,15 +404,15 @@ SORT is the kind of sorting to use."
 (defun lem-ui-subscribe-to-community-at-point ()
   "."
   (interactive)
-  (lem-ui-with-id 'community
-    ;; TODO: needs feedback!
-    (lem-follow-community id)))
+  (lem-ui-with-id
+      ;; TODO: needs feedback!
+      (lem-follow-community id)))
 
 (defun lem-ui-view-community-at-point ()
   "."
   (interactive)
-  (lem-ui-with-id 'community
-    (lem-ui-view-community json id)))
+  (lem-ui-with-id
+      (lem-ui-view-community json id)))
 
 (defun lem-ui-view-community (community id &optional sort limit)
   "View COMMUNITY, which is JSON, with ID, sorting by SORT.
@@ -514,9 +512,7 @@ STATS are the community's stats to print."
 Simple means we just read a string."
   (interactive)
   (let* ((json (lem-ui-thing-json))
-         (post-id (if (alist-get 'post json)
-                      (lem-ui--get-id 'post json)
-                    (lem-ui--get-id 'post-id json)))
+         (post-id (lem-ui--get-id))
          (parent-id (when-let ((comment (alist-get 'comment json)))
                       (alist-get 'id comment)))
          (content (read-string "Reply: "))
@@ -669,15 +665,15 @@ SORT."
 (defun lem-ui-view-user-at-point ()
   "View user at point."
   (interactive)
-  (lem-ui-with-id 'person
-    (lem-ui-view-user id)))
+  (lem-ui-with-id
+      (lem-ui-view-user id)))
 
 (defun lem-ui-message-user-at-point ()
   "Send private message to user at point."
   (interactive)
-  (lem-ui-with-id 'person
-    (let ((message (read-string "Private message: ")))
-      (lem-send-private-message message id))))
+  (lem-ui-with-id
+      (let ((message (read-string "Private message: ")))
+        (lem-send-private-message message id))))
 
 (provide 'lem-ui)
 ;;; lem-ui.el ends here
