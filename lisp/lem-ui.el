@@ -789,14 +789,14 @@ SORT."
         ;; TODO: cycle view-type: Overview, comments, posts
         (cond ((eq view-type 'posts)
                (insert (lem-ui-format-heading "posts"))
-               (lem-ui-render-posts json buf nil))
+               (lem-ui-render-posts json buf nil sort :community :trim))
               ((eq view-type 'comments)
                (insert (lem-ui-format-heading "comments"))
                (lem-ui-render-comments .comments))
               (t ; no arg: overview
                (insert (lem-ui-format-heading "overview"))
                ;; TODO: insert mixed comments/posts
-               (lem-ui-render-posts json buf nil)
+               (lem-ui-render-posts json buf nil sort :community :trim)
                (lem-ui-render-comments .comments)))
         (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user)
         (goto-char (point-min))))))
