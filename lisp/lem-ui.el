@@ -76,16 +76,13 @@ NAME is not part of the symbol table, '?' is returned."
   "Get json of thing at point, comment, post, community or user."
   (get-text-property (point) 'json))
 
-(defun lem-ui-id-from-json (key json &optional string)
+(defun lem-ui--get-id ()
   "Return id as a string, from alist KEY in JSON.
 SLOT is a symbol, either post, comment, user, or community.
 STRING means return as string, else return number."
-  ;; FIXME up scotty
-  (let ((num (alist-get 'id
-                        (alist-get key json))))
-    (if string
-        (number-to-string num)
-      num)))
+  ;; FIXME up scotty: just 'id prop all items then no need for this
+  ;; nor even for 1`lem-ui-with-id'
+  (get-text-property (point) 'id))
 
 ;;; MACROS
 (defmacro lem-ui-with-buffer (buffer mode-fun other-window &rest body)
@@ -113,7 +110,7 @@ Within this macro call, args JSON and ID are available."
            (indent 1))
   `(let* ((json (lem-ui-thing-json))
           ;; TODO: make generic by getting THING from JSON
-          (id (lem-ui-id-from-json ,thing json :string)))
+          (id (lem-ui--get-id ,thing json :string)))
      ,body))
 
 ;;; BUFFER DETAILS
@@ -501,8 +498,8 @@ Simple means we just read a string."
   (interactive)
   (let* ((json (lem-ui-thing-json))
          (post-id (if (alist-get 'post json)
-                      (lem-ui-id-from-json 'post json)
-                    (lem-ui-id-from-json 'post-id json)))
+                      (lem-ui--get-id 'post json)
+                    (lem-ui--get-id 'post-id json)))
          (parent-id (when-let ((comment (alist-get 'comment json)))
                       (alist-get 'id comment)))
          (content (read-string "Reply: "))
