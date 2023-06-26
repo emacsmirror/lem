@@ -444,18 +444,20 @@ SORT is the kind of sorting to use."
          (id (alist-get choice list nil nil #'equal)))
     (lem-ui-view-community id)))
 
-(defun lem-ui-view-community (id &optional sort limit)
-  "View COMMUNITY, which is JSON, with ID, sorting by SORT.
-SORT can be \"New\", \"Hot\", \"Old\", or \"Top\".
-LIMIT is the max results to show."
+(defun lem-ui-view-community (id &optional type sort limit)
+  "View community with ID.
+SORT must be a member of `lem-sort-types'.
+TYPE must be member of `lem-listing-types'.
+LIMIT is the amount of results to return."
   (let* ((community (lem-get-community id))
          (view (alist-get 'community_view community))
          ;; TODO: do we need this also?:
-         (posts (lem-get-posts nil nil limit id)) ; no sorting
+         (posts (lem-get-posts type sort limit id)) ; no sorting
          (buf (get-buffer-create"*lem*")))
     (lem-ui-with-buffer buf 'lem-mode t
       (lem-ui-render-community-header view nil :stats)
       (lem-ui-render-posts posts buf nil sort) ; no children
+      (lem-ui-set-buffer-spec type sort #'lem-ui-view-commiunity)
       (goto-char (point-min)))))
 
 (defun lem-ui-get-community-id (community &optional string)
