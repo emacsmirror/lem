@@ -235,55 +235,39 @@ If current view is a post, use `lem-comment-sort-types'."
   (interactive)
   (let* ((type (lem-ui-get-buffer-spec :listing-type))
          (sort (lem-ui-get-buffer-spec :sort))
+         (sort-rest (member sort lem-sort-types))
          (view-fun (lem-ui-get-buffer-spec :view-fun))
-         (post-p (eq view-fun #'lem-ui-view-post)))
-    ;; TODO: errors on user view (unneeded?)
-    (if post-p
-        (let ((id (save-excursion
-                    (goto-char (point-min))
-                    (lem-ui--get-id :string))))
-          ;; TODO: refactor sort cycling
-          (cond ((equal sort "Hot")
-                 (funcall view-fun
-                          id "Top"))
-                ((equal sort "Top")
-                 (funcall view-fun
-                          id "New"))
-                ((equal sort "New")
-                 (funcall view-fun
-                          id "Old"))
-                ((equal sort "Old")
-                 (funcall view-fun
-                          id "New"))
-                (t ; handle nil sort type
-                 (funcall view-fun
-                          id "Top"))))
-      (cond ((equal sort "Top")
-             (funcall view-fun
-                      type "Active")
-             (equal sort "Active")
-             (funcall view-fun
-                      ;; (lem-ui-view-instance
-                      type "Hot"))
-            ((equal sort "Hot")
-             ;; (lem-ui-view-instance
-             (funcall view-fun
-                      type "New"))
-            ((equal sort "New")
-             (funcall view-fun
-                      ;; (lem-ui-view-instance
-                      type "TopDay"))
-            ((equal sort "TopDay")
-             (funcall view-fun
-                      ;; (lem-ui-view-instance
-                      type "TopAll"))
-            ((equal sort "TopAll")
-             (funcall view-fun
-                      ;; (lem-ui-view-instance
-                      type "Active"))
-            (t ; handle unsorted/default views
-             (funcall view-fun
-                      type "Top"))))))
+         (post-p (eq view-fun #'lem-ui-view-post))
+         (user-p (eq view-fun #'lem-ui-view-user)))
+    ;; TODO: errors on user view (shoulssd work)
+    (cond (user-p
+           (let ((id (save-excursion
+                       (goto-char (point-min))
+                       (lem-ui--get-id :string))))
+             (cond ((or (equal sort (car (last lem-sort-types)))
+                        (null sort))
+                    (funcall view-fun id nil ; handle listing
+                             (car lem-sort-types)))
+                   (t
+                    (funcall view-fun id nil ; handle listing
+                             (cadr sort-rest))))))
+          (post-p
+           (let ((id (save-excursion
+                       (goto-char (point-min))
+                       (lem-ui--get-id :string))))
+             ;; TODO: refactor sort cycling
+             (cond ((or (equal sort (car (last lem-sort-types)))
+                        (null sort))
+                    (funcall view-fun id (car lem-comment-sort-types)))
+                   (t
+                    (funcall view-fun id
+                             (cadr (member sort lem-comment-sort-types)))))))
+          (t
+           (cond ((or (equal sort (car (last lem-sort-types)))
+                      (null sort))
+                  (funcall view-fun type (car lem-sort-types)))
+                 (t
+                  (funcall view-fun type (cadr sort-rest))))))))
 
 ;; TODO add view fun to buffer-spec
 (defun lem-ui-sort-or-type (sort-or-type view-fun)
