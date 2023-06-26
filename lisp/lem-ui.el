@@ -495,6 +495,17 @@ STATS are the community's stats to print."
     (insert
      (format "%s %s | %s %s | %s %s\n" s-sym s p-sym p c-sym c))))
 
+(defun lem-ui-view-item-community ()
+  "."
+  (interactive)
+  (let ((id (get-text-property (point) 'community-id)))
+    (if id
+        (let* ((str (number-to-string id))
+               (community (alist-get 'community_view
+                                     (lem-get-community str))))
+          (lem-ui-view-community community str))
+      ("Not item at point?"))))
+
 ;;; REPLIES
 
 (defun lem-ui-reply-simple ()
