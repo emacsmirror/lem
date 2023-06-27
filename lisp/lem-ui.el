@@ -364,12 +364,18 @@ SORT-OR-TYPE is either sort or type."
          ;; TODO: handle all search args: community, page, limit
          (response (lem-search query type listing-type sort)))
     ;; TODO: render other responses:
+    ;; ("All" "Comments" "Posts" "Communities" "Users" "Url")
     (cond ((equal type "Users")
            (let ((users (alist-get 'users response))
                  ;; TODO: refactor as lem-ui-render-users
                  (buf (get-buffer-create "*lem-users*")))
              (lem-ui-with-buffer buf 'lem-mode nil
-               (lem-ui-render-users users)))))))
+               (lem-ui-render-users users))))
+          ((equal type "Communities")
+           (let ((communities (alist-get 'communities response))
+                 (buf (get-buffer-create "*lem-communities*")))
+             (lem-ui-with-buffer buf 'lem-mode nil
+               (lem-ui-render-communities communities)))))))
 
 ;;; POSTS
 
@@ -572,7 +578,7 @@ TRIM means trim each post for length."
 
 ;;; COMMUNITIES
 
-(defun lem-ui-view-communities (&optional type sort)
+(defun lem-ui-view-subscribed (&optional type sort)
   "View communities, subscribed to by the logged in user.
 TYPE must be one of `lem-listing-types'.
 SORT must be one of `lem-sort-types'."
@@ -588,8 +594,7 @@ SORT must be one of `lem-sort-types'."
       (cl-loop for c in list
                for id = (alist-get 'id (alist-get 'community c))
                for view = (lem-get-community (number-to-string id) nil)
-               ;; for community = (alist-get 'community_view view)
-               do (lem-ui-render-community-header view buffer :stats))
+               do (lem-ui-render-community view buffer :stats :view))
       (goto-char (point-min)))))
 
 (defun lem-ui-subscribe-to-community-at-point ()
@@ -663,50 +668,63 @@ If STRING, return one, else number."
         (number-to-string id)
       id)))
 
-(defun lem-ui-render-community-header (community &optional buffer stats)
+(defun lem-ui-render-communities (communities &optional type sort)
+  "Render COMMUNITIES.
+TYPE
+SORT."
+  (cl-loop for x in communities ;communities ; sorted
+           do (lem-ui-render-community x "*lem-communities*" :stats)))
+
+(defun lem-ui-render-community (community &optional buffer stats view)
   "Render header details for COMMUNITY.
 BUFFER is the one to render in, a string.
-STATS are the community's stats to print."
-  (with-current-buffer (get-buffer-create (or buffer "*lem-community*"))
-    (let-alist (alist-get 'community_view community)
-      (insert
-       (propertize
-        (concat
-         (propertize .community.title
-                     'face '(:weight bold))
-         " | "
-         (lem-ui-font-lock-comment .community.name)
-         "\n"
-         (lem-ui-font-lock-comment .community.actor_id)
-         "\n"
-         .community.description
-         "\n"
-         lem-ui-horiz-bar
-         "\n"
-         .subscribed
-         "\n")
-        'json community
-        'id .community.id
-        'type 'community)) ;(caar community)))
-      ;; stats:
-      (when stats
-        (lem-ui-render-community-stats .counts.subscribers
-                                       .counts.posts
-                                       .counts.comments)))
-    ;; mods:
-    (let* ((mods-list (alist-get 'moderators community))
-           (mods (mapcar (lambda (x)
-                           (let-alist (alist-get 'moderator x)
-                             (list (number-to-string .id)
-                                   (or .display_name .name) .actor_id)))
-                         mods-list)))
-      (insert "mods: "
-              (mapconcat (lambda (x)
-                           (mapconcat #'identity x " "))
-                         mods " | ")
-              "\n"
-              lem-ui-horiz-bar
-              "\n\n"))))
+STATS are the community's stats to print.
+VIEW means COMMUNITY is a community_view."
+  (let ((community (if view
+                       (alist-get 'community_view community)
+                     community)))
+    (with-current-buffer (get-buffer-create (or buffer "*lem-community*"))
+      (let-alist community
+        (insert
+         (propertize
+          (concat
+           (propertize .community.title
+                       'face '(:weight bold))
+           " | "
+           (lem-ui-font-lock-comment .community.name)
+           "\n"
+           (lem-ui-font-lock-comment .community.actor_id)
+           "\n"
+           .community.description
+           "\n"
+           lem-ui-horiz-bar
+           "\n"
+           .subscribed
+           "\n")
+          'json community
+          'id .community.id
+          'type 'community)) ;(caar community)))
+        ;; stats:
+        (when stats
+          (lem-ui-render-community-stats .counts.subscribers
+                                         .counts.posts
+                                         .counts.comments)))
+      ;; mods:
+      (let* ((mods-list (alist-get 'moderators community))
+             (mods (mapcar (lambda (x)
+                             (let-alist (alist-get 'moderator x)
+                               (list (number-to-string .id)
+                                     (or .display_name .name) .actor_id)))
+                           mods-list)))
+        (when mods
+          (insert "mods: "
+                  (mapconcat (lambda (x)
+                               (mapconcat #'identity x " "))
+                             mods " | ")
+                  "\n"
+                  lem-ui-horiz-bar
+                  "\n")))
+      (insert "\n"))))
 
 (defun lem-ui-render-community-stats (subscribers posts comments)
   "Render stats for SUBSCRIBERS, POSTS and COMMENTS."
