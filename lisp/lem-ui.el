@@ -908,9 +908,9 @@ LIMIT is max items to show."
 (defun lem-ui-format-heading (name)
   "Format a heading for NAME."
   (propertize
-   (concat "\n " lem-ui-horiz-bar "\n "
+   (concat " " lem-ui-horiz-bar "\n "
            (upcase name)
-           "\n " lem-ui-horiz-bar "\n\n")
+           "\n " lem-ui-horiz-bar "\n")
    'face 'success))
 
 (defun lem-ui-view-user-at-point ()
