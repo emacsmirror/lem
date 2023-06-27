@@ -175,6 +175,8 @@ Optionally start from POS."
            (lem-ui-view-post-at-point))
           ((eq type 'community)
            (lem-ui-view-community-at-point))
+          ((eq type 'comment)
+           (lem-ui-view-comment-post))
           ((eq type 'user)
            (lem-ui-view-user-at-point)))))
 
