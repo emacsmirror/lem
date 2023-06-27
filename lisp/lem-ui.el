@@ -551,6 +551,19 @@ TRIM means trim each post for length."
       (cl-loop for x in list
                do (lem-ui-render-post x comments sort community trim)))))
 
+(defun lem-ui-save-item ()
+  ""
+  (let ((id (lem-ui--get-id))
+        (type (lem-ui--item-type)))
+    (cond ((eq type 'post)
+           (lem-save-post id)
+           (message "%s %s saved!" type id))
+          ((eq type 'comment)
+           (lem-api-save-comment id)
+           (message "%s %s saved!" type id))
+          (t
+           (message "You can only save posts and comments.")))))
+
 ;;; COMMUNITIES
 
 (defun lem-ui-view-communities (&optional type sort)
