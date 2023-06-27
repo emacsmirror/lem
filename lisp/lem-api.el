@@ -258,7 +258,7 @@ LIMIT and PAGE are numbers."
 Returns a person_view, comments, posts, moderates objects."
   (username person-id sort limit page community-id)
   nil
-  (saved-only)) ; TODO: optional manual params!
+  (saved-only))
 
 ;; ("saved_only" "true")
 (defun lem-api-get-person-saved-only (person-id)
