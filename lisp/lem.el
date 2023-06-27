@@ -69,6 +69,13 @@
   "Non-nil if STR is in `lem-search-types'."
   (cl-member str lem-search-types :test 'equal))
 
+(defconst lem-user-view-types
+  '("overview" "posts" "comments"))
+
+(defun lem-user-view-type-p ()
+  ""
+  (cl-member str lem-user-view-types :test 'equal))
+
 ;;; CUSTOMIZE
 
 

@@ -196,72 +196,76 @@ LIMIT is the amount of results to return."
       (goto-char (point-min)))))
 
 ;;; VIEWS SORTING AND TYPES
+
+(defun lem-ui-get-view-id ()
+  "Get id of the view item, a post or user."
+  (save-excursion
+    (goto-char (point-min))
+    (lem-ui--get-id :string)))
+
 (defun lem-ui-cycle-listing-type ()
-  "Cycle view between `lem-listing-types'."
+  "Cycle view between `lem-listing-types'.
+For a user view, cycle between overview, posts and comments.
+For a community view, cycle between posts and comments."
   (interactive)
   (let* ((type (lem-ui-get-buffer-spec :listing-type))
          (sort (lem-ui-get-buffer-spec :sort))
          (view-fun (lem-ui-get-buffer-spec :view-fun))
-         (user-p (eq view-fun #'lem-ui-view-user)))
+         (id (lem-ui-get-view-id))
+         (user-p (eq view-fun #'lem-ui-view-user))
+         (community-p (eq view-fun #'lem-ui-view-community)))
     ;; TODO: refactor
-    (if user-p
-        (let ((id (save-excursion (lem-ui--get-id :string))))
-          (cond ((equal type 'overview)
-                 (funcall view-fun
-                          id 'posts sort))
-                ((equal type 'posts)
-                 (funcall view-fun
-                          id 'comments sort))
-                ((equal type 'comments)
-                 (funcall view-fun
-                          id 'overview sort))
-                (t ; handle nil values
-                 (funcall view-fun
-                          id 'overview sort))))
-      (cond ((equal type "All")
-             (funcall view-fun
-                      "Local" sort))
-            ((equal type "Local")
-             (funcall view-fun
-                      "Subscribed" sort))
-            ((equal type "Subscribed")
-             (t ; handle nil values
-              (funcall view-fun
-                       "All" sort)))))))
+    (cond (user-p
+           (cond ((equal type 'overview)
+                  (funcall view-fun
+                           id 'posts sort))
+                 ((equal type 'posts)
+                  (funcall view-fun
+                           id 'comments sort))
+                 ((equal type 'comments)
+                  (funcall view-fun
+                           id 'overview sort))
+                 (t ; handle nil values
+                  (funcall view-fun
+                           id 'overview sort))))
+          (community-p
+           (if (eq type 'posts)
+               (funcall view-fun id 'comments sort)
+             (funcall view-fun id 'posts sort)))
+          (t
+           (cond ((or (equal type (car (last lem-listing-types)))
+                      (null type))
+                  (funcall view-fun (car lem-listing-types) sort))
+                 (t
+                  (funcall view-fun (cadr (member type lem-listing-types)))))))))
 
 (defun lem-ui-cycle-sort ()
   "Cycle view between some `lem-sort-types'
-If current view is a post, use `lem-comment-sort-types'."
+For post view, use `lem-comment-sort-types'."
   (interactive)
   (let* ((type (lem-ui-get-buffer-spec :listing-type))
          (sort (lem-ui-get-buffer-spec :sort))
          (sort-rest (member sort lem-sort-types))
          (view-fun (lem-ui-get-buffer-spec :view-fun))
+         (id (lem-ui-get-view-id))
          (post-p (eq view-fun #'lem-ui-view-post))
-         (user-p (eq view-fun #'lem-ui-view-user)))
-    ;; TODO: errors on user view (shoulssd work)
-    (cond (user-p
-           (let ((id (save-excursion
-                       (goto-char (point-min))
-                       (lem-ui--get-id :string))))
-             (cond ((or (equal sort (car (last lem-sort-types)))
-                        (null sort))
-                    (funcall view-fun id nil ; handle listing
-                             (car lem-sort-types)))
-                   (t
-                    (funcall view-fun id nil ; handle listing
-                             (cadr sort-rest))))))
+         (user-p (eq view-fun #'lem-ui-view-user))
+         (community-p (eq view-fun #'lem-ui-view-community)))
+    (cond ((or user-p community-p)
+           (cond ((or (equal sort (car (last lem-sort-types)))
+                      (null sort))
+                  (funcall view-fun id type
+                           (car lem-sort-types)))
+                 (t
+                  (funcall view-fun id type
+                           (cadr sort-rest)))))
           (post-p
-           (let ((id (save-excursion
-                       (goto-char (point-min))
-                       (lem-ui--get-id :string))))
-             ;; TODO: refactor sort cycling
-             (cond ((or (equal sort (car (last lem-sort-types)))
-                        (null sort))
-                    (funcall view-fun id (car lem-comment-sort-types)))
-                   (t
-                    (funcall view-fun id
-                             (cadr (member sort lem-comment-sort-types)))))))
+           (cond ((or (equal sort (car (last lem-sort-types)))
+                      (null sort))
+                  (funcall view-fun id (car lem-comment-sort-types)))
+                 (t
+                  (funcall view-fun id
+                           (cadr (member sort lem-comment-sort-types))))))
           (t
            (cond ((or (equal sort (car (last lem-sort-types)))
                       (null sort))
@@ -269,30 +273,53 @@ If current view is a post, use `lem-comment-sort-types'."
                  (t
                   (funcall view-fun type (cadr sort-rest))))))))
 
-;; TODO add view fun to buffer-spec
-(defun lem-ui-sort-or-type (sort-or-type view-fun)
+(defun lem-ui-sort-or-type (sort-or-type view-fun &optional id)
   "Reload current view, setting SORT-OR-TYPE, with VIEW-FUN."
   (let* ((type (lem-ui-get-buffer-spec :listing-type))
          (sort (lem-ui-get-buffer-spec :sort))
-         (list (if (equal sort-or-type "type")
-                   lem-listing-types
-                 lem-sort-types))
+         (post-p (eq view-fun #'lem-ui-view-post))
+         (user-p (eq view-fun #'lem-ui-view-user))
+         (sort-list (if post-p lem-comment-sort-types
+                      lem-sort-types))
+         (type-list (if user-p
+                        lem-user-view-types
+                      lem-listing-types))
+         (list (if (eq sort-or-type 'type)
+                   type-list
+                 sort-list))
          (choice (completing-read (format "View by %s" sort-or-type)
                                   list nil :match)))
-    (if (equal sort-or-type "type")
-        (funcall view-fun choice sort)
-      (funcall view-fun type choice))))
+    (if id
+        (if (eq sort-or-type 'type)
+            (funcall view-fun id choice sort)
+          (funcall view-fun id type choice))
+      (if (eq sort-or-type 'type)
+          (funcall view-fun choice sort)
+        (funcall view-fun type choice)))))
 
 ;; TODO: make for any current view:
-(defun lem-ui-choose-sort ()
-  "Read a sort type and load it."
-  (interactive)
-  (lem-ui-sort-or-type "sort" 'lem-ui-view-instance))
+(defun lem-ui-call-sort-or-type (sort-or-type)
+  "Call `lem-ui-call-or-type', with id arg if needed."
+  (let ((view-fun (lem-ui-get-buffer-spec :view-fun))
+        (id (lem-ui-get-view-id)))
+    (if (and (eq view-fun #'lem-ui-view-post)
+             (eq sort-or-type 'type))
+        (message "Post views don't have listing type.")
+      (if (or (eq view-fun #'lem-ui-view-post)
+              (eq view-fun #'lem-ui-view-user)
+              (eq view-fun #'lem-ui-view-community))
+          (lem-ui-sort-or-type sort-or-type view-fun id)
+        (lem-ui-sort-or-type sort-or-type view-fun)))))
 
 (defun lem-ui-choose-type ()
   "Read a listing-type type and load it."
   (interactive)
-  (lem-ui-sort-or-type "type" 'lem-ui-view-instance))
+  (lem-ui-call-sort-or-type 'type))
+
+(defun lem-ui-choose-sort ()
+  "Read a sort type and load it."
+  (interactive)
+  (lem-ui-call-sort-or-type 'sort))
 
 (defun lem-ui-read-type (prompt types-list)
   ""
@@ -464,9 +491,9 @@ SORT must be a member of `lem-sort-types'."
       (when (and comments
                  (< 0 .counts.comments))
         (let* ((post-id (number-to-string .post.id))
-               (comments (lem-api-get-post-comments post-id "All" sort))
-               (list (alist-get 'comments comments)))
-          (lem-ui-render-comments list "All" sort)))))) ; NB: type All, make arg?
+               (comments (lem-api-get-post-comments post-id "All" sort)))
+          ;; (list (alist-get 'comments comments)))
+          (lem-ui-render-comments comments "All" sort)))))) ; NB: type All, make arg?
 
 (defun lem-ui-render-posts (posts &optional buffer comments sort community trim)
   "Render a list of abbreviated posts POSTS in BUFFER.
@@ -525,28 +552,33 @@ SORT is the kind of sorting to use."
   "Prompt for a subscribed community and view it."
   (interactive)
   (let* ((communities ;(setq lem-test-c (car (alist-get 'communities
-
           (lem-list-communities "Subscribed"))
          (list (lem-ui--community-short-list communities))
          (choice (completing-read "Jump to community: "
                                   list))
          (id (alist-get choice list nil nil #'equal)))
-    (lem-ui-view-community id)))
+    (lem-ui-view-community id 'posts)))
 
-(defun lem-ui-view-community (id &optional type sort limit)
+(defun lem-ui-view-community (id &optional item sort limit)
   "View community with ID.
+ITEMS must be posts or comments.
 SORT must be a member of `lem-sort-types'.
-TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return."
   (let* ((community (lem-get-community id))
          (view (alist-get 'community_view community))
-         ;; TODO: do we need this also?:
-         (posts (lem-get-posts type sort limit id)) ; no sorting
-         (buf (get-buffer-create"*lem*")))
-    (lem-ui-with-buffer buf 'lem-mode t
+         (buf (get-buffer-create "*lem-community*"))
+         (items (if (eq item 'posts)
+                    (lem-get-posts nil sort limit id)
+                  (lem-get-comments nil nil nil sort limit id)))) ; no sorting
+    (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-community-header view nil :stats)
-      (lem-ui-render-posts posts buf nil sort) ; no children
-      (lem-ui-set-buffer-spec type sort #'lem-ui-view-commiunity)
+      (if (eq item 'posts)
+          (progn
+            (insert (lem-ui-format-heading "posts"))
+            (lem-ui-render-posts items buf nil sort)) ; no children
+        (insert (lem-ui-format-heading "comments"))
+        (lem-ui-render-comments items nil sort))
+      (lem-ui-set-buffer-spec item sort #'lem-ui-view-community)
       (goto-char (point-min)))))
 
 (defun lem-ui-get-community-id (community &optional string)
@@ -564,8 +596,7 @@ If STRING, return one, else number."
   "Render header details for COMMUNITY.
 BUFFER is the one to render in, a string.
 STATS are the community's stats to print."
-  ;; (let ((community (alist-get 'community_view community-view)))
-  (with-current-buffer (get-buffer-create (or buffer "*lem*"))
+  (with-current-buffer (get-buffer-create (or buffer "*lem-community*"))
     (let-alist community
       (insert
        (propertize
@@ -604,7 +635,7 @@ STATS are the community's stats to print."
                          mods " | ")
               "\n"
               lem-ui-horiz-bar
-              "\n\n"))))
+              "\n"))))
 
 (defun lem-ui-render-community-stats (subscribers posts comments)
   "."
@@ -698,9 +729,10 @@ SORT must be a member of `lem-comment-sort-types'."
   "COMMENTS
 TYPE
 SORT."
-  ;; TODO: build comment tree
-  (cl-loop for x in comments ; sorted
-           do (lem-ui-render-comment x sort)))
+  (let ((list (alist-get 'comments comments)))
+    ;; TODO: build comment tree
+    (cl-loop for x in list ;comments ; sorted
+             do (lem-ui-render-comment x sort))))
 
 ;; (setq lem-post-comments (lem-get-post-comments "1235982" "651145" "New"))
 ;; (setq lem-post-comments (lem-get-post-comments "1235982" nil "New"))
@@ -763,25 +795,24 @@ SORT."
       'type (caar json)))))
 
 (defun lem-ui-view-user (id &optional view-type sort limit)
-  "View user with ID."
+  "View user with ID.
+VIEW-TYPE must be a member of `lem-user-view-types'."
   (let ((json (lem-api-get-person-by-id id))
         (buf (get-buffer-create "*lem-user*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (let-alist json
-        ;; (setq lem-test-user json)
         (lem-ui-render-user .person_view)
-        ;; TODO: cycle view-type: Overview, comments, posts
-        (cond ((eq view-type 'posts)
+        (cond ((equal view-type "posts")
                (insert (lem-ui-format-heading "posts"))
                (lem-ui-render-posts json buf nil sort :community :trim))
-              ((eq view-type 'comments)
+              ((equal view-type "comments")
                (insert (lem-ui-format-heading "comments"))
-               (lem-ui-render-comments .comments))
+               (lem-ui-render-comments json))
               (t ; no arg: overview
                (insert (lem-ui-format-heading "overview"))
                ;; TODO: insert mixed comments/posts
                (lem-ui-render-posts json buf nil sort :community :trim)
-               (lem-ui-render-comments .comments)))
+               (lem-ui-render-comments json)))
         (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user)
         (goto-char (point-min))))))
 

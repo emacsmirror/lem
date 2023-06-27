@@ -44,6 +44,10 @@
 ;; probably every request has to be followed by an (alist-get 'object object)
 ;; call. But some return a list of objects.
 
+;; The signature of the functions aims to be like so:
+;; (function main-arg [secondary-art] &optional type sort limit page [tertiary args])
+;; so that we can reliably handle type, sort, limit, page params
+
 ;; Lemmy API methods list:
 ;; addAdmin
 ;; addModToCommunity
