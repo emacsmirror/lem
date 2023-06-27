@@ -3,7 +3,7 @@
 ;; Copyright (C) 2023  martian hiatus and mastodon.el authors
 ;; Author: martian hiatus <martianhiatus [a t] riseup [d o t] net>
 ;; Version: 0.1
-;; Package-Requires: ((emacs "28.1") (fedi "0.1") (persist "0.4"))
+;; Package-Requires: ((emacs "28.1") (fedi "0.1"))
 ;; URL: https://codeberg.org/martianh/lem
 ;; Keywords: multimedia, comm, web, fediverse
 
@@ -102,7 +102,7 @@ Load current user's instance posts."
   (interactive)
   (unless lem-auth-token
     (lem-login-set-token))
-  (lem-ui-view-instance "All" "Active")) ; add customize defaults
+  (lem-ui-view-instance "All" "Active")) ; TODO: add customize defaults
 
 (defun lem-login-set-token ()
   "Login for user NAME with PASSWORD."
