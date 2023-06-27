@@ -37,7 +37,7 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 - [ ] image loading logic (from mastodon.el)
 - [ ] timestamp logic (from mastodon.el)
 - [ ] rich compose interface (from mastodon.el)
-- [ ] comment threads (see #1)
+- [ ] comment threads (see #2)
 - [ ] =~/.authinfo.gpg=
   
 * todos DONE (UI layer)
