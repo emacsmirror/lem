@@ -76,19 +76,23 @@ NAME is not part of the symbol table, '?' is returned."
   "Get json of thing at point, comment, post, community or user."
   (get-text-property (point) 'json))
 
+(defun lem-ui--property (prop)
+  "Get text property PROP from item at point."
+  (get-text-property (point) prop))
+
+(defun lem-ui--item-type ()
+  "Return the type property of item at point."
+  (lem-ui--property 'type))
+
 (defun lem-ui--get-id (&optional string type)
   "Return id as a string, from alist KEY in JSON.
 SLOT is a symbol, either post, comment, user, or community.
 STRING means return as string, else return number.
 TYPE is the name of the ID property to get."
-  (let ((id (get-text-property (point) (or type 'id))))
+  (let ((id (lem-ui--property (or type 'id))))
     (if string
         (number-to-string id)
       id)))
-
-(defun lem-ui--item-type ()
-  "Return the type property of item at point."
-  (get-text-property (point) 'type))
 
 ;;; MACROS
 (defmacro lem-ui-with-buffer (buffer mode-fun other-window &rest body)
