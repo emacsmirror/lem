@@ -49,6 +49,7 @@
     (private   . ("🔒" . "[followers]"))
     (direct    . ("✉" . "[direct]"))
     (edited    . ("✍" . "[edited]"))
+    (upvote    . ("⬆" . "[upvotes]"))
     (person    . ("👤" . "[people]"))
     (pinned    . ("📌" . "[pinned]"))
     (replied   . ("⬇" . "↓"))
@@ -441,7 +442,7 @@ COMMUNITY and COMMUNITY-URL are those of the community the item belongs to."
     (propertize
      (concat
       " | "
-      (lem-ui-symbol 'favourite) " "
+      (lem-ui-symbol 'upvote) " "
       (number-to-string score) " | "
       timestamp
       (if (eq featured-p t)
