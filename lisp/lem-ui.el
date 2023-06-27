@@ -638,17 +638,17 @@ LIMIT is the amount of results to return."
                    (unless (lem-comment-sort-type-p sort)
                      (car lem-comment-sort-types))
                  sort))
-         (items (if (eq item 'posts)
-                    (lem-get-posts nil sort limit id)
-                  (lem-get-comments nil nil nil sort limit id)))) ; no sorting
+         (items (if (eq item 'comments)
+                    (lem-get-comments nil nil nil sort limit id)
+                  (lem-get-posts nil sort limit id)))) ; no sorting
     (lem-ui-with-buffer buf 'lem-mode nil
-      (lem-ui-render-community-header community nil :stats)
-      (if (eq item 'posts)
+      (lem-ui-render-community community nil :stats :view)
+      (if (eq item 'comments)
           (progn
-            (insert (lem-ui-format-heading "posts"))
-            (lem-ui-render-posts items buf nil sort)) ; no children
-        (insert (lem-ui-format-heading "comments"))
-        (lem-ui-render-comments items nil sort))
+            (insert (lem-ui-format-heading "comments"))
+            (lem-ui-render-comments items nil sort))
+        (insert (lem-ui-format-heading "posts"))
+        (lem-ui-render-posts items buf nil sort)) ; no children
       (lem-ui-set-buffer-spec item sort #'lem-ui-view-community)
       (goto-char (point-min)))))
 
