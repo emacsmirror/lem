@@ -203,51 +203,53 @@ LIMIT is the amount of results to return."
     (goto-char (point-min))
     (lem-ui--get-id :string)))
 
-(defun lem-ui-cycle-funcall (fun type sort call-type &optional id)
+(defun lem-ui-cycle-funcall (fun type sort call-type &optional id post-p)
   ""
   (let ((str (if (eq call-type 'listing) type sort)))
     (if id
         (progn
-          (funcall fun id type sort)
+          (if post-p
+              (funcall fun id sort)
+            (funcall fun id type sort))
           (message "%s: %s" call-type str))
       (funcall fun type sort)
       (message "%s: %s" call-type str))))
 
 (defun lem-ui-cycle-listing-type ()
-  "Cycle view between `lem-listing-types'.
+"Cycle view between `lem-listing-types'.
 For a user view, cycle between overview, posts and comments.
 For a community view, cycle between posts and comments."
-  (interactive)
-  (let* ((type (lem-ui-get-buffer-spec :listing-type))
-         (sort (lem-ui-get-buffer-spec :sort))
-         (view-fun (lem-ui-get-buffer-spec :view-fun))
-         (id (lem-ui-get-view-id))
-         (user-p (eq view-fun #'lem-ui-view-user))
-         (community-p (eq view-fun #'lem-ui-view-community)))
-    ;; TODO: refactor
-    (cond (user-p
-           (cond ((equal type "overview")
-                  (lem-ui-cycle-funcall view-fun
-                                        "posts" sort 'listing id))
-                 ((equal type "posts")
-                  (lem-ui-cycle-funcall view-fun
-                                        "comments" sort 'listing id))
-                 (t ; comments or nil
-                  (lem-ui-cycle-funcall view-fun
-                                        "overview" sort 'listing id))))
-          (community-p
-           (if (eq type 'posts)
-               (lem-ui-cycle-funcall view-fun 'comments sort 'listing id)
-             (lem-ui-cycle-funcall view-fun 'posts sort 'listing id)))
-          ;; (funcall view-fun id 'comments sort)
-          ;; (funcall view-fun id 'posts sort)))
-          (t
-           (if (or (equal type (car (last lem-listing-types)))
-                   (null type))
-               (lem-ui-cycle-funcall
-                view-fun (car lem-listing-types) sort 'listing)
+(interactive)
+(let* ((type (lem-ui-get-buffer-spec :listing-type))
+       (sort (lem-ui-get-buffer-spec :sort))
+       (view-fun (lem-ui-get-buffer-spec :view-fun))
+       (id (lem-ui-get-view-id))
+       (user-p (eq view-fun #'lem-ui-view-user))
+       (community-p (eq view-fun #'lem-ui-view-community)))
+  ;; TODO: refactor
+  (cond (user-p
+         (cond ((equal type "overview")
+                (lem-ui-cycle-funcall view-fun
+                                      "posts" sort 'listing id))
+               ((equal type "posts")
+                (lem-ui-cycle-funcall view-fun
+                                      "comments" sort 'listing id))
+               (t ; comments or nil
+                (lem-ui-cycle-funcall view-fun
+                                      "overview" sort 'listing id))))
+        (community-p
+         (if (eq type 'posts)
+             (lem-ui-cycle-funcall view-fun 'comments sort 'listing id)
+           (lem-ui-cycle-funcall view-fun 'posts sort 'listing id)))
+        ;; (funcall view-fun id 'comments sort)
+        ;; (funcall view-fun id 'posts sort)))
+        (t
+         (if (or (equal type (car (last lem-listing-types)))
+                 (null type))
              (lem-ui-cycle-funcall
-              view-fun (cadr (member type lem-listing-types)) sort 'listing))))))
+              view-fun (car lem-listing-types) sort 'listing)
+           (lem-ui-cycle-funcall
+            view-fun (cadr (member type lem-listing-types)) sort 'listing))))))
 
 (defun lem-ui-cycle-sort ()
   "Cycle view between some `lem-sort-types'
@@ -270,19 +272,22 @@ For post view, use `lem-comment-sort-types'."
                   (lem-ui-cycle-funcall view-fun type
                                         (cadr sort-rest) 'sort id))))
           (post-p
-           (cond ((or (equal sort (car (last lem-sort-types)))
+           (cond ((or (equal sort (car (last lem-comment-sort-types)))
                       (null sort))
                   (lem-ui-cycle-funcall
-                   view-fun type (car lem-comment-sort-types) 'sort id))
+                   view-fun type (car lem-comment-sort-types) 'sort id :post))
                  (t
                   (lem-ui-cycle-funcall
-                   view-fun type (cadr (member sort lem-comment-sort-types)) 'sort id))))
+                   view-fun type (cadr (member sort lem-comment-sort-types))
+                   'sort id :post))))
           (t
            (cond ((or (equal sort (car (last lem-sort-types)))
                       (null sort))
-                  (lem-ui-cycle-funcall view-fun type (car lem-sort-types) 'sort))
+                  (lem-ui-cycle-funcall
+                   view-fun type (car lem-sort-types) 'sort))
                  (t
-                  (lem-ui-cycle-funcall view-fun type (cadr sort-rest) 'sort)))))))
+                  (lem-ui-cycle-funcall
+                   view-fun type (cadr sort-rest) 'sort)))))))
 
 (defun lem-ui-sort-or-type (sort-or-type view-fun &optional id)
   "Reload current view, setting SORT-OR-TYPE, with VIEW-FUN."
