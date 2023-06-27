@@ -28,7 +28,7 @@
 
 (require 'cl-lib)
 (require 'persist)
-(require 'lem-request)
+(require 'lem-api)
 (require 'lem-ui)
 
 ;;; AUTOLOADS
@@ -96,6 +96,8 @@
   "Keymap for `lem-mode'.")
 
 ;;; ENTRYPOINT
+
+;;;###autoload
 (defun lem ()
   "Open lem, a Lemmy client.
 Load current user's instance posts."

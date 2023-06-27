@@ -148,6 +148,8 @@
 
 (setq fedi-package-prefix "lem")
 
+(defvar lem-auth-token)
+
 ;;; MACRO
 (defmacro lem-request
     (method name endpoint

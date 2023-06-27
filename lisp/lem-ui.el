@@ -29,7 +29,7 @@
 
 ;;; Code:
 
-(require 'lem-request)
+(require 'lem-api)
 
 (defvar lem-ui-horiz-bar
   (if (char-displayable-p ?―)
@@ -188,7 +188,7 @@ Optionally start from POS."
 SORT must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return."
-  (let ((posts (lem-get-instance-posts type nil limit)) ; no sort here, its below
+  (let ((posts (lem-get-posts type nil limit)) ; no sort here, its below
         (buf (get-buffer-create "*lem*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-posts posts buf nil sort :community :trim)
