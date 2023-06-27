@@ -708,6 +708,7 @@ VIEW means COMMUNITY is a community_view."
              lem-ui-horiz-bar
              "\n")
             'json community
+            'byline-top t ; next/prev hack
             'id .community.id
             'type 'community))) ;(caar community)))
         ;; stats:
