@@ -39,12 +39,13 @@ See =lem-login= and =lem-login-set-token=. Lemmy seems to just require an =auth=
 - [X] generic like/dislike cmds
 - [-] rich text rendering of content and bylines
 - [-] finish cycling of views by sort/listing-type
-- [ ] finish implementing limit
+- [-] tabstop navigation logic (from mastodon.el)
+- [-] finish implementing limit
+- [ ] "save" items and view them [like bookmarking]
 - [ ] update current buffer
 - [ ] add more to buffer
 - [ ] proper buffer naming/separation
 - [ ] pagination
-- [-] tabstop navigation logic (from mastodon.el)
 - [ ] timestamp logic (from mastodon.el)
 - [ ] rich compose interface (from mastodon.el)
 - [ ] comment threads (see #1)
