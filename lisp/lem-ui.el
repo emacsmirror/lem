@@ -194,7 +194,7 @@ SORT must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return."
   (let ((posts (lem-get-posts type sort limit)) ; sort here too?
-        (buf (get-buffer-create "*lem*")))
+        (buf (get-buffer-create "*lem-instance*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-posts posts buf nil sort :community :trim)
       (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance) ; no children
