@@ -459,8 +459,8 @@ ID is the item's id."
         (kill-buffer-and-window))
       rendered)))
 
-(defun lem-ui-render-post-body (body)
-  ""
+(defun lem-ui-render-body (body)
+  "Render post BODY as markdowned html."
   (let ((buf "*lem-md*")
         str)
     (with-temp-buffer
@@ -469,9 +469,10 @@ ID is the item's id."
       (with-current-buffer buf
         (shr-render-buffer (current-buffer))
         ;; (goto-char (point-min))
-        (re-search-forward "\n\n")
+        (re-search-forward "\n\n" nil :no-error)
         (setq str (buffer-substring (point) (point-max)))
-        (kill-buffer)))
+        (kill-buffer-and-window) ; shr's *html*
+        (kill-buffer buf))) ; our md
     str))
 
 (defun lem-ui-render-post (post &optional comments sort community trim)
@@ -484,7 +485,7 @@ SORT must be a member of `lem-sort-types'."
   (let-alist post
     (let ((url (lem-ui--render-url .post.url))
           (body (when .post.body
-                  (lem-ui-render-post-body .post.body))))
+                  (lem-ui-render-body .post.body))))
       (insert
        (propertize
         (concat
@@ -712,30 +713,28 @@ Simple means we just read a string."
   "Render single COMMENT.
 SORT must be a member of `lem-comment-sort-types'."
   (let-alist comment
-    (insert
-     (propertize
-      (concat
-       "\n"
-       (lem-ui-top-byline .creator.name
-                          .counts.score
-                          .comment.published)
-       "\n"
-       (or .comment.content "")
-       "\n"
-       (lem-ui-bt-byline .counts.child_count .comment.id)
-       "\n"
-       ;; properties to add:
-       ;; (number-to-string .post.id) "\n"
-       ;; (number-to-string .comment.creator_id) "\n"
-       ;; (number-to-string .post.community_id) "\n"
-       lem-ui-horiz-bar
-       "\n")
-      'json comment
-      'id .comment.id
-      'post-id .comment.post_id
-      'community-id .post.community-id
-      'creator-id .creator.id
-      'type (caar comment)))))
+    (let ((content (when .comment.content
+                     (lem-ui-render-body .comment.content))))
+      (insert
+       (propertize
+        (concat
+         "\n"
+         (lem-ui-top-byline .creator.name
+                            .counts.score
+                            .comment.published)
+         "\n"
+         (or content "")
+         "\n"
+         (lem-ui-bt-byline .counts.child_count .comment.id)
+         "\n"
+         lem-ui-horiz-bar
+         "\n")
+        'json comment
+        'id .comment.id
+        'post-id .comment.post_id
+        'community-id .post.community-id
+        'creator-id .creator.id
+        'type (caar comment))))))
 
 (defun lem-ui-get-comment-path (comment)
   "Get path value from COMMENT."
