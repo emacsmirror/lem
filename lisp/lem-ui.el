@@ -120,7 +120,6 @@ Within this macro call, args JSON and ID are available."
   (declare (debug 'body)
            (indent 1))
   `(let* ((json (lem-ui-thing-json))
-          ;; TODO: make generic by getting THING from JSON
           (id (lem-ui--get-id :string)))
      ,body))
 
@@ -415,7 +414,6 @@ etc.")
                                &optional community community-url featured-p)
   "Format a top byline for post with NAME, SCORE and TIMESTAMP.
 COMMUNITY and COMMUNITY-URL are those of the community the item belongs to."
-  ;; TODO: name link to user page, etc.
   (propertize
    (concat
     (propertize name
@@ -709,7 +707,6 @@ STATS are the community's stats to print."
 
 (defun lem-ui-render-community-stats (subscribers posts comments)
   "Render stats for SUBSCRIBERS, POSTS and COMMENTS."
-  ;; TODO: get symbols for these
   (let ((s (number-to-string subscribers))
         (s-sym (lem-ui-symbol 'person))
         (p (number-to-string posts))
