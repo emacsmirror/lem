@@ -700,8 +700,6 @@ VIEW means COMMUNITY is a community_view."
            .community.description
            "\n"
            lem-ui-horiz-bar
-           "\n"
-           .subscribed
            "\n")
           'json community
           'id .community.id
@@ -710,7 +708,8 @@ VIEW means COMMUNITY is a community_view."
         (when stats
           (lem-ui-render-community-stats .counts.subscribers
                                          .counts.posts
-                                         .counts.comments)))
+                                         .counts.comments))
+        (insert .subscribed "\n"))
       ;; mods:
       (let* ((mods-list (alist-get 'moderators community))
              (mods (mapcar (lambda (x)
