@@ -148,6 +148,7 @@
 
 (setq fedi-package-prefix "lem")
 
+;;;###autoload
 (defvar lem-auth-token nil
   "A user auth token for a lemmy instance.
 Logging in will set this. You can also save it in your init.el.")
