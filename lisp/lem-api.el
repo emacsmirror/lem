@@ -600,6 +600,15 @@ Returns a private_message_view."
 ;; (setq lem-post-comments (lem-get-post-comments "1235982"))
 ;; (setq lem-comm (lem-community-posts "14856"))
 
+;;; SAVING
+
+(lem-request "put" "save-post" "post/save"
+  (post-id)
+  "Save post with POST-ID, a number."
+  (post-id)
+  ("save" . t)
+  nil :json)
+
 ;; eg ids:
 ;; emacs community: 14856
 ;; a post: 1235982 (emacs lemmy client?)
