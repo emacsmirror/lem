@@ -687,23 +687,25 @@ VIEW means COMMUNITY is a community_view."
                      community)))
     (with-current-buffer (get-buffer-create (or buffer "*lem-community*"))
       (let-alist community
-        (insert
-         (propertize
-          (concat
-           (propertize .community.title
-                       'face '(:weight bold))
-           " | "
-           (lem-ui-font-lock-comment .community.name)
-           "\n"
-           (lem-ui-font-lock-comment .community.actor_id)
-           "\n"
-           .community.description
-           "\n"
-           lem-ui-horiz-bar
-           "\n")
-          'json community
-          'id .community.id
-          'type 'community)) ;(caar community)))
+        (let ((desc (lem-ui-render-body .community.description)))
+          (insert
+           (propertize
+            (concat
+             (propertize .community.title
+                         'face '(:weight bold))
+             " | "
+             (lem-ui-font-lock-comment .community.name)
+             "\n"
+             (lem-ui-font-lock-comment .community.actor_id)
+             "\n"
+             desc
+             ;; .community.description
+             "\n"
+             lem-ui-horiz-bar
+             "\n")
+            'json community
+            'id .community.id
+            'type 'community))) ;(caar community)))
         ;; stats:
         (when stats
           (lem-ui-render-community-stats .counts.subscribers
