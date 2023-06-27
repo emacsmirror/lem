@@ -142,7 +142,7 @@ LISTING-TYPE must be member of `lem-listing-types'."
 ;;; NAV
 
 (defun lem--goto-pos (fun &optional refresh pos)
-  "Search for toot with FUN.
+  "Search for item with FUN.
 If search returns nil, execute REFRESH function.
 Optionally start from POS."
   (let* ((npos (funcall fun
@@ -422,7 +422,8 @@ etc.")
 (defun lem-ui-top-byline (name score timestamp
                                &optional community community-url featured-p)
   "Format a top byline for post with NAME, SCORE and TIMESTAMP.
-COMMUNITY and COMMUNITY-URL are those of the community the item belongs to."
+COMMUNITY and COMMUNITY-URL are those of the community the item belongs to.
+FEATURED-P means the item is pinned."
   (propertize
    (concat
     (propertize name
@@ -564,7 +565,8 @@ TRIM means trim each post for length."
                do (lem-ui-render-post x comments sort community trim)))))
 
 (defun lem-ui-save-item ()
-  ""
+  "Save item at point.
+Saved items can be viewed in your profile, like bookmarks."
   (let ((id (lem-ui--get-id))
         (type (lem-ui--item-type)))
     (cond ((eq type 'post)
