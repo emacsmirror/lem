@@ -50,6 +50,7 @@
     (direct    . ("✉" . "[direct]"))
     (edited    . ("✍" . "[edited]"))
     (person    . ("👤" . "[people]"))
+    (pinned    . ("📌" . "[pinned]"))
     (replied   . ("⬇" . "↓"))
     (reply-bar . ("┃" . "|")))
   "A set of symbols (and fallback strings) to be used in timeline.
@@ -411,7 +412,7 @@ etc.")
            (lem-ui-view-user creator-id)))))
 
 (defun lem-ui-top-byline (name score timestamp
-                               &optional community community-url)
+                               &optional community community-url featured-p)
   "Format a top byline for post with NAME, SCORE and TIMESTAMP.
 COMMUNITY and COMMUNITY-URL are those of the community the item belongs to."
   ;; TODO: name link to user page, etc.
@@ -444,7 +445,11 @@ COMMUNITY and COMMUNITY-URL are those of the community the item belongs to."
       " | "
       (lem-ui-symbol 'favourite) " "
       (number-to-string score) " | "
-      timestamp)
+      timestamp
+      (if (eq featured-p t)
+          (concat " | "
+                  (lem-ui-symbol 'pinned))
+        ""))
      'face font-lock-comment-face))
    'byline-top t))
 
@@ -507,7 +512,8 @@ SORT must be a member of `lem-sort-types'."
                             .counts.score
                             .post.published
                             (when community .community.name)
-                            (when community .community.actor_id))
+                            (when community .community.actor_id)
+                            .post.featured_local)
          "\n"
          (propertize .post.name
                      'face '(:weight bold))
