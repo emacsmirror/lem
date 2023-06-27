@@ -459,6 +459,21 @@ ID is the item's id."
         (kill-buffer-and-window))
       rendered)))
 
+(defun lem-ui-render-post-body (body)
+  ""
+  (let ((buf "*lem-md*")
+        str)
+    (with-temp-buffer
+      (insert body)
+      (markdown-standalone buf)
+      (with-current-buffer buf
+        (shr-render-buffer (current-buffer))
+        ;; (goto-char (point-min))
+        (re-search-forward "\n\n")
+        (setq str (buffer-substring (point) (point-max)))
+        (kill-buffer)))
+    str))
+
 (defun lem-ui-render-post (post &optional comments sort community trim)
   ;; NB trim both in instance and community views
   ;; NB show community info in instance and in post views
@@ -467,7 +482,9 @@ Optionally render its COMMENTS. Optionally render post's COMMUNITY.
 Optionally TRIM post length.
 SORT must be a member of `lem-sort-types'."
   (let-alist post
-    (let ((url (lem-ui--render-url .post.url)))
+    (let ((url (lem-ui--render-url .post.url))
+          (body (when .post.body
+                  (lem-ui-render-post-body .post.body))))
       (insert
        (propertize
         (concat
@@ -486,8 +503,8 @@ SORT must be a member of `lem-sort-types'."
            "")
          (if .post.body
              (if trim
-                 (string-limit .post.body 400)
-               .post.body)
+                 (string-limit body 400)
+               body)
            "")
          "\n"
          (lem-ui-bt-byline .counts.comments .post.id)
