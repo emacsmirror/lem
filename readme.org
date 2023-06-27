@@ -14,7 +14,11 @@ New endpoints are trivial to add with the =lem-request= macro.
 
 * Logging in
 
-See =lem-login= and =lem-login-set-token=. Lemmy seems to just require an =auth= parameter with a token you receive as a response to logging in. Currently this token is saved to the persistent variable =lem-auth-token=, which is probably not smart, but it's easy. Lemmy does not yet have OAuth implemented.
+See =lem-login= and =lem-login-set-token=. Lemmy has not yet implemented OAUth and only requires an =auth= parameter with a token that you receive as a response to logging in with username and password. If you log in with =lem.el=, =lem-auth-token= will be set to the value of the token received. You can then set it in your init file to not have to log in again.
+
+* NB: API instability
+
+The Lemmy developers have clearly stated that the current API version, v3, is unstable and will likely be subject to breaking changes. This will mean =lem.el= will have to play catch-up as things change.
 
 * dependency
 
