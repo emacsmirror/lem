@@ -182,13 +182,13 @@ Optionally start from POS."
 
 ;;; INSTANCE
 
-;; TODO: toggle posts or comments, and cycle Local, All, or Subscribed
+;; TODO: toggle posts or comments
 (defun lem-ui-view-instance (&optional type sort limit)
   "View posts of current user's home instance.
 SORT must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return."
-  (let ((posts (lem-get-posts type nil limit)) ; no sort here, its below
+  (let ((posts (lem-get-posts type sort limit)) ; sort here too?
         (buf (get-buffer-create "*lem*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-posts posts buf nil sort :community :trim)
