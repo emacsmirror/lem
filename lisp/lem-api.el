@@ -128,8 +128,8 @@
 ;; resolveObject
 ;; resolvePostReport
 ;; resolvePrivateMessageReport
-;; saveComment
-;; savePost
+;; saveComment DONE
+;; savePost DONE
 ;; saveUserSettings
 ;; search DONE
 ;; transferCommunity
@@ -156,7 +156,7 @@ Logging in will set this. You can also save it in your init.el.")
 ;;; MACRO
 (defmacro lem-request
     (method name endpoint
-            &optional args docstring params man-params json headers unauthorized)
+            &optional args docstring params man-params opt-bools json headers unauthorized)
   "Create http request function NAME, using http METHOD, for ENDPOINT.
 ARGS are for the function.
 PARAMS is an alist of form parameters to send with the request.
@@ -173,7 +173,8 @@ See `fedi-request'."
      ;; add auth param to manual-params:
      ,(unless unauthorized
         (append `(("auth" . ,lem-auth-token))
-                man-params))
+                `(,man-params)))
+     ,opt-bools
      ,json ,headers))
 
 ;;; INSTANCES
@@ -247,15 +248,24 @@ LIMIT and PAGE are numbers."
   (username-or-email password)
   "Log in to `fedi-instance-url' with NAME and PASSWORD."
   (username-or-email password)
-  nil
+  nil nil
   :json nil :unauthed)
 
 ;;; USERS / PERSON
 (lem-request "get" "get-person" "user"
-  (&optional username person-id sort limit page community-id) ; saved_only
+  (&optional username person-id sort limit page community-id saved-only)
   "Get person with ID.
 Returns a person_view, comments, posts, moderates objects."
-  (username person-id sort limit page community-id))
+  (username person-id sort limit page community-id)
+  nil
+  (saved-only)) ; TODO: optional manual params!
+
+;; ("saved_only" "true")
+(defun lem-api-get-person-saved-only (person-id)
+  ""
+  (lem-get-person nil person-id nil nil nil nil "true"))
+
+;; (setq lem-saved-only-test (lem-api-get-person-saved-only "8511"))
 
 (defun lem-api-get-person-by-id (person-id &optional sort limit page)
   ""
@@ -265,10 +275,10 @@ Returns a person_view, comments, posts, moderates objects."
   ""
   (lem-get-person username nil sort limit page))
 
-;; (lem-get-person-by-id "8511")
+;; (lem-api-get-person-by-id "8511")
 ;; (lem-get-person-by-id "899775")
 
-;; (setq lem-user-me (lem-get-person-by-name "blawsybogsy"))
+;; (setq lem-user-me (lem-api-get-person-by-name "blawsybogsy"))
 
 ;; TODO: block user
 
@@ -312,8 +322,8 @@ discussion_languages, default_post_language."
   "Follow a community with COMMUNITY-ID.
 Returns a community_view and discussion_languages."
   (community-id)
-  (("follow" . t))
-  :json)
+  ("follow" . t)
+  nil :json)
 
 ;; (lem-follow-community 14711)
 
@@ -333,8 +343,7 @@ Returns a community_view and discussion_languages."
 Returns a community_view and discussion_languages."
   (name title banner description discussion-languages
         icon nsfw posting-restricted-to-mods)
-  nil
-  :json)
+  nil nil :json)
 
 ;; (lem-create-community "communeity" "com")
 
@@ -343,8 +352,8 @@ Returns a community_view and discussion_languages."
   "Delete community with COMMUNITY-ID, a number.
 Returns a community_view and discussion_languages."
   (community-id)
-  (("deleted" . t))
-  :json)
+  ("deleted" . t)
+  nil :json)
 
 ;; (lem-delete-community 98302)
 
@@ -354,8 +363,8 @@ Returns a community_view and discussion_languages."
   (community-id)
   "Block community with COMMUNITY-ID"
   (community-id)
-  (("block" . t))
-  :json)
+  ("block" . t)
+  nil :json)
 
 ;; (lem-block-community 96200)
 
@@ -409,8 +418,7 @@ BODY is the post's content. URL is its link.
 NSFW and HONEYPOT not yet implemented.
 Returns a post_view."
   (name community-id body url nsfw honeypot language-id)
-  nil
-  :json)
+  nil nil :json)
 
 ;; (lem-create-post "tootle on" 96200 "hooley-dooley") ; always cross-posts?
 
@@ -427,8 +435,7 @@ Returns a post_view."
 SCORE is a number, either 0, 1 to upvote, and -1 to downvote.
 Returns a post_view."
   (post-id score)
-  nil
-  :json)
+  nil nil :json)
 
 ;; (lem-like-post 1341246 1)
 
@@ -437,8 +444,7 @@ Returns a post_view."
   "Edit post with ID, giving it a NEW-NAME, and NEW-BODY and NEW-URL.
 Returns a post_view."
   (post-id name body url) ; nsfw url lang-id
-  nil
-  :json)
+  nil nil :json)
 
 ;; (lem-edit-post 1341246 "blaodh" "trep")
 
@@ -446,8 +452,8 @@ Returns a post_view."
   (post-id)
   ""
   (post-id)
-  (("deleted" . t))
-  :json)
+  ("deleted" . t)
+  nil :json)
 
 ;; (lem-delete-post 1341246)
 
@@ -456,8 +462,7 @@ Returns a post_view."
   "Report post with ID to instance moderator, giving REASON, a string.
 Returns a post_report_view."
   (post-id reason)
-  nil
-  :json)
+  nil nil :json)
 
 ;;; COMMENTS
 ;; <https://join-lemmy.org/api/interfaces/GetComments.html>
@@ -477,8 +482,7 @@ Returns a comment_view, recipient_ids, and form_id."
 PARENT-ID is the parent comment to reply to.
 Returns a comment_view, recipient_ids, and form_id."
   (post-id content parent-id)
-  nil
-  :json)
+  nil nil :json)
 
 ;; (lem-create-comment 1341246 "replying via lem.el")
 
@@ -542,8 +546,7 @@ LIMIT is the amount of results to return."
 To get the old text for editing, you first need to fetch the comment.
 Returns a comment_view, recipient_ids, and form_id."
   (comment-id content)
-  nil
-  :json)
+  nil nil :json)
 
 ;; (lem-edit-comment 765662 "tasdfl;k")
 
@@ -553,8 +556,7 @@ Returns a comment_view, recipient_ids, and form_id."
 SCORE is a number, either 0, 1 to upvote, and -1 to downvote.
 Returns a comment_view."
   (comment-id score)
-  nil
-  :json)
+  nil nil :json)
 
 ;; (lem-like-comment 765662 1)
 
@@ -562,8 +564,8 @@ Returns a comment_view."
   (comment-id)
   ""
   (comment-id)
-  (("deleted" . t))
-  :json)
+  ("deleted" . t)
+  nil :json)
 
 ;; (lem-delete-comment 765662)
 
@@ -572,8 +574,7 @@ Returns a comment_view."
   "Report comment with ID to instance moderator, giving REASON, a string.
 Returns comment_report_view."
   (comment-id reason)
-  nil
-  :json)
+  nil nil :json)
 
 ;; (lem-report-comment 765662 "test") ; broken
 
@@ -591,8 +592,7 @@ Returns private_messages."
   "Sent a private message CONTENT to user with RECIPIENT-ID.
 Returns a private_message_view."
   (content recipient-id)
-  nil
-  :json)
+  nil nil :json)
 
 ;; (lem-send-private-message "test" 899775)
 

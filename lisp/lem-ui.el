@@ -321,7 +321,6 @@ ID is the main view item's id."
           (funcall view-fun choice sort)
         (funcall view-fun type choice)))))
 
-;; TODO: make for any current view:
 (defun lem-ui-call-sort-or-type (sort-or-type)
   "Call `lem-ui-call-or-type', with id arg if needed.
 SORT-OR-TYPE is either sort or type."
