@@ -148,7 +148,9 @@
 
 (setq fedi-package-prefix "lem")
 
-(defvar lem-auth-token)
+(defvar lem-auth-token nil
+  "A user auth token for a lemmy instance.
+Logging in will set this. You can also save it in your init.el.")
 
 ;;; MACRO
 (defmacro lem-request
@@ -537,7 +539,7 @@ LIMIT is the amount of results to return."
   (comment-id content)
   "Edit comment with ID, providing content NEW-STR.
 To get the old text for editing, you first need to fetch the comment.
-  Returns a comment_view, recipient_ids, and form_id."
+Returns a comment_view, recipient_ids, and form_id."
   (comment-id content)
   nil
   :json)

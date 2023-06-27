@@ -34,9 +34,7 @@
 
 
 ;;; VARS
-(defvar lem-auth-token ""
-  "A user auth token for a lemmy instance.
-Logging in will set this. You can also save it in your init.el.")
+(defvar lem-auth-token)
 
 ;;; TYPES
 (defconst lem-listing-types
@@ -112,7 +110,7 @@ Load current user's instance posts."
   (let* ((name (read-string "Username: "))
          (password (read-string "Password: "))
          (json (lem-login name password)))
-    (setq lem-auth-token (alist-get 'jwt json)))) ;
+    (setq lem-auth-token (alist-get 'jwt json))))
 
 
 (define-derived-mode lem-mode special-mode "lem"
