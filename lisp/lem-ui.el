@@ -792,20 +792,30 @@ SORT."
            (str (number-to-string post)))
       (lem-ui-view-post str))))
 
-(defun lem-ui-like-comment-at-point (&optional dislike)
+;;; LIKES / VOTES
+
+(defun lem-ui-like-item (&optional dislike)
   "Like (upvote) item at point.
+TYPE is either post or comment
 If DISLIKE, dislike (downvote) it."
   (interactive)
-  (lem-ui-with-id ; FIXME: make generic so this works for posts
-      ;; TODO: feedback needed!
-      (lem-like-comment
-       (string-to-number id) ; this sucks: we convert and convert back.
-       (if dislike -1 1))))
+  (lem-ui-with-id
+      (let* ((type (get-text-property (point) 'type))
+             (fun (if (eq type 'post)
+                      #'lem-like-post
+                    #'lem-like-comment))
+             (id (string-to-number id))
+             (score (if dislike -1 1)))
+        (if (or (eq type 'post)
+                (eq type 'comment))
+            (progn (funcall fun id score)
+                   (message "%s %s %sliked!" type id (if dislike "dis" "")))
+          (message "No post or comment at point?")))))
 
-(defun lem-ui-dislike-comment-at-point ()
+(defun lem-ui-dislike-item ()
   "Dislike (downvote) item at point."
   (interactive)
-  (lem-ui-like-comment-at-point :dislike))
+  (lem-ui-like-item :dislike))
 
 ;;; USERS
 
