@@ -153,12 +153,12 @@ Optionally start from POS."
       (funcall refresh))))
 
 (defun lem-next-item ()
-  ""
+  "Move to next item."
   (interactive)
   (lem--goto-pos #'next-single-property-change))
 
 (defun lem-prev-item ()
-  ""
+  "Move to prev item."
   (interactive)
   (lem--goto-pos #'previous-single-property-change))
 
@@ -204,7 +204,9 @@ LIMIT is the amount of results to return."
     (lem-ui--get-id :string)))
 
 (defun lem-ui-cycle-funcall (fun type sort call-type &optional id post-p)
-  ""
+  "Cal FUN with args TYPE SORT and ID.
+CALL-TYPE is listing or sort.
+POST-P means we are cycling a post view (which has no type)."
   (let ((str (if (eq call-type 'listing) type sort)))
     (if id
         (progn
@@ -253,7 +255,7 @@ For a community view, cycle between posts and comments."
             view-fun (cadr (member type lem-listing-types)) sort 'listing))))))
 
 (defun lem-ui-cycle-sort ()
-  "Cycle view between some `lem-sort-types'
+  "Cycle view between some `lem-sort-types'.
 For post view, use `lem-comment-sort-types'."
   (interactive)
   (let* ((type (lem-ui-get-buffer-spec :listing-type))
@@ -291,7 +293,8 @@ For post view, use `lem-comment-sort-types'."
                    view-fun type (cadr sort-rest) 'sort)))))))
 
 (defun lem-ui-sort-or-type (sort-or-type view-fun &optional id)
-  "Reload current view, setting SORT-OR-TYPE, with VIEW-FUN."
+  "Reload current view, setting SORT-OR-TYPE, with VIEW-FUN.
+ID is the main view item's id."
   (let* ((type (lem-ui-get-buffer-spec :listing-type))
          (sort (lem-ui-get-buffer-spec :sort))
          (post-p (eq view-fun #'lem-ui-view-post))
@@ -316,7 +319,8 @@ For post view, use `lem-comment-sort-types'."
 
 ;; TODO: make for any current view:
 (defun lem-ui-call-sort-or-type (sort-or-type)
-  "Call `lem-ui-call-or-type', with id arg if needed."
+  "Call `lem-ui-call-or-type', with id arg if needed.
+SORT-OR-TYPE is either sort or type."
   (let ((view-fun (lem-ui-get-buffer-spec :view-fun))
         (id (lem-ui-get-view-id)))
     (if (and (eq view-fun #'lem-ui-view-post)
@@ -339,7 +343,7 @@ For post view, use `lem-comment-sort-types'."
   (lem-ui-call-sort-or-type 'sort))
 
 (defun lem-ui-read-type (prompt types-list)
-  ""
+  "Read a choice from TYPES-LIST using PROMPT."
   (completing-read prompt
                    types-list nil :match))
 
@@ -392,7 +396,7 @@ highlighting, mouse click action tabbing to next/previous link
 etc.")
 
 (defun lem-ui--follow-link-at-point ()
-  ""
+  "Follow link at point."
   (interactive)
   (let ((id (lem-ui--get-id :string 'id))
         (creator-id (lem-ui--get-id :string 'creator-id))
@@ -531,10 +535,12 @@ SORT must be a member of `lem-sort-types'."
           (lem-ui-render-comments comments "All" sort)))))) ; NB: type All, make arg?
 
 (defun lem-ui-render-posts (posts &optional buffer comments sort community trim)
-  "Render a list of abbreviated posts POSTS in BUFFER.
+  "Render a list of posts POSTS in BUFFER.
 Used for instance, communities, posts, and users.
 COMMENTS means also show post comments.
-SORT is the kind of sorting to use."
+SORT is the kind of sorting to use.
+COMMUNITY means display what community it was posted to.
+TRIM means trim each post for length."
   (let ((list (alist-get 'posts posts))
         (buf (or buffer (get-buffer-create "*lem*"))))
     (with-current-buffer buf
@@ -544,7 +550,9 @@ SORT is the kind of sorting to use."
 ;;; COMMUNITIES
 
 (defun lem-ui-view-communities (&optional type sort)
-  "View communities, subscribed to by the logged in user."
+  "View communities, subscribed to by the logged in user.
+TYPE must be one of `lem-listing-types'.
+SORT must be one of `lem-sort-types'."
   (interactive)
   (let* ((type (or type (completing-read "View communities: "
                                          lem-listing-types)))
@@ -678,7 +686,7 @@ STATS are the community's stats to print."
               "\n"))))
 
 (defun lem-ui-render-community-stats (subscribers posts comments)
-  "."
+  "Render stats for SUBSCRIBERS, POSTS and COMMENTS."
   ;; TODO: get symbols for these
   (let ((s (number-to-string subscribers))
         (s-sym (lem-ui-symbol 'person))
@@ -764,7 +772,7 @@ SORT must be a member of `lem-comment-sort-types'."
            collect path-split))
 
 (defun lem-ui-render-comments (comments &optional type sort)
-  "COMMENTS
+  "Render COMMENTS.
 TYPE
 SORT."
   (let ((list (alist-get 'comments comments)))
@@ -785,7 +793,8 @@ SORT."
       (lem-ui-view-post str))))
 
 (defun lem-ui-like-comment-at-point (&optional dislike)
-  ""
+  "Like (upvote) item at point.
+If DISLIKE, dislike (downvote) it."
   (interactive)
   (lem-ui-with-id ; FIXME: make generic so this works for posts
       ;; TODO: feedback needed!
@@ -794,10 +803,9 @@ SORT."
        (if dislike -1 1))))
 
 (defun lem-ui-dislike-comment-at-point ()
-  "."
+  "Dislike (downvote) item at point."
   (interactive)
   (lem-ui-like-comment-at-point :dislike))
-
 
 ;;; USERS
 
@@ -834,7 +842,9 @@ SORT."
 
 (defun lem-ui-view-user (id &optional view-type sort limit)
   "View user with ID.
-VIEW-TYPE must be a member of `lem-user-view-types'."
+VIEW-TYPE must be a member of `lem-user-view-types'.
+SORT must be a member of `lem-sort-types'.
+LIMIT is max items to show."
   (let ((json (lem-api-get-person-by-id id sort limit))
         (buf (get-buffer-create "*lem-user*")))
     (lem-ui-with-buffer buf 'lem-mode nil
