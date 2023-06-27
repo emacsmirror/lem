@@ -24,8 +24,25 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 
 =lem= depends on [[https://codeberg.org/martianh/fedi.el][fedi.el]], a library to make writing a library of API requests easier.
 
-* TODOS (UI layer)
+* TODOS / doing (UI layer)
 
+- [ ] improve rich text rendering of content and bylines
+- [-] tabstop navigation logic (from mastodon.el)
+- [-] finish implementing limit
+- [ ] view saved items
+- [ ] update current buffer
+- [ ] add more to buffer
+- [ ] proper buffer naming/separation
+- [ ] pagination
+- [ ] image loading logic (from mastodon.el)
+- [ ] timestamp logic (from mastodon.el)
+- [ ] rich compose interface (from mastodon.el)
+- [ ] comment threads (see #1)
+- [ ] =~/.authinfo.gpg=
+  
+* todos DONE (UI layer)
+
+- [X] finish cycling of views by sort/listing-type
 - [X] view instance
 - [X] list communities
 - [X] view community
@@ -41,20 +58,8 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 - [X] prev/next item
 - [X] render post/comment body as markdown
 - [X] generic like/dislike cmds
-- [-] rich text rendering of content and bylines
-- [-] finish cycling of views by sort/listing-type
-- [-] tabstop navigation logic (from mastodon.el)
-- [-] finish implementing limit
-- [ ] "save" items and view them [like bookmarking]
-- [ ] update current buffer
-- [ ] add more to buffer
-- [ ] proper buffer naming/separation
-- [ ] pagination
-- [ ] timestamp logic (from mastodon.el)
-- [ ] rich compose interface (from mastodon.el)
-- [ ] comment threads (see #1)
-- [ ] =~/.authinfo.gpg=
-  
+- [X] "save" items [bookmarking]
+
 * lem commands index
 #+BEGIN_SRC emacs-lisp :results table :colnames '("Binding" "Command" "Description") :exports results
   (let ((rows))
