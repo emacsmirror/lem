@@ -739,7 +739,7 @@ SORT must be a member of `lem-comment-sort-types'."
         'json comment
         'id .comment.id
         'post-id .comment.post_id
-        'community-id .post.community-id
+        'community-id .post.community_id
         'creator-id .creator.id
         'type (caar comment))))))
 
