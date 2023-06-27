@@ -580,8 +580,8 @@ Saved items can be viewed in your profile, like bookmarks."
 
 ;;; COMMUNITIES
 
-(defun lem-ui-view-subscribed (&optional type sort)
-  "View communities, subscribed to by the logged in user.
+(defun lem-ui-view-communities (&optional type sort)
+  "View Lemmy communities.
 TYPE must be one of `lem-listing-types'.
 SORT must be one of `lem-sort-types'."
   (interactive)
@@ -591,7 +591,7 @@ SORT must be one of `lem-sort-types'."
                                          lem-sort-types)))
          (json (lem-list-communities type sort))
          (list (alist-get 'communities json))
-         (buffer (format "*lem-communities-%s*" (downcase type))))
+         (buffer (format "*lem-communities*")))
     (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode nil
       (cl-loop for c in list
                for id = (alist-get 'id (alist-get 'community c))
@@ -687,7 +687,11 @@ VIEW means COMMUNITY is a community_view."
                      community)))
     (with-current-buffer (get-buffer-create (or buffer "*lem-community*"))
       (let-alist community
-        (let ((desc (lem-ui-render-body .community.description)))
+        (let ((desc (if view
+                        (when .community.description
+                          (lem-ui-render-body .community.description))
+                      (when .description
+                        (lem-ui-render-body .description)))))
           (insert
            (propertize
             (concat
