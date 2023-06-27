@@ -218,41 +218,41 @@ POST-P means we are cycling a post view (which has no type)."
       (message "%s: %s" call-type str))))
 
 (defun lem-ui-cycle-listing-type ()
-"Cycle view between `lem-listing-types'.
+  "Cycle view between `lem-listing-types'.
 For a user view, cycle between overview, posts and comments.
 For a community view, cycle between posts and comments."
-(interactive)
-(let* ((type (lem-ui-get-buffer-spec :listing-type))
-       (sort (lem-ui-get-buffer-spec :sort))
-       (view-fun (lem-ui-get-buffer-spec :view-fun))
-       (id (lem-ui-get-view-id))
-       (user-p (eq view-fun #'lem-ui-view-user))
-       (post-p (eq view-fun #'lem-ui-view-post))
-       (community-p (eq view-fun #'lem-ui-view-community)))
-  ;; TODO: refactor
-  (cond (user-p
-         (cond ((equal type "overview")
-                (lem-ui-cycle-funcall view-fun
-                                      "posts" sort 'listing id))
-               ((equal type "posts")
-                (lem-ui-cycle-funcall view-fun
-                                      "comments" sort 'listing id))
-               (t ; comments or nil
-                (lem-ui-cycle-funcall view-fun
-                                      "overview" sort 'listing id))))
-        (community-p
-         (if (eq type 'posts)
-             (lem-ui-cycle-funcall view-fun 'comments sort 'listing id)
-           (lem-ui-cycle-funcall view-fun 'posts sort 'listing id)))
-        (post-p
-         (message "Post views don't have listing type."))
-        (t
-         (if (or (equal type (car (last lem-listing-types)))
-                 (null type))
+  (interactive)
+  (let* ((type (lem-ui-get-buffer-spec :listing-type))
+         (sort (lem-ui-get-buffer-spec :sort))
+         (view-fun (lem-ui-get-buffer-spec :view-fun))
+         (id (lem-ui-get-view-id))
+         (user-p (eq view-fun #'lem-ui-view-user))
+         (post-p (eq view-fun #'lem-ui-view-post))
+         (community-p (eq view-fun #'lem-ui-view-community)))
+    ;; TODO: refactor
+    (cond (user-p
+           (cond ((equal type "overview")
+                  (lem-ui-cycle-funcall view-fun
+                                        "posts" sort 'listing id))
+                 ((equal type "posts")
+                  (lem-ui-cycle-funcall view-fun
+                                        "comments" sort 'listing id))
+                 (t ; comments or nil
+                  (lem-ui-cycle-funcall view-fun
+                                        "overview" sort 'listing id))))
+          (community-p
+           (if (eq type 'posts)
+               (lem-ui-cycle-funcall view-fun 'comments sort 'listing id)
+             (lem-ui-cycle-funcall view-fun 'posts sort 'listing id)))
+          (post-p
+           (message "Post views don't have listing type."))
+          (t
+           (if (or (equal type (car (last lem-listing-types)))
+                   (null type))
+               (lem-ui-cycle-funcall
+                view-fun (car lem-listing-types) sort 'listing)
              (lem-ui-cycle-funcall
-              view-fun (car lem-listing-types) sort 'listing)
-           (lem-ui-cycle-funcall
-            view-fun (cadr (member type lem-listing-types)) sort 'listing))))))
+              view-fun (cadr (member type lem-listing-types)) sort 'listing))))))
 
 (defun lem-ui-cycle-sort ()
   "Cycle view between some `lem-sort-types'.
