@@ -35,6 +35,8 @@ See =lem-login= and =lem-login-set-token=. Lemmy seems to just require an =auth=
 - [X] subscribe to community
 - [X] search by type: user, community, post, comment, all
 - [X] prev/next item
+- [X] render post body as markdown
+- [-] rich text rendering of content and bylines
 - [-] finish cycling of views by sort/listing-type
 - [ ] finish implementing limit
 - [ ] update current buffer
@@ -42,7 +44,6 @@ See =lem-login= and =lem-login-set-token=. Lemmy seems to just require an =auth=
 - [ ] proper buffer naming/separation
 - [ ] pagination
 - [ ] generic like/dislike cmds
-- [ ] rich text rendering of content and bylines
 - [ ] tabstop navigation logic (from mastodon.el)
 - [ ] timestamp logic (from mastodon.el)
 - [ ] rich compose interface (from mastodon.el)
@@ -87,7 +88,9 @@ See =lem-login= and =lem-login-set-token=. Lemmy seems to just require an =auth=
 |         | lem-mode                               | Major mode for Lemmy, the federated link-aggregator and forum. |
 | n       | lem-next-item                          |                                                                |
 | p       | lem-prev-item                          |                                                                |
+|         | lem-ui--follow-link-at-point           |                                                                |
 |         | lem-ui-choose-sort                     | Read a sort type and load it.                                  |
+|         | lem-ui-choose-sort-or-type             | Read a sort type and load it.                                  |
 |         | lem-ui-choose-type                     | Read a listing-type type and load it.                          |
 |         | lem-ui-cycle-instance-view-type        | Cycle instance view between view listing types.                |
 | C-c C-c | lem-ui-cycle-listing-type              | Cycle view between `lem-listing-types'.                        |
