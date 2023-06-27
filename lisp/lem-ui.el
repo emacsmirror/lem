@@ -597,9 +597,10 @@ LIMIT is the amount of results to return."
          (view (alist-get 'community_view community))
          (buf (get-buffer-create "*lem-community*"))
          ;; in case we set community posts, then switch to comments:
-         (sort (when (eq item 'comments)
-                 (unless (lem-comment-sort-type-p sort)
-                   (car lem-comment-sort-types))))
+         (sort (if (eq item 'comments)
+                   (unless (lem-comment-sort-type-p sort)
+                     (car lem-comment-sort-types))
+                 sort))
          (items (if (eq item 'posts)
                     (lem-get-posts nil sort limit id)
                   (lem-get-comments nil nil nil sort limit id)))) ; no sorting
