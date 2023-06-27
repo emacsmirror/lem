@@ -579,17 +579,17 @@ SORT must be one of `lem-sort-types'."
   (interactive)
   (let* ((type (or type (completing-read "View communities: "
                                          lem-listing-types)))
-         (sort (or sort (completing-read "Sorted by: "
+         (sort (or sort (completing-read "Sorted by: " ; or custom default
                                          lem-sort-types)))
          (json (lem-list-communities type sort))
          (list (alist-get 'communities json))
-         (buffer (format "*lem-" (downcase type) "-communities*")))
-    (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode t
+         (buffer (format "*lem-communities-%s*" (downcase type))))
+    (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode nil
       (cl-loop for c in list
                for id = (alist-get 'id (alist-get 'community c))
                for view = (lem-get-community (number-to-string id) nil)
-               for community = (alist-get 'community_view view)
-               do (lem-ui-render-community-header community buffer :stats))
+               ;; for community = (alist-get 'community_view view)
+               do (lem-ui-render-community-header view buffer :stats))
       (goto-char (point-min)))))
 
 (defun lem-ui-subscribe-to-community-at-point ()
@@ -642,7 +642,7 @@ LIMIT is the amount of results to return."
                     (lem-get-posts nil sort limit id)
                   (lem-get-comments nil nil nil sort limit id)))) ; no sorting
     (lem-ui-with-buffer buf 'lem-mode nil
-      (lem-ui-render-community-header view nil :stats)
+      (lem-ui-render-community-header community nil :stats)
       (if (eq item 'posts)
           (progn
             (insert (lem-ui-format-heading "posts"))
@@ -668,7 +668,7 @@ If STRING, return one, else number."
 BUFFER is the one to render in, a string.
 STATS are the community's stats to print."
   (with-current-buffer (get-buffer-create (or buffer "*lem-community*"))
-    (let-alist community
+    (let-alist (alist-get 'community_view community)
       (insert
        (propertize
         (concat
@@ -677,17 +677,17 @@ STATS are the community's stats to print."
          " | "
          (lem-ui-font-lock-comment .community.name)
          "\n"
-         .community.description
-         "\n"
          (lem-ui-font-lock-comment .community.actor_id)
          "\n"
-         .subscribed
+         .community.description
          "\n"
          lem-ui-horiz-bar
+         "\n"
+         .subscribed
          "\n")
         'json community
         'id .community.id
-        'type (caar community)))
+        'type 'community)) ;(caar community)))
       ;; stats:
       (when stats
         (lem-ui-render-community-stats .counts.subscribers
@@ -706,7 +706,7 @@ STATS are the community's stats to print."
                          mods " | ")
               "\n"
               lem-ui-horiz-bar
-              "\n"))))
+              "\n\n"))))
 
 (defun lem-ui-render-community-stats (subscribers posts comments)
   "Render stats for SUBSCRIBERS, POSTS and COMMENTS."
