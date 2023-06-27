@@ -225,6 +225,7 @@ For a community view, cycle between posts and comments."
        (view-fun (lem-ui-get-buffer-spec :view-fun))
        (id (lem-ui-get-view-id))
        (user-p (eq view-fun #'lem-ui-view-user))
+       (post-p (eq view-fun #'lem-ui-view-post))
        (community-p (eq view-fun #'lem-ui-view-community)))
   ;; TODO: refactor
   (cond (user-p
@@ -241,8 +242,8 @@ For a community view, cycle between posts and comments."
          (if (eq type 'posts)
              (lem-ui-cycle-funcall view-fun 'comments sort 'listing id)
            (lem-ui-cycle-funcall view-fun 'posts sort 'listing id)))
-        ;; (funcall view-fun id 'comments sort)
-        ;; (funcall view-fun id 'posts sort)))
+        (post-p
+         (message "Post views don't have listing type."))
         (t
          (if (or (equal type (car (last lem-listing-types)))
                  (null type))
