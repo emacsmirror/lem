@@ -596,7 +596,7 @@ SORT must be one of `lem-sort-types'."
   (interactive)
   (let* ((communities ;(setq lem-test-c (car (alist-get 'communities
           (lem-list-communities "Subscribed"))
-         (list (lem-ui--community-short-list communities))
+         (list (lem-ui--communities-alist communities))
          (choice (completing-read "Jump to community: "
                                   list))
          (id (alist-get choice list nil nil #'equal)))
