@@ -801,8 +801,14 @@ SORT must be a member of `lem-comment-sort-types'."
         'creator-id .creator.id
         'type (caar comment))))))
 
+;; FIXME: fuck this but gotta work out to have `lem-ui--parentfun' access the
+;; list of data:
+(defvar-local lem-comments-raw)
+
 (defun lem-ui--build-and-render-comments-hierarchy (comments)
   ""
+  (setq lem-comments-raw comments)
+  ;; (let ((lem-comments-raw comments))
   ;; FIXME: this still returns duplicate comments:
   (lem-ui--build-hierarchy comments) ; sets `lem-comments-hierarchy'
   (with-current-buffer (get-buffer-create"*lem-post*")
