@@ -29,6 +29,7 @@
 
 ;;; Code:
 
+(require 'hierarchy)
 (require 'lem-api)
 
 (defvar lem-ui-horiz-bar
@@ -804,7 +805,7 @@ SORT must be a member of `lem-comment-sort-types'."
 (defvar-local lem-comments-raw nil)
 
 (defun lem-ui--build-and-render-comments-hierarchy (comments)
-  ""
+  "Build `lem-comments-hierarchy', a hierarchy, from COMMENTS, and render."
   (setq lem-comments-raw comments)
   (lem-ui--build-hierarchy comments) ; sets `lem-comments-hierarchy'
   (with-current-buffer (get-buffer-create"*lem-post*")
@@ -861,6 +862,7 @@ Parent-fun for `hierarchy-add-tree'."
                                     #'lem-ui--parentfun))))
 
 (defun lem-ui-format-comment (comment &optional indent)
+  "Format COMMENT, optionally with INDENT amount of indent bars."
   (with-current-buffer (get-buffer-create "*lem-post*")
     (let-alist comment
       (let ((content (when .comment.content
