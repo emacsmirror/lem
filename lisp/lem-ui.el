@@ -502,7 +502,7 @@ ID is the item's id."
     str))
 
 (defun lem-ui-render-post (post &optional comments sort community trim)
-  ;; NB trim both in instance and community views
+  ;; NB trim in instance, community, and user views
   ;; NB show community info in instance and in post views
   "Render single POST.
 Optionally render its COMMENTS. Optionally render post's COMMUNITY.
@@ -799,12 +799,12 @@ SORT must be a member of `lem-comment-sort-types'."
         'creator-id .creator.id
         'type (caar comment))))))
 
-(defun lem-ui-get-comment-path (comment)
+(defun lem-ui--get-comment-path (comment)
   "Get path value from COMMENT."
   (alist-get 'path
              (alist-get 'comment comment)))
 
-(defun lem-ui-split-path (path)
+(defun lem-ui--split-path (path)
   "Call split string on PATH with \".\" separator."
   (split-string path "\\."))
 
@@ -814,8 +814,8 @@ SORT must be a member of `lem-comment-sort-types'."
 (defun lem-ui-sort-comments (list)
   "LIST."
   (cl-loop for c in list
-           for path = (lem-ui-get-comment-path c)
-           for path-split = (lem-ui-split-path path)
+           for path = (lem-ui--get-comment-path c)
+           for path-split = (lem-ui--split-path path)
            ;; collect c))
            collect path-split))
 
