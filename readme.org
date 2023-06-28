@@ -37,11 +37,11 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 - [ ] image loading logic (from mastodon.el)
 - [ ] timestamp logic (from mastodon.el)
 - [ ] rich compose interface (from mastodon.el)
-- [ ] comment threads (see #2)
 - [ ] =~/.authinfo.gpg=
   
 * todos DONE (UI layer)
 
+- [X] comment threads (uwu!)
 - [X] finish cycling of views by sort/listing-type
 - [X] view instance
 - [X] list communities
@@ -111,7 +111,7 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 |         | lem-ui-search                          | Do a search for one of the types in `lem-search-types'.        |
 | S       | lem-ui-subscribe-to-community-at-point | .                                                              |
 |         | lem-ui-view-comment-post               | View post of comment at point.                                 |
-|         | lem-ui-view-communities                | View communities, subscribed to by the logged in user.         |
+|         | lem-ui-view-communities                | View Lemmy communities.                                        |
 | C       | lem-ui-view-community-at-point         | .                                                              |
 |         | lem-ui-view-item-community             | View community of item at point.                               |
 |         | lem-ui-view-item-user                  | View user of item at point.                                    |
