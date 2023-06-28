@@ -547,9 +547,11 @@ SORT must be a member of `lem-sort-types'."
       (when (and comments
                  (< 0 .counts.comments))
         (let* ((post-id (number-to-string .post.id))
-               (comments (lem-api-get-post-comments post-id "All" sort)))
-          ;; (list (alist-get 'comments comments)))
-          (lem-ui-render-comments comments "All" sort)))))) ; NB: type All, make arg?
+               (comments (lem-api-get-post-comments post-id "All" sort "160"))
+               (unique-comments (cl-remove-duplicates comments)))
+          (lem-ui--build-and-render-comments-hierarchy unique-comments))))))
+;; (list (alist-get 'comments comments)))
+;; (lem-ui-render-comments comments "All" sort)))))) ; NB: type All, make arg?
 
 (defun lem-ui-render-posts (posts &optional buffer comments sort community trim)
   "Render a list of posts POSTS in BUFFER.
@@ -799,25 +801,92 @@ SORT must be a member of `lem-comment-sort-types'."
         'creator-id .creator.id
         'type (caar comment))))))
 
-(defun lem-ui--get-comment-path (comment)
+(defun lem-ui--build-and-render-comments-hierarchy (comments)
+  ""
+  ;; FIXME: this still returns duplicate comments:
+  (lem-ui--build-hierarchy comments) ; sets `lem-comments-hierarchy'
+  (with-current-buffer (get-buffer-create"*lem-post*")
+    (hierarchy-print
+     lem-comments-hierarchy
+     (lambda (item indent)
+       (lem-ui-format-comment item indent))
+     (lem-ui-symbol 'reply-bar))))
+
+(defun lem-ui--parent-id (comment)
+  "Return the parent id of COMMENT as a number.
+Return nil if comment is only a child of the root post."
+  (let* ((path (lem-ui--get-comment-path comment))
+         (split (lem-ui--split-path path))
+         (id (string-to-number
+              (car (last split 2)))))
+    (if (eq id 0)
+        nil
+      id)))
+
+(defun lem-ui--parentfun (child)
+  "Return the parent of CHILD in `lemmy-comments-hierarchy', recursively.
+Parent-fun for `hierarchy-add-tree'."
+  (let* ((parent-id (lem-ui--parent-id child))
+         (list (alist-get 'comments lem-comments-raw)))
+    (cl-find-if
+     (lambda (comment)
+       (let ((com (alist-get 'comment comment)))
+         (equal parent-id
+                (alist-get 'id com))))
+     list)))
+
+(defun lem-ui-get-comment-path (comment)
   "Get path value from COMMENT."
   (alist-get 'path
              (alist-get 'comment comment)))
 
-(defun lem-ui--split-path (path)
+(defun lem-ui-split-path (path)
   "Call split string on PATH with \".\" separator."
   (split-string path "\\."))
+
+(defvar lem-comments-hierarchy)
+;; (setq lem-comments-hierarchy (hierarchy-new))
+
+(defun lem-ui--build-hierarchy (comments)
+  "Build a hierarchy of COMMENTS using `hierarchy.el'."
+  (let ((list (alist-get 'comments comments)))
+    ;; (hierarchy-add-trees lem-comments-hierarchy
+    ;; list
+    ;; #'lem-ui--parentfun)))
+    (setq lem-comments-hierarchy (hierarchy-new))
+    (cl-loop for comment in list
+             do (hierarchy-add-tree lem-comments-hierarchy
+                                    comment
+                                    #'lem-ui--parentfun))))
+
+(defun lem-ui-format-comment (comment &optional indent)
+  (with-current-buffer (get-buffer-create "*lem-post*")
+    (let-alist comment
+      (let ((content (when .comment.content
+                       (lem-ui-render-body .comment.content)))
+            (indent-str (make-string indent (string-to-char
+                                             (lem-ui-symbol 'reply-bar)))))
+        ;; (insert
+        (propertize
+         (concat ;"\n"
+          (lem-ui-top-byline .creator.name
+                             .counts.score
+                             .comment.published)
+          "\n"
+          (or content "")
+          "\n")
+         'line-prefix indent-str)))))
 
 ;; Path: "The path / tree location of a comment, separated by dots, ending with the comment's id. Ex: 0.24.27"
 ;; https://github.com/LemmyNet/lemmy/blob/63d3759c481ff2d7594d391ae86e881e2aeca56d/crates/db_schema/src/source/comment.rs#L39
 
-(defun lem-ui-sort-comments (list)
-  "LIST."
-  (cl-loop for c in list
-           for path = (lem-ui--get-comment-path c)
-           for path-split = (lem-ui--split-path path)
-           ;; collect c))
-           collect path-split))
+;; (defun lem-ui-sort-comments (list)
+;;   "LIST."
+;;   (cl-loop for c in list
+;;            for path = (lem-ui-get-comment-path c)
+;;            for path-split = (lem-ui-split-path path)
+;;            ;; collect c))
+;;            collect path-split))
 
 (defun lem-ui-render-comments (comments &optional type sort)
   "Render COMMENTS.
