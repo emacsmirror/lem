@@ -801,15 +801,11 @@ SORT must be a member of `lem-comment-sort-types'."
         'creator-id .creator.id
         'type (caar comment))))))
 
-;; FIXME: fuck this but gotta work out to have `lem-ui--parentfun' access the
-;; list of data:
-(defvar-local lem-comments-raw)
+(defvar-local lem-comments-raw nil)
 
 (defun lem-ui--build-and-render-comments-hierarchy (comments)
   ""
   (setq lem-comments-raw comments)
-  ;; (let ((lem-comments-raw comments))
-  ;; FIXME: this still returns duplicate comments:
   (lem-ui--build-hierarchy comments) ; sets `lem-comments-hierarchy'
   (with-current-buffer (get-buffer-create"*lem-post*")
     (hierarchy-print
@@ -850,8 +846,7 @@ Parent-fun for `hierarchy-add-tree'."
   "Call split string on PATH with \".\" separator."
   (split-string path "\\."))
 
-(defvar lem-comments-hierarchy)
-;; (setq lem-comments-hierarchy (hierarchy-new))
+(defvar-local lem-comments-hierarchy nil)
 
 (defun lem-ui--build-hierarchy (comments)
   "Build a hierarchy of COMMENTS using `hierarchy.el'."
