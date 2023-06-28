@@ -821,8 +821,8 @@ SORT must be a member of `lem-comment-sort-types'."
 (defun lem-ui--parent-id (comment)
   "Return the parent id of COMMENT as a number.
 Return nil if comment is only a child of the root post."
-  (let* ((path (lem-ui--get-comment-path comment))
-         (split (lem-ui--split-path path))
+  (let* ((path (lem-ui-get-comment-path comment))
+         (split (lem-ui-split-path path))
          (id (string-to-number
               (car (last split 2)))))
     (if (eq id 0)
