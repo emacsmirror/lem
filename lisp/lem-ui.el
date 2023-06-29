@@ -595,9 +595,7 @@ SORT must be a member of `lem-sort-types'."
         'id .post.id
         'community-id .post.community_id
         'creator-id .creator.id
-        'type (caar post)))
-      (when (and comments
-                 (< 0 .counts.comments))))))
+        'type (caar post))))))
 
 (defun lem-ui-render-posts (posts &optional buffer sort community trim)
   "Render a list of posts POSTS in BUFFER.
