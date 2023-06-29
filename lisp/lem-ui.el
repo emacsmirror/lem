@@ -393,7 +393,8 @@ LIMIT."
   (let* ((post-view (lem-get-post id))
          (post (alist-get 'post_view post-view)))
     (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
-      (lem-ui-render-post post :comments sort :community)
+      (lem-ui-render-post post nil sort :community)
+      (lem-ui-render-post-comments id)
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post)
       (goto-char (point-min))))) ; limit
 
@@ -539,20 +540,14 @@ SORT must be a member of `lem-sort-types'."
          (lem-ui-bt-byline .counts.comments .post.id)
          "\n"
          lem-ui-horiz-bar
-         "\n")
+         "\n\n")
         'json post
         'id .post.id
         'community-id .post.community_id
         'creator-id .creator.id
         'type (caar post)))
       (when (and comments
-                 (< 0 .counts.comments))
-        (let* ((post-id (number-to-string .post.id))
-               (comments (lem-api-get-post-comments post-id "All" sort "160"))
-               (unique-comments (cl-remove-duplicates comments)))
-          (lem-ui--build-and-render-comments-hierarchy unique-comments))))))
-;; (list (alist-get 'comments comments)))
-;; (lem-ui-render-comments comments "All" sort)))))) ; NB: type All, make arg?
+                 (< 0 .counts.comments))))))
 
 (defun lem-ui-render-posts (posts &optional buffer comments sort community trim)
   "Render a list of posts POSTS in BUFFER.
@@ -802,6 +797,22 @@ SORT must be a member of `lem-comment-sort-types'."
         'creator-id .creator.id
         'type (caar comment))))))
 
+(defun lem-ui-render-comments (comments &optional type sort)
+  "Render COMMENTS.
+TYPE
+SORT.
+For viewing a plain list of comments, not a hierarchy."
+  (let ((list (alist-get 'comments comments)))
+    (cl-loop for x in list
+             do (lem-ui-render-comment x sort))))
+
+;; (setq lem-post-comments (lem-get-post-comments "1235982" "651145" "New"))
+;; (setq lem-post-comments (lem-get-post-comments "1235982" nil "New"))
+
+;;; THREADED COMMENTS:
+;; Path: "The path / tree location of a comment, separated by dots, ending with the comment's id. Ex: 0.24.27"
+;; https://github.com/LemmyNet/lemmy/blob/63d3759c481ff2d7594d391ae86e881e2aeca56d/crates/db_schema/src/source/comment.rs#L39
+
 (defvar-local lem-comments-raw nil)
 
 (defun lem-ui--build-and-render-comments-hierarchy (comments)
@@ -869,39 +880,29 @@ Parent-fun for `hierarchy-add-tree'."
                        (lem-ui-render-body .comment.content)))
             (indent-str (make-string indent (string-to-char
                                              (lem-ui-symbol 'reply-bar)))))
-        ;; (insert
         (propertize
-         (concat ;"\n"
+         (concat
           (lem-ui-top-byline .creator.name
                              .counts.score
                              .comment.published)
           "\n"
           (or content "")
           "\n")
+         'json comment
+         'id .comment.id
+         'post-id .comment.post_id
+         'community-id .post.community_id
+         'creator-id .creator.id
+         'type 'comment
          'line-prefix indent-str)))))
 
-;; Path: "The path / tree location of a comment, separated by dots, ending with the comment's id. Ex: 0.24.27"
-;; https://github.com/LemmyNet/lemmy/blob/63d3759c481ff2d7594d391ae86e881e2aeca56d/crates/db_schema/src/source/comment.rs#L39
-
-;; (defun lem-ui-sort-comments (list)
-;;   "LIST."
-;;   (cl-loop for c in list
-;;            for path = (lem-ui-get-comment-path c)
-;;            for path-split = (lem-ui-split-path path)
-;;            ;; collect c))
-;;            collect path-split))
-
-(defun lem-ui-render-comments (comments &optional type sort)
-  "Render COMMENTS.
-TYPE
-SORT."
-  (let ((list (alist-get 'comments comments)))
-    ;; TODO: build comment tree
-    (cl-loop for x in list ;comments ; sorted
-             do (lem-ui-render-comment x sort))))
-
-;; (setq lem-post-comments (lem-get-post-comments "1235982" "651145" "New"))
-;; (setq lem-post-comments (lem-get-post-comments "1235982" nil "New"))
+(defun lem-ui-render-post-comments (post-id &optional sort)
+  "Render a hierarchy of post's comments.
+POST-ID is the post's id."
+  (let* ( ;(post-id (number-to-string .post.id))
+         (comments (lem-api-get-post-comments post-id "All" sort "160"))
+         (unique-comments (cl-remove-duplicates comments)))
+    (lem-ui--build-and-render-comments-hierarchy unique-comments)))
 
 (defun lem-ui-view-comment-post ()
   "View post of comment at point."
