@@ -196,12 +196,67 @@ Optionally start from POS."
 SORT must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return."
-  (let ((posts (lem-get-posts type sort limit)) ; sort here too?
+  (let ((instance (lem-get-instance))
+        (posts (lem-get-posts type sort limit)) ; sort here too?
         (buf (get-buffer-create "*lem-instance*")))
     (lem-ui-with-buffer buf 'lem-mode nil
+      (lem-ui-render-instance instance :stats)
       (lem-ui-render-posts posts buf nil sort :community :trim)
       (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance) ; no children
       (goto-char (point-min)))))
+
+(defun lem-ui-render-instance (instance &optional stats)
+  "INSTANCE."
+  (let ((inst (alist-get 'site_view instance)))
+    (with-current-buffer (get-buffer-create  "*lem-instance*")
+      (let-alist inst
+        ;; (let ((desc
+        ;; (if view
+        ;;                 (when .community.description
+        ;;                   (lem-ui-render-body .community.description))
+        ;;               (when .description
+        ;;                 (lem-ui-render-body .description)))))
+        (insert
+         (propertize
+          (concat
+           (propertize .site.name
+                       'face '(:weight bold))
+           " | "
+           (lem-ui-font-lock-comment .site.actor_id)
+           (lem-ui-font-lock-comment " created: " .site.published)
+           "\n"
+           .site.description
+           "\n"
+           lem-ui-horiz-bar
+           "\n")
+          'json instance
+          'byline-top t ; next/prev hack
+          'id .community.id
+          'type 'community))) ;(caar community)))
+      ;; stats:
+      (when stats
+        (let-alist (alist-get 'counts inst)
+          (lem-ui-render-stats .users
+                               .posts
+                               .comments
+                               .communities)))
+      ;; (insert .subscribed "\n"))
+      ;; admins:
+      (let* ((admins-list (alist-get 'admins instance))
+             (admins (mapcar (lambda (x)
+                               (let-alist (alist-get 'person x)
+                                 (list (number-to-string .id)
+                                       (or .display_name .name) .actor_id)))
+                             admins-list)))
+        (when admins
+          (insert "admins: "
+                  (mapconcat (lambda (x)
+                               (mapconcat #'identity x " "))
+                             admins " | ")
+                  "\n"
+                  lem-ui-horiz-bar
+                  "\n")))
+      (insert "\n"))))
 
 ;;; VIEWS SORTING AND TYPES
 
