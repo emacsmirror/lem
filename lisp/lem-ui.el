@@ -54,6 +54,7 @@
     (person    . ("👤" . "[people]"))
     (pinned    . ("📌" . "[pinned]"))
     (replied   . ("⬇" . "↓"))
+    (community . ("👪" . "[community]"))
     (reply-bar . ("┃" . "|")))
   "A set of symbols (and fallback strings) to be used in timeline.
 If a symbol does not look right (tofu), it means your
@@ -766,7 +767,7 @@ VIEW means COMMUNITY is a community_view."
             'type 'community))) ;(caar community)))
         ;; stats:
         (when stats
-          (lem-ui-render-community-stats .counts.subscribers
+          (lem-ui-render-stats .counts.subscribers
                                          .counts.posts
                                          .counts.comments))
         (insert .subscribed "\n"))
@@ -787,16 +788,20 @@ VIEW means COMMUNITY is a community_view."
                   "\n")))
       (insert "\n"))))
 
-(defun lem-ui-render-community-stats (subscribers posts comments)
-  "Render stats for SUBSCRIBERS, POSTS and COMMENTS."
+(defun lem-ui-render-stats (subscribers posts comments
+                                        &optional communities)
+  "Render stats for SUBSCRIBERS, POSTS, COMMENTS.
+And optionally for instance COMMUNITIES."
   (let ((s (number-to-string subscribers))
         (s-sym (lem-ui-symbol 'person))
         (p (number-to-string posts))
         (p-sym (lem-ui-symbol 'direct))
         (c (number-to-string comments))
-        (c-sym (lem-ui-symbol 'reply)))
+        (c-sym (lem-ui-symbol 'reply))
+        (ties (if communities (number-to-string communities) ""))
+        (ties-sym (if communities (lem-ui-symbol 'community) "")))
     (insert
-     (format "%s %s | %s %s | %s %s\n" s-sym s p-sym p c-sym c))))
+     (format "%s %s | %s %s | %s %s | %s %s\n" s-sym s p-sym p c-sym c ties-sym ties))))
 
 (defun lem-ui-view-item-community ()
   "View community of item at point."
