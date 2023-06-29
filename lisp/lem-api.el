@@ -185,7 +185,7 @@ Returns a site_view, admins list, online count, version, my_user,
 federated_instances, all_languages, discussion_languages, and
 taglines.")
 
-;; (lem-instance)
+;; (lem-get-instance)
 
 (lem-request "get" "get-site-metadata" "post/site_metadata"
   (url)

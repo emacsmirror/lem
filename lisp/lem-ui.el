@@ -211,12 +211,6 @@ LIMIT is the amount of results to return."
   (let ((inst (alist-get 'site_view instance)))
     (with-current-buffer (get-buffer-create  "*lem-instance*")
       (let-alist inst
-        ;; (let ((desc
-        ;; (if view
-        ;;                 (when .community.description
-        ;;                   (lem-ui-render-body .community.description))
-        ;;               (when .description
-        ;;                 (lem-ui-render-body .description)))))
         (insert
          (propertize
           (concat
@@ -233,7 +227,7 @@ LIMIT is the amount of results to return."
           'json instance
           'byline-top t ; next/prev hack
           'id .community.id
-          'type 'community))) ;(caar community)))
+          'type 'instance)))
       ;; stats:
       (when stats
         (let-alist (alist-get 'counts inst)
@@ -241,8 +235,8 @@ LIMIT is the amount of results to return."
                                .posts
                                .comments
                                .communities)))
-      ;; (insert .subscribed "\n"))
       ;; admins:
+      ;; TODO: refactor mods/admins display:
       (let* ((admins-list (alist-get 'admins instance))
              (admins (mapcar (lambda (x)
                                (let-alist (alist-get 'person x)
