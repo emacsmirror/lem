@@ -202,7 +202,7 @@ LIMIT is the amount of results to return."
         (buf (get-buffer-create "*lem-instance*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-instance instance :stats)
-      (lem-ui-render-posts posts buf nil sort :community :trim)
+      (lem-ui-render-posts posts buf sort :community :trim)
       (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance) ; no children
       (goto-char (point-min)))))
 
@@ -449,7 +449,7 @@ LIMIT."
   (let* ((post-view (lem-get-post id))
          (post (alist-get 'post_view post-view)))
     (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
-      (lem-ui-render-post post nil sort :community)
+      (lem-ui-render-post post sort :community)
       (lem-ui-render-post-comments id)
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post)
       (goto-char (point-min))))) ; limit
@@ -559,11 +559,11 @@ ID is the item's id."
         (kill-buffer buf))) ; our md
     str))
 
-(defun lem-ui-render-post (post &optional comments sort community trim)
+(defun lem-ui-render-post (post &optional sort community trim)
   ;; NB trim in instance, community, and user views
   ;; NB show community info in instance and in post views
   "Render single POST.
-Optionally render its COMMENTS. Optionally render post's COMMUNITY.
+Optionally render post's COMMUNITY.
 Optionally TRIM post length.
 SORT must be a member of `lem-sort-types'."
   (let-alist post
@@ -605,7 +605,7 @@ SORT must be a member of `lem-sort-types'."
       (when (and comments
                  (< 0 .counts.comments))))))
 
-(defun lem-ui-render-posts (posts &optional buffer comments sort community trim)
+(defun lem-ui-render-posts (posts &optional buffer sort community trim)
   "Render a list of posts POSTS in BUFFER.
 Used for instance, communities, posts, and users.
 COMMENTS means also show post comments.
@@ -616,7 +616,7 @@ TRIM means trim each post for length."
         (buf (or buffer (get-buffer-create "*lem*"))))
     (with-current-buffer buf
       (cl-loop for x in list
-               do (lem-ui-render-post x comments sort community trim)))))
+               do (lem-ui-render-post x sort community trim)))))
 
 (defun lem-ui-save-item ()
   "Save item at point.
@@ -709,7 +709,7 @@ LIMIT is the amount of results to return."
             (insert (lem-ui-format-heading "comments"))
             (lem-ui-render-comments items nil sort))
         (insert (lem-ui-format-heading "posts"))
-        (lem-ui-render-posts items buf nil sort)) ; no children
+        (lem-ui-render-posts items buf sort)) ; no children
       (lem-ui-set-buffer-spec item sort #'lem-ui-view-community)
       (goto-char (point-min)))))
 
@@ -1043,14 +1043,14 @@ LIMIT is max items to show."
         (lem-ui-render-user .person_view)
         (cond ((equal view-type "posts")
                (insert (lem-ui-format-heading "posts"))
-               (lem-ui-render-posts json buf nil sort :community :trim))
+               (lem-ui-render-posts json buf sort :community :trim))
               ((equal view-type "comments")
                (insert (lem-ui-format-heading "comments"))
                (lem-ui-render-comments json))
               (t ; no arg: overview
                (insert (lem-ui-format-heading "overview"))
                ;; TODO: insert mixed comments/posts
-               (lem-ui-render-posts json buf nil sort :community :trim)
+               (lem-ui-render-posts json buf sort :community :trim)
                (lem-ui-render-comments json)))
         (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user)
         (goto-char (point-min))))))
