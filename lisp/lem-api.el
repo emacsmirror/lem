@@ -391,6 +391,7 @@ Without either arg, get instance posts."
 
 ;; (lem-get-posts "All")
 ;; (lem-get-posts "Subscribed" "Active")
+;; (lem-get-posts "Subscribed" "Hot" "2")
 ;; (lem-get-posts "Local" "Hot" "2")
 
 (defun lem-api-list-posts-community-by-id (community-id
@@ -401,6 +402,7 @@ SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return."
   (lem-get-posts type sort limit community-id))
 
+;; (lem-api-list-posts-community-by-id "14856")
 
 (defun lem-api-list-posts-community-by-name (community-name
                                              &optional type sort limit)
