@@ -70,9 +70,9 @@ NAME is not part of the symbol table, '?' is returned."
         (cdr symbol))
     "?"))
 
-(defun lem-ui-font-lock-comment (str)
+(defun lem-ui-font-lock-comment (&rest strs)
   "Font lock comment face STR."
-  (propertize str
+  (propertize (mapconcat #'identity strs "")
               'face font-lock-comment-face))
 
 (defun lem-ui-thing-json ()
