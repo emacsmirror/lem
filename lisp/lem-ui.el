@@ -390,7 +390,7 @@ SORT-OR-TYPE is either sort or type."
         (lem-ui-sort-or-type sort-or-type view-fun)))))
 
 (defun lem-ui-choose-type ()
-  "Read a listing-type type and load it."
+  "Read a listing type and load it."
   (interactive)
   (lem-ui-call-sort-or-type 'type))
 
@@ -546,7 +546,6 @@ ID is the item's id."
       (markdown-standalone buf)
       (with-current-buffer buf
         (shr-render-buffer (current-buffer))
-        ;; (goto-char (point-min))
         (re-search-forward "\n\n" nil :no-error)
         (setq str (buffer-substring (point) (point-max)))
         (kill-buffer-and-window) ; shr's *html*
