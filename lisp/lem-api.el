@@ -201,7 +201,7 @@ SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return."
   (lem-get-posts type sort limit))
 
-;; (setq lem-test-inst-posts (lem-get-instance-posts "Subscribed"))
+;; (setq lem-test-inst-posts (lem-api-get-instance-posts "Subscribed"))
 
 (lem-request "get" "get-federated-instances" "federated_instances")
 
