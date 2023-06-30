@@ -32,7 +32,6 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 - [ ] add more to buffer
 - [ ] improve rich text rendering of content and bylines
 - [ ] update current buffer
-- [ ] proper buffer naming/separation
 - [ ] image loading logic (from mastodon.el)
 - [ ] timestamp logic (from mastodon.el)
 - [ ] rich compose interface (from mastodon.el)
@@ -40,6 +39,7 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
   
 * todos DONE (UI layer)
 
+- [X] proper buffer naming/separation
 - [X] view saved posts
 - [X] comment threads (uwu!)
 - [X] finish cycling of views by sort/listing-type

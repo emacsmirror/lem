@@ -610,7 +610,7 @@ SORT is the kind of sorting to use.
 COMMUNITY means display what community it was posted to.
 TRIM means trim each post for length."
   (let (;(list (alist-get 'posts posts)) ; consistency
-        (buf (or buffer (get-buffer-create "*lem*"))))
+        (buf (or buffer (get-buffer-create "*lem-posts*"))))
     (with-current-buffer buf
       (cl-loop for x in posts
                do (lem-ui-render-post x sort community trim)))))
