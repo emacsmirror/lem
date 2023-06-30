@@ -653,6 +653,29 @@ Saved items can be viewed in your profile, like bookmarks."
       (lem-ui-render-posts posts buffer)
       (goto-char (point-min)))))
 
+;;; CREATE A POST
+
+(defun lem-ui-new-post-simple ()
+  "."
+  (interactive)
+  (let* ((name (read-string "Post title: "))
+         (communities (lem-list-communities "Subscribed"))
+         (list (lem-ui--communities-alist communities))
+         (choice (completing-read "Community: "
+                                  list))
+         (community-id (string-to-number
+                        (alist-get choice list nil nil #'equal)))
+         (body (read-string "Post body [optional]: "))
+         (url (read-string "URL [optional]: "))
+         (response
+          (lem-create-post name community-id body
+                           (when (not (equal "" url))
+                             url))))
+    ;; TODO: nsfw, etc.
+    (when response
+      (let-alist response
+        (message "Post %s created!" .post_view.post.id)))))
+
 ;;; COMMUNITIES
 
 (defun lem-ui-view-communities (&optional type sort limit)
