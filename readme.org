@@ -26,14 +26,13 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 
 * TODOS / doing (UI layer)
 
-- [ ] improve rich text rendering of content and bylines
 - [-] tabstop navigation logic (from mastodon.el)
 - [-] finish implementing limit
-- [ ] view saved items
-- [ ] update current buffer
-- [ ] add more to buffer
-- [ ] proper buffer naming/separation
 - [ ] pagination
+- [ ] add more to buffer
+- [ ] improve rich text rendering of content and bylines
+- [ ] update current buffer
+- [ ] proper buffer naming/separation
 - [ ] image loading logic (from mastodon.el)
 - [ ] timestamp logic (from mastodon.el)
 - [ ] rich compose interface (from mastodon.el)
@@ -41,6 +40,7 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
   
 * todos DONE (UI layer)
 
+- [X] view saved posts
 - [X] comment threads (uwu!)
 - [X] finish cycling of views by sort/listing-type
 - [X] view instance
@@ -100,7 +100,7 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 | p       | lem-prev-item                          | Move to prev item.                                             |
 |         | lem-ui--follow-link-at-point           | Follow link at point.                                          |
 |         | lem-ui-choose-sort                     | Read a sort type and load it.                                  |
-|         | lem-ui-choose-type                     | Read a listing-type type and load it.                          |
+|         | lem-ui-choose-type                     | Read a listing type and load it.                               |
 | C-c C-c | lem-ui-cycle-listing-type              | Cycle view between `lem-listing-types'.                        |
 | C-c C-s | lem-ui-cycle-sort                      | Cycle view between some `lem-sort-types'.                      |
 |         | lem-ui-dislike-item                    | Dislike (downvote) item at point.                              |
@@ -108,6 +108,7 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 |         | lem-ui-like-item                       | Like (upvote) item at point.                                   |
 |         | lem-ui-message-user-at-point           | Send private message to user at point.                         |
 |         | lem-ui-reply-simple                    | Reply to post or comment at point.                             |
+|         | lem-ui-save-item                       | Save item at point.                                            |
 |         | lem-ui-search                          | Do a search for one of the types in `lem-search-types'.        |
 | S       | lem-ui-subscribe-to-community-at-point | .                                                              |
 |         | lem-ui-view-comment-post               | View post of comment at point.                                 |
@@ -116,5 +117,7 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 |         | lem-ui-view-item-community             | View community of item at point.                               |
 |         | lem-ui-view-item-user                  | View user of item at point.                                    |
 |         | lem-ui-view-post-at-point              | .                                                              |
+|         | lem-ui-view-saved-items                |                                                                |
+|         | lem-ui-view-saved-posts                | View saved posts of the current user, or of user with ID.      |
 | RET     | lem-ui-view-thing-at-point             | View post, community or user at point.                         |
 |         | lem-ui-view-user-at-point              | View user at point.                                            |
