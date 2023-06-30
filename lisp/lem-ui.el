@@ -674,7 +674,7 @@ Saved items can be viewed in your profile, like bookmarks."
     ;; TODO: nsfw, etc.
     (when response
       (let-alist response
-        (message "Post %s created!" .post_view.post.id)))))
+        (message "Post %s created!" .post_view.post.name)))))
 
 ;;; COMMUNITIES
 
