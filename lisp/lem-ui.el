@@ -612,6 +612,7 @@ TRIM means trim each post for length."
 (defun lem-ui-save-item ()
   "Save item at point.
 Saved items can be viewed in your profile, like bookmarks."
+  (interactive)
   (let ((id (lem-ui--get-id))
         (type (lem-ui--item-type)))
     (cond ((eq type 'post)
