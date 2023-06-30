@@ -405,21 +405,21 @@ SORT-OR-TYPE is either sort or type."
   (completing-read prompt
                    types-list nil :match))
 
-(defun lem-ui-search ()
+(defun lem-ui-search (&optional limit)
   "Do a search for one of the types in `lem-search-types'."
   (interactive)
   (let* ((type (lem-ui-read-type "Search type: " lem-search-types))
          ;; LISTING/SORT doesn't make sense for all search types, eg users!:
          (listing-type (lem-ui-read-type "Listing type: " lem-listing-types))
          (sort (lem-ui-read-type "Sort by: " lem-sort-types))
+         (limit (or limit (read-string "Results [max 50]: ")))
          (query (read-string "Query: "))
          ;; TODO: handle all search args: community, page, limit
-         (response (lem-search query type listing-type sort)))
+         (response (lem-search query type listing-type sort limit)))
     ;; TODO: render other responses:
     ;; ("All" "Comments" "Posts" "Communities" "Users" "Url")
     (cond ((equal type "Users")
            (let ((users (alist-get 'users response))
-                 ;; TODO: refactor as lem-ui-render-users
                  (buf (get-buffer-create "*lem-users*")))
              (lem-ui-with-buffer buf 'lem-mode nil
                (lem-ui-render-users users))))
@@ -427,7 +427,12 @@ SORT-OR-TYPE is either sort or type."
            (let ((communities (alist-get 'communities response))
                  (buf (get-buffer-create "*lem-communities*")))
              (lem-ui-with-buffer buf 'lem-mode nil
-               (lem-ui-render-communities communities)))))))
+               (lem-ui-render-communities communities))))
+          ((equal type "Posts")
+           (let ((posts (alist-get 'posts response))
+                 (buf (get-buffer-create "*lem-posts*")))
+             (lem-ui-with-buffer buf 'lem-mode nil
+               (lem-ui-render-posts posts)))))))
 
 ;;; POSTS
 
