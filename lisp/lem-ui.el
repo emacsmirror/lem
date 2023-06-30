@@ -197,9 +197,10 @@ Optionally start from POS."
 SORT must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return."
-  (let ((instance (lem-get-instance))
-        (posts (lem-get-posts type sort limit)) ; sort here too?
-        (buf (get-buffer-create "*lem-instance*")))
+  (let* ((instance (lem-get-instance))
+         (posts (lem-get-posts type sort limit)) ; sort here too?
+         (posts (alist-get 'posts posts))
+         (buf (get-buffer-create "*lem-instance*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-instance instance :stats)
       (lem-ui-render-posts posts buf sort :community :trim)
@@ -603,10 +604,10 @@ COMMENTS means also show post comments.
 SORT is the kind of sorting to use.
 COMMUNITY means display what community it was posted to.
 TRIM means trim each post for length."
-  (let ((list (alist-get 'posts posts))
+  (let (;(list (alist-get 'posts posts)) ; consistency
         (buf (or buffer (get-buffer-create "*lem*"))))
     (with-current-buffer buf
-      (cl-loop for x in list
+      (cl-loop for x in posts
                do (lem-ui-render-post x sort community trim)))))
 
 (defun lem-ui-save-item ()
@@ -629,10 +630,10 @@ Saved items can be viewed in your profile, like bookmarks."
   (interactive)
   (let* ((saved-only (lem-api-get-person-saved-only
                       (number-to-string (or id lem-user-id))))
-         ;; (posts (alist-get 'posts saved-only))
+         (posts (alist-get 'posts saved-only))
          (buffer (format "*lem-saved-posts*")))
     (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode nil
-      (lem-ui-render-posts saved-only buffer) ; gets posts from _view obj
+      (lem-ui-render-posts posts buffer)
       (goto-char (point-min)))))
 
 ;;; COMMUNITIES
@@ -704,8 +705,10 @@ LIMIT is the amount of results to return."
                      (car lem-comment-sort-types))
                  sort))
          (items (if (eq item 'comments)
-                    (lem-get-comments nil nil nil sort limit id)
-                  (lem-get-posts nil sort limit id)))) ; no sorting
+                    (alist-get 'comments
+                               (lem-get-comments nil nil nil sort limit id))
+                  (alist-get 'posts
+                             (lem-get-posts nil sort limit id))))) ; no sorting
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-community community nil :stats :view)
       (if (eq item 'comments)
@@ -732,7 +735,7 @@ If STRING, return one, else number."
   "Render COMMUNITIES.
 TYPE
 SORT."
-  (cl-loop for x in communities ;communities ; sorted
+  (cl-loop for x in communities
            do (lem-ui-render-community x "*lem-communities*" :stats)))
 
 (defun lem-ui-render-community (community &optional buffer stats view)
@@ -867,13 +870,12 @@ SORT must be a member of `lem-comment-sort-types'."
         'type (caar comment))))))
 
 (defun lem-ui-render-comments (comments &optional type sort)
-  "Render COMMENTS.
+  "Render COMMENTS, a list of comment objects.
 TYPE
 SORT.
 For viewing a plain list of comments, not a hierarchy."
-  (let ((list (alist-get 'comments comments)))
-    (cl-loop for x in list
-             do (lem-ui-render-comment x sort))))
+  (cl-loop for x in comments
+           do (lem-ui-render-comment x sort)))
 
 ;; (setq lem-post-comments (lem-get-post-comments "1235982" "651145" "New"))
 ;; (setq lem-post-comments (lem-get-post-comments "1235982" nil "New"))
@@ -887,7 +889,8 @@ For viewing a plain list of comments, not a hierarchy."
 (defun lem-ui--build-and-render-comments-hierarchy (comments)
   "Build `lem-comments-hierarchy', a hierarchy, from COMMENTS, and render."
   (setq lem-comments-raw comments)
-  (lem-ui--build-hierarchy comments) ; sets `lem-comments-hierarchy'
+  (let ((list (alist-get 'comments comments)))
+    (lem-ui--build-hierarchy list)) ; sets `lem-comments-hierarchy'
   (with-current-buffer (get-buffer-create"*lem-post*")
     (hierarchy-print
      lem-comments-hierarchy
@@ -931,15 +934,14 @@ Parent-fun for `hierarchy-add-tree'."
 
 (defun lem-ui--build-hierarchy (comments)
   "Build a hierarchy of COMMENTS using `hierarchy.el'."
-  (let ((list (alist-get 'comments comments)))
-    ;; (hierarchy-add-trees lem-comments-hierarchy
-    ;; list
-    ;; #'lem-ui--parentfun)))
-    (setq lem-comments-hierarchy (hierarchy-new))
-    (cl-loop for comment in list
-             do (hierarchy-add-tree lem-comments-hierarchy
-                                    comment
-                                    #'lem-ui--parentfun))))
+  ;; (hierarchy-add-trees lem-comments-hierarchy
+  ;; list
+  ;; #'lem-ui--parentfun)))
+  (setq lem-comments-hierarchy (hierarchy-new))
+  (cl-loop for comment in list
+           do (hierarchy-add-tree lem-comments-hierarchy
+                                  comment
+                                  #'lem-ui--parentfun)))
 
 (defun lem-ui-format-comment (comment &optional indent)
   "Format COMMENT, optionally with INDENT amount of indent bars."
@@ -1052,15 +1054,15 @@ LIMIT is max items to show."
         (lem-ui-render-user .person_view)
         (cond ((equal view-type "posts")
                (insert (lem-ui-format-heading "posts"))
-               (lem-ui-render-posts json buf sort :community :trim))
+               (lem-ui-render-posts .posts buf sort :community :trim))
               ((equal view-type "comments")
                (insert (lem-ui-format-heading "comments"))
-               (lem-ui-render-comments json))
+               (lem-ui-render-comments .comments))
               (t ; no arg: overview
                (insert (lem-ui-format-heading "overview"))
                ;; TODO: insert mixed comments/posts
-               (lem-ui-render-posts json buf sort :community :trim)
-               (lem-ui-render-comments json)))
+               (lem-ui-render-posts .posts buf sort :community :trim)
+               (lem-ui-render-comments .comments)))
         (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user)
         (goto-char (point-min))))))
 
