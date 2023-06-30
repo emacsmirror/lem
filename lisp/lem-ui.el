@@ -226,7 +226,7 @@ LIMIT is the amount of results to return."
            "\n")
           'json instance
           'byline-top t ; next/prev hack
-          'id .community.id
+          'id .site.id
           'type 'instance)))
       ;; stats:
       (when stats
