@@ -36,6 +36,9 @@
 ;;; VARS
 (defvar lem-auth-token)
 
+(defvar lem-user-id nil
+  "The ID of the current user.")
+
 ;;; TYPES
 (defconst lem-listing-types
   '("All" ; "Community" removed?
@@ -109,9 +112,15 @@ Load current user's instance posts."
   (interactive)
   (let* ((name (read-string "Username: "))
          (password (read-string "Password: "))
-         (json (lem-login name password)))
+         (login-response (lem-login name password)))
     (setq lem-auth-token (alist-get 'jwt json))))
 
+(defun lem-set-user-id (username)
+  ""
+  (let* ((user (lem-api-get-person-by-name username))
+         (person (alist-get 'person_view user))
+         (id (alist-get 'id (alist-get 'person person))))
+    (setq lem-user-id id)))
 
 (define-derived-mode lem-mode special-mode "lem"
   "Major mode for Lemmy, the federated link-aggregator and forum."
