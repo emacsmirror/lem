@@ -822,11 +822,16 @@ And optionally for instance COMMUNITIES."
 Simple means we just read a string."
   (interactive)
   (let* ((json (lem-ui-thing-json))
-         (post-id (lem-ui--get-id))
-         (parent-id (when-let ((comment (alist-get 'comment json)))
-                      (alist-get 'id comment)))
+         (type (lem-ui--item-type))
          (content (read-string "Reply: "))
-         (response (lem-create-comment post-id content parent-id)))
+         (post-id (if (equal type 'post)
+                      (lem-ui--get-id)
+                    (when-let ((post (alist-get 'post json)))
+                      (alist-get 'id post))))
+         (comment-id (when (equal type 'comment)
+                       (when-let ((comment (alist-get 'comment json)))
+                         (alist-get 'id comment))))
+         (response (lem-create-comment post-id content comment-id)))
     (when response
       (let-alist response
         (message "Comment created: %s" .comment_view.comment.content)))))
