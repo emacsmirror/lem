@@ -207,8 +207,20 @@ LIMIT is the amount of results to return."
       (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance) ; no children
       (goto-char (point-min)))))
 
+(defun lem-ui-view-instance-full (args)
+  "View view instance details."
+  ;; TODO: full instance info: sidebar, full desc,
+  ;; trending communities, stats, admins
+  )
+
+(defun lem-ui-view-modlog (args)
+  "docstring"
+  ;; TODO
+  )
+
 (defun lem-ui-render-instance (instance &optional stats)
-  "INSTANCE."
+  "INSTANCE.
+STATS."
   (let ((inst (alist-get 'site_view instance)))
     (with-current-buffer (get-buffer-create  "*lem-instance*")
       (let-alist inst
@@ -1070,6 +1082,11 @@ LIMIT is max items to show."
                (lem-ui-render-comments .comments)))
         (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user)
         (goto-char (point-min))))))
+
+;; TODO: view own profile: full sort types
+;; overview/comments/posts/saved listings
+;; list of communities moderated
+;; list subscribed
 
 (defun lem-ui-view-item-user ()
   "View user of item at point."
