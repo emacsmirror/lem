@@ -637,7 +637,7 @@ Saved items can be viewed in your profile, like bookmarks."
 
 ;;; COMMUNITIES
 
-(defun lem-ui-view-communities (&optional type sort)
+(defun lem-ui-view-communities (&optional type sort limit)
   "View Lemmy communities.
 TYPE must be one of `lem-listing-types'.
 SORT must be one of `lem-sort-types'."
@@ -646,7 +646,8 @@ SORT must be one of `lem-sort-types'."
                                          lem-listing-types)))
          (sort (or sort (completing-read "Sorted by: " ; or custom default
                                          lem-sort-types)))
-         (json (lem-list-communities type sort))
+         (limit (or limit (read-string "Number of results [max 50]: ")))
+         (json (lem-list-communities type sort limit))
          (list (alist-get 'communities json))
          (buffer (format "*lem-communities*")))
     (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode nil
