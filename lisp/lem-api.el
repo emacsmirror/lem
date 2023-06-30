@@ -172,8 +172,10 @@ See `fedi-request'."
      ,args ,docstring ,params
      ;; add auth param to manual-params:
      ,(unless unauthorized
-        (append `(("auth" . ,lem-auth-token))
-                `(,man-params)))
+        (if man-params
+            (append `(,man-params)
+                    `(("auth" . ,lem-auth-token)))
+          `(("auth" . ,lem-auth-token))))
      ,opt-bools
      ,json ,headers))
 
