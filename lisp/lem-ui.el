@@ -624,6 +624,17 @@ Saved items can be viewed in your profile, like bookmarks."
           (t
            (message "You can only save posts and comments.")))))
 
+(defun lem-ui-view-saved-posts (&optional id)
+  "View saved posts of the current user, or of user with ID."
+  (interactive)
+  (let* ((saved-only (lem-api-get-person-saved-only
+                      (number-to-string (or id lem-user-id))))
+         ;; (posts (alist-get 'posts saved-only))
+         (buffer (format "*lem-saved-posts*")))
+    (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode nil
+      (lem-ui-render-posts saved-only buffer) ; gets posts from _view obj
+      (goto-char (point-min)))))
+
 ;;; COMMUNITIES
 
 (defun lem-ui-view-communities (&optional type sort)
