@@ -978,7 +978,7 @@ Parent-fun for `hierarchy-add-tree'."
   ;; list
   ;; #'lem-ui--parentfun)))
   (setq lem-comments-hierarchy (hierarchy-new))
-  (cl-loop for comment in list
+  (cl-loop for comment in comments
            do (hierarchy-add-tree lem-comments-hierarchy
                                   comment
                                   #'lem-ui--parentfun)))
