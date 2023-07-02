@@ -95,7 +95,7 @@
 ;; getPrivateMessages DONE
 ;; getReplies DONE
 ;; getReportCount
-;; getSite
+;; getSite DONE
 ;; getSiteMetadata DONE
 ;; getUnreadCount
 ;; getUnreadRegistrationApplicationCount

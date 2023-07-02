@@ -683,6 +683,8 @@ Saved items can be viewed in your profile, like bookmarks."
 TYPE must be one of `lem-listing-types'.
 SORT must be one of `lem-sort-types'."
   (interactive)
+  ;; FIXME: we rly don't need to have to ask for these now that we have type
+  ;; cycling. Make Customize defaults or just set them and go.
   (let* ((type (or type (completing-read "View communities: "
                                          lem-listing-types)))
          (sort (or sort (completing-read "Sorted by: " ; or custom default
