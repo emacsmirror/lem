@@ -424,31 +424,28 @@ SORT-OR-TYPE is either sort or type."
 (defun lem-ui-search (&optional limit)
   "Do a search for one of the types in `lem-search-types'."
   (interactive)
-  (let* ((type (lem-ui-read-type "Search type: " lem-search-types))
+  (let* ((type (downcase (lem-ui-read-type "Search type: " lem-search-types)))
          ;; LISTING/SORT doesn't make sense for all search types, eg users!:
          (listing-type (lem-ui-read-type "Listing type: " lem-listing-types))
          (sort (lem-ui-read-type "Sort by: " lem-sort-types))
          (limit (or limit (read-string "Results [max 50]: ")))
          (query (read-string "Query: "))
+         (type-fun (intern (concat "lem-ui-render-" type)))
+         (buf-name (format "*lem-search-%s*" type))
+         (buf (get-buffer-create buf-name))
          ;; TODO: handle all search args: community, page, limit
-         (response (lem-search query type listing-type sort limit)))
+         (response (lem-search query (capitalize type) listing-type sort limit))
+         (data (alist-get (intern type) response)))
     ;; TODO: render other responses:
-    ;; ("All" "Comments" "Posts" "Communities" "Users" "Url")
-    (cond ((equal type "Users")
-           (let ((users (alist-get 'users response))
-                 (buf (get-buffer-create "*lem-users*")))
-             (lem-ui-with-buffer buf 'lem-mode nil
-               (lem-ui-render-users users))))
-          ((equal type "Communities")
-           (let ((communities (alist-get 'communities response))
-                 (buf (get-buffer-create "*lem-communities*")))
-             (lem-ui-with-buffer buf 'lem-mode nil
-               (lem-ui-render-communities communities))))
-          ((equal type "Posts")
-           (let ((posts (alist-get 'posts response))
-                 (buf (get-buffer-create "*lem-posts*")))
-             (lem-ui-with-buffer buf 'lem-mode nil
-               (lem-ui-render-posts posts)))))))
+    ;; ("All" TODO
+    ;; "Comments" DONE
+    ;; "Posts" DONE
+    ;; "Communities" DONE
+    ;; "Users"
+    ;; "Url") TODO
+    (lem-ui-with-buffer buf 'lem-mode nil
+      (funcall type-fun data)))) ; and say a prayer to the function signature
+                                        ; gods
 
 ;;; POSTS
 
