@@ -115,15 +115,15 @@ than `switch-to-buffer'."
          (switch-to-buffer ,buffer))
        ,@body)))
 
-(defmacro lem-ui-with-id (body)
-  "Call BODY after fetching ID of THING (at point), a symbol.
+(defmacro lem-ui-with-id (body &optional number)
+  "Call BODY after fetching ID of thing (at point).
 Thing can be anything handled by `lem-ui-thing-json', currently:
 comment, post, community or person.
 Within this macro call, args JSON and ID are available."
   (declare (debug 'body)
            (indent 1))
   `(let* ((json (lem-ui-thing-json))
-          (id (lem-ui--get-id :string)))
+          (id (lem-ui--get-id (if ,number nil :string))))
      ,body))
 
 ;;; BUFFER DETAILS
@@ -705,7 +705,8 @@ SORT must be one of `lem-sort-types'."
   (interactive)
   (lem-ui-with-id
       ;; TODO: needs feedback!
-      (lem-follow-community id)))
+      (lem-follow-community id)
+    :number))
 
 (defun lem-ui-view-community-at-point ()
   "."
