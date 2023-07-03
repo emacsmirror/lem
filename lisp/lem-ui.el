@@ -130,12 +130,14 @@ Within this macro call, args JSON and ID are available."
 (defvar-local lem-ui-buffer-spec nil
   "A plist containing details about the current lem buffer.")
 
-(defun lem-ui-set-buffer-spec (listing-type sort view-fun) ; endpoint etc.
+(defun lem-ui-set-buffer-spec (&optional listing-type sort view-fun item page)
   "Set `lem-ui-buffer-spec' for the current buffer.
 SORT must be a member of `lem-sort-types'.
-LISTING-TYPE must be member of `lem-listing-types'."
+LISTING-TYPE must be member of `lem-listing-types'.
+ITEM is a symbol, either posts or comments."
   (setq lem-ui-buffer-spec
-        `(:sort ,sort :listing-type ,listing-type :view-fun ,view-fun)))
+        `(:sort ,sort :listing-type ,listing-type :view-fun ,view-fun
+                :item-type ,item :page ,page)))
 
 (defun lem-ui-get-buffer-spec (key)
   "Return value of KEY in `lem-ui-buffer-spec'."
@@ -192,19 +194,19 @@ Optionally start from POS."
 ;;; INSTANCE
 
 ;; TODO: toggle posts or comments
-(defun lem-ui-view-instance (&optional type sort limit)
+(defun lem-ui-view-instance (&optional type sort limit page)
   "View posts of current user's home instance.
 SORT must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return."
   (let* ((instance (lem-get-instance))
-         (posts (lem-get-posts type sort limit)) ; sort here too?
+         (posts (lem-get-posts type sort limit nil nil page)) ; sort here too?
          (posts (alist-get 'posts posts))
          (buf (get-buffer-create "*lem-instance*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-instance instance :stats)
       (lem-ui-render-posts posts buf sort :community :trim)
-      (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance) ; no children
+      (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance page)
       (goto-char (point-min)))))
 
 (defun lem-ui-view-instance-full (args)
@@ -734,11 +736,12 @@ SORT must be one of `lem-sort-types'."
          (id (alist-get choice list nil nil #'equal)))
     (lem-ui-view-community id 'posts)))
 
-(defun lem-ui-view-community (id &optional item sort limit)
+(defun lem-ui-view-community (id &optional item sort limit page)
   "View community with ID.
 ITEM is a symbol, either posts or comments.
 SORT must be a member of `lem-sort-types'.
-LIMIT is the amount of results to return."
+LIMIT is the amount of results to return.
+PAGE is the page number of items to display, a string."
   (let* ((community (lem-get-community id))
          (view (alist-get 'community_view community))
          (buf (get-buffer-create "*lem-community*"))
@@ -749,9 +752,9 @@ LIMIT is the amount of results to return."
                  sort))
          (items (if (eq item 'comments)
                     (alist-get 'comments
-                               (lem-get-comments nil nil nil sort limit id))
+                               (lem-get-comments nil nil nil sort limit id nil page))
                   (alist-get 'posts
-                             (lem-get-posts nil sort limit id))))) ; no sorting
+                             (lem-get-posts nil sort limit id nil page))))) ; no sorting
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-community community nil :stats :view)
       (if (eq item 'comments)
@@ -760,7 +763,7 @@ LIMIT is the amount of results to return."
             (lem-ui-render-comments items nil sort))
         (insert (lem-ui-format-heading "posts"))
         (lem-ui-render-posts items buf sort)) ; no children
-      (lem-ui-set-buffer-spec item sort #'lem-ui-view-community)
+      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-community item page)
       (goto-char (point-min)))))
 
 (defun lem-ui-get-community-id (community &optional string)

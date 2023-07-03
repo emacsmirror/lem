@@ -262,7 +262,6 @@ Returns a person_view, comments, posts, moderates objects."
   nil
   (saved-only))
 
-;; ("saved_only" "true")
 (defun lem-api-get-person-saved-only (person-id)
   ""
   (lem-get-person nil person-id nil nil nil nil "true"))
@@ -382,19 +381,20 @@ Returns a post_view, a community_view, moderators, and online count."
 ;; (setq lem-test-post (lem-get-post "1341246"))
 
 (lem-request "get" "get-posts" "post/list"
-  (&optional type- sort limit community-id community-name) ; page saved_only
+  (&optional type- sort limit community-id community-name page) ;saved_only
   "List posts for the args provided.
 TYPE- must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return.
 COMMUNITY-ID and COMMUNITY-NAME are the community to get posts from.
 Without either arg, get instance posts."
-  (type- sort limit community-id community-name))
+  (type- sort limit community-id community-name page))
 
 ;; (lem-get-posts "All")
 ;; (lem-get-posts "Subscribed" "Active")
 ;; (lem-get-posts "Subscribed" "Hot" "2")
 ;; (lem-get-posts "Local" "Hot" "2")
+;; (lem-get-posts nil nil nil "86881" nil "2")
 
 (defun lem-api-list-posts-community-by-id (community-id
                                            &optional type sort limit)
@@ -499,7 +499,7 @@ Returns a comment_view, recipient_ids, and form_id."
 (lem-request "get" "get-comments" "comment/list"
   (&optional post-id parent-id type- sort limit
              ;; page saved_only
-             community-id community-name)
+             community-id community-name page)
   "SORT must be a member of `lem-sort-types'.
 LISTING-TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return.
@@ -507,7 +507,7 @@ COMMUNITY-ID and COMMUNITY-NAME are the community to get posts from.
 Without any id or name, get instance comments."
   (post-id parent-id type- sort limit
            ;; page saved_only
-           community-id community-name))
+           community-id community-name page))
 
 (defun lem-api-get-post-comments (post-id &optional type sort limit) ; page saved_only
   "Get comments for POST-ID.
