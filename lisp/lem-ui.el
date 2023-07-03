@@ -294,8 +294,10 @@ POST-P means we are cycling a post view (which has no type)."
   "Cycle view between `lem-listing-types'.
 For a user view, cycle between overview, posts and comments.
 For a community view, cycle between posts and comments."
+  ;; FIXME: remove posts/comments from this logic/binding
   (interactive)
   (let* ((type (lem-ui-get-buffer-spec :listing-type))
+         (item-type (lem-ui-get-buffer-spec :item-type))
          (sort (lem-ui-get-buffer-spec :sort))
          (view-fun (lem-ui-get-buffer-spec :view-fun))
          (id (lem-ui-get-view-id))
@@ -314,7 +316,7 @@ For a community view, cycle between posts and comments."
                   (lem-ui-cycle-funcall view-fun
                                         "overview" sort 'listing id))))
           (community-p
-           (if (eq type 'posts)
+           (if (not (eq item-type 'comments))
                (lem-ui-cycle-funcall view-fun 'comments sort 'listing id)
              (lem-ui-cycle-funcall view-fun 'posts sort 'listing id)))
           (post-p
