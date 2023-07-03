@@ -886,6 +886,20 @@ Simple means we just read a string."
       (let-alist response
         (message "Comment created: %s" .comment_view.comment.content)))))
 
+(defun lem-ui-view-replies (&optional unread)
+  "View reply comments to the current user."
+  (interactive)
+  (let* ((replies (lem-get-replies unread))
+         (list (alist-get 'replies replies))
+         (buf (get-buffer-create "*lem-replies*")))
+    (lem-ui-with-buffer buf 'lem-mode nil
+      (lem-ui-render-replies list))))
+
+(defun lem-ui-render-replies (replies)
+  "Render REPLIES, reply comments to the current user."
+  (cl-loop for reply in replies
+           do (lem-ui-render-comment reply)))
+
 ;;; COMMENTS
 
 (defun lem-ui-render-comment (comment &optional sort)

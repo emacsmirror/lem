@@ -296,10 +296,11 @@ Returns a mentions list."
 (lem-request "get" "get-replies" "user/replies"
   (&optional unread-only)
   "Get replies for the current user.
-Returns a replies list."
+Returns a list of comment_reply objects."
   (unread-only))
 
 ;; (lem-get-replies "true")
+;; (lem-get-replies)
 
 ;;; COMMUNITIES
 (lem-request "get" "get-community" "community"
