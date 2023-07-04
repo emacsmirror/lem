@@ -1010,8 +1010,9 @@ Parent-fun for `hierarchy-add-tree'."
   (let-alist comment
     (let ((content (when .comment.content
                      (lem-ui-render-body .comment.content)))
-          (indent-str (make-string indent (string-to-char
-                                           (lem-ui-symbol 'reply-bar)))))
+          (indent-str (when indent
+                        (make-string indent (string-to-char
+                                             (lem-ui-symbol 'reply-bar))))))
       (propertize
        (concat
         (lem-ui-top-byline nil nil
