@@ -1095,12 +1095,12 @@ LIMIT is max items to show."
                (lem-ui-render-posts .posts sort :community :trim))
               ((equal view-type "comments")
                (insert (lem-ui-format-heading "comments"))
-               (lem-ui-render-comments .comments))
+               (lem-ui-render-comments .comments view-type sort))
               (t ; no arg: overview
                (insert (lem-ui-format-heading "overview"))
                ;; TODO: insert mixed comments/posts
                (lem-ui-render-posts .posts sort :community :trim)
-               (lem-ui-render-comments .comments)))
+               (lem-ui-render-comments .comments view-type sort)))
         (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user)
         (goto-char (point-min))))))
 
