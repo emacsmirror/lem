@@ -490,55 +490,66 @@ etc.")
           ((eq item-type 'user)
            (lem-ui-view-user creator-id)))))
 
-(defun lem-ui-top-byline (name score timestamp
-                               &optional community community-url featured-p)
+(defun lem-ui-top-byline (title url username score timestamp
+                                &optional community community-url featured-p)
   "Format a top byline for post with NAME, SCORE and TIMESTAMP.
 COMMUNITY and COMMUNITY-URL are those of the community the item belongs to.
 FEATURED-P means the item is pinned."
-  (propertize
-   (concat
-    (propertize name
-                ;; 'shr-url user-url
-                'keymap lem-ui--link-map
-                'button t
-                'category 'shr
-                'follow-link t
-                'mouse-face 'highlight
-                'lem-tab-stop 'user
-                'face 'underline)
-    (when community
-      (concat
-       (propertize " to "
-                   'face font-lock-comment-face)
-       (propertize community
-                   'shr-url community-url
-                   'keymap lem-ui--link-map
-                   'button t
-                   'category 'shr
-                   'follow-link t
-                   'face 'underline
-                   'lem-tab-stop 'community
-                   'mouse-face 'highlight)))
+  (let ((url (lem-ui--render-url url)))
     (propertize
      (concat
-      " | "
-      (lem-ui-symbol 'upvote) " "
-      (number-to-string score) " | "
-      timestamp
-      (if (eq featured-p t)
-          (concat " | "
-                  (lem-ui-symbol 'pinned))
-        ""))
-     'face font-lock-comment-face))
-   'byline-top t))
+      (if title
+          (concat (propertize title
+                              'face '(:weight bold))
+                  "\n")
+        "")
+      (if url
+          (concat url "\n")
+        "")
+      (propertize username
+                  ;; 'shr-url user-url
+                  'keymap lem-ui--link-map
+                  'button t
+                  'category 'shr
+                  'follow-link t
+                  'mouse-face 'highlight
+                  'lem-tab-stop 'user
+                  'face 'underline)
+      (when community
+        (concat
+         (propertize " to "
+                     'face font-lock-comment-face)
+         (propertize community
+                     'shr-url community-url
+                     'keymap lem-ui--link-map
+                     'button t
+                     'category 'shr
+                     'follow-link t
+                     'face 'underline
+                     'lem-tab-stop 'community
+                     'mouse-face 'highlight)))
+      (propertize
+       (concat
+        " | "
+        ;; (lem-ui-symbol 'upvote) " "
+        ;; (number-to-string score) " | "
+        timestamp
+        (if (eq featured-p t)
+            (concat " | "
+                    (lem-ui-symbol 'pinned))
+          ""))
+       'face font-lock-comment-face))
+     'byline-top t)))
 
-(defun lem-ui-bt-byline (comments &optional id)
+(defun lem-ui-bt-byline (score comments &optional id)
   "Format a bottom byline for a post or comment.
 COMMENTS is the comments count to render.
 ID is the item's id."
   (propertize
-   (format "%s %s | %s" (lem-ui-symbol 'reply)
-           (number-to-string comments)
+   (concat (lem-ui-symbol 'upvote) " "
+           (number-to-string score) " | "
+           (lem-ui-symbol 'reply) " "
+           (number-to-string comments) " | "
            (propertize (concat "id: "
                                (number-to-string id))
                        'face font-lock-comment-face))
@@ -585,27 +596,22 @@ SORT must be a member of `lem-sort-types'."
       (insert
        (propertize
         (concat
-         "\n"
-         (lem-ui-top-byline .creator.name
+         (lem-ui-top-byline .post.name
+                            .post.url
+                            .creator.name
                             .counts.score
                             .post.published
                             (when community .community.name)
                             (when community .community.actor_id)
                             .post.featured_local)
          "\n"
-         (propertize .post.name
-                     'face '(:weight bold))
-         "\n"
-         (if url
-             (concat url "\n\n")
-           "")
          (if .post.body
              (if trim
                  (string-limit body 400)
                body)
            "")
          "\n"
-         (lem-ui-bt-byline .counts.comments .post.id)
+         (lem-ui-bt-byline .counts.score .counts.comments .post.id)
          "\n"
          lem-ui-horiz-bar
          "\n\n")
@@ -907,7 +913,8 @@ SORT must be a member of `lem-comment-sort-types'."
        (propertize
         (concat
          "\n"
-         (lem-ui-top-byline .creator.name
+         (lem-ui-top-byline nil nil
+                            .creator.name
                             .counts.score
                             .comment.published)
          "\n"
@@ -1007,11 +1014,16 @@ Parent-fun for `hierarchy-add-tree'."
                                            (lem-ui-symbol 'reply-bar)))))
       (propertize
        (concat
-        (lem-ui-top-byline .creator.name
+        (lem-ui-top-byline nil nil
+                           .creator.name
                            .counts.score
                            .comment.published)
         "\n"
         (or content "")
+        "\n"
+        (lem-ui-bt-byline .counts.score .counts.child_count .comment.id)
+        "\n"
+        lem-ui-horiz-bar
         "\n")
        'json comment
        'id .comment.id
