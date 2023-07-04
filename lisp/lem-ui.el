@@ -72,7 +72,7 @@ NAME is not part of the symbol table, '?' is returned."
     "?"))
 
 (defun lem-ui-font-lock-comment (&rest strs)
-  "Font lock comment face STR."
+  "Font lock comment face STRS."
   (propertize (mapconcat #'identity strs "")
               'face font-lock-comment-face))
 
@@ -120,7 +120,8 @@ than `switch-to-buffer'."
   "Call BODY after fetching ID of thing (at point).
 Thing can be anything handled by `lem-ui-thing-json', currently:
 comment, post, community or person.
-Within this macro call, args JSON and ID are available."
+Within this macro call, args JSON and ID are available.
+NUMBER means return ID as a number."
   (declare (debug 'body)
            (indent 1))
   `(let* ((json (lem-ui-thing-json))
@@ -158,8 +159,6 @@ Optionally start from POS."
         (if (not (get-text-property npos 'byline-top))
             (lem--goto-pos fun refresh npos)
           (goto-char npos))
-      ;; force display of help-echo on moving to a toot byline:
-      ;; (lem--message-help-echo))
       (funcall refresh))))
 
 (defun lem-next-item ()
@@ -210,14 +209,14 @@ LIMIT is the amount of results to return."
       (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance page)
       (goto-char (point-min)))))
 
-(defun lem-ui-view-instance-full (args)
+(defun lem-ui-view-instance-full (_args)
   "View view instance details."
   ;; TODO: full instance info: sidebar, full desc,
   ;; trending communities, stats, admins
   )
 
-(defun lem-ui-view-modlog (args)
-  "docstring"
+(defun lem-ui-view-modlog (_args)
+  "Docstring."
   ;; TODO
   )
 
@@ -422,7 +421,8 @@ SORT-OR-TYPE is either sort or type."
                    types-list nil :match))
 
 (defun lem-ui-search (&optional limit)
-  "Do a search for one of the types in `lem-search-types'."
+  "Do a search for one of the types in `lem-search-types'.
+LIMIT is the max results to return."
   (interactive)
   (let* ((type (downcase (lem-ui-read-type "Search type: " lem-search-types)))
          ;; LISTING/SORT doesn't make sense for all search types, eg users!:
@@ -492,7 +492,7 @@ etc.")
 
 (defun lem-ui-top-byline (title url username score timestamp
                                 &optional community community-url featured-p)
-  "Format a top byline for post with NAME, SCORE and TIMESTAMP.
+  "Format a top byline for post with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
 COMMUNITY and COMMUNITY-URL are those of the community the item belongs to.
 FEATURED-P means the item is pinned."
   (let ((url (lem-ui--render-url url)))
@@ -531,8 +531,6 @@ FEATURED-P means the item is pinned."
       (propertize
        (concat
         " | "
-        ;; (lem-ui-symbol 'upvote) " "
-        ;; (number-to-string score) " | "
         timestamp
         (if (eq featured-p t)
             (concat " | "
@@ -542,7 +540,8 @@ FEATURED-P means the item is pinned."
      'byline-top t)))
 
 (defun lem-ui-bt-byline (score comments &optional id)
-  "Format a bottom byline for a post or comment.
+  "Format a bottom byline for an item.
+SCORE is the item's score.
 COMMENTS is the comments count to render.
 ID is the item's id."
   (propertize
@@ -685,7 +684,8 @@ Saved items can be viewed in your profile, like bookmarks."
 (defun lem-ui-view-communities (&optional type sort limit)
   "View Lemmy communities.
 TYPE must be one of `lem-listing-types'.
-SORT must be one of `lem-sort-types'."
+SORT must be one of `lem-sort-types'.
+LIMIT is the max results to return."
   (interactive)
   (let* ((json (lem-list-communities type sort limit))
          (list (alist-get 'communities json))
@@ -724,8 +724,7 @@ SORT must be one of `lem-sort-types'."
 (defun lem-ui-jump-to-subscribed ()
   "Prompt for a subscribed community and view it."
   (interactive)
-  (let* ((communities ;(setq lem-test-c (car (alist-get 'communities
-          (lem-list-communities "Subscribed"))
+  (let* ((communities (lem-list-communities "Subscribed"))
          (list (lem-ui--communities-alist communities))
          (choice (completing-read "Jump to community: "
                                   list))
@@ -756,7 +755,7 @@ PAGE is the page number of items to display, a string."
       (if (eq item 'comments)
           (progn
             (insert (lem-ui-format-heading "comments"))
-            (lem-ui-render-comments items nil sort))
+            (lem-ui-render-comments items nil sort)) ; no type
         (insert (lem-ui-format-heading "posts"))
         (lem-ui-render-posts items buf sort)) ; no children
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-community item page)
@@ -805,14 +804,13 @@ VIEW means COMMUNITY is a community_view."
            (lem-ui-font-lock-comment .community.actor_id)
            "\n"
            desc
-           ;; .community.description
            "\n"
            lem-ui-horiz-bar
            "\n")
           'json community
           'byline-top t ; next/prev hack
           'id .community.id
-          'type 'community))) ;(caar community)))
+          'type 'community)))
       ;; stats:
       (when stats
         (lem-ui-render-stats .counts.subscribers
@@ -882,7 +880,8 @@ Simple means we just read a string."
         (message "Comment created: %s" .comment_view.comment.content)))))
 
 (defun lem-ui-view-replies (&optional unread)
-  "View reply comments to the current user."
+  "View reply comments to the current user.
+Optionally only view UNREAD items."
   (interactive)
   (let* ((replies (lem-get-replies unread))
          (list (alist-get 'replies replies))
@@ -1007,7 +1006,8 @@ Parent-fun for `hierarchy-add-tree'."
 
 (defun lem-ui-render-post-comments (post-id &optional sort)
   "Render a hierarchy of post's comments.
-POST-ID is the post's id."
+POST-ID is the post's id.
+SORT must be a member of `lem-sort-types'."
   ;; TODO: TYPE_ and LIMIT:
   (let* ((comments (lem-api-get-post-comments post-id "All" sort "160"))
          (unique-comments (cl-remove-duplicates comments)))
