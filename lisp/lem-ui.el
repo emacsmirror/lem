@@ -904,7 +904,7 @@ SORT must be a member of `lem-comment-sort-types'."
    (lem-ui-format-comment comment)
    "\n"))
 
-(defun lem-ui-render-comments (comments &optional buffer type sort)
+(defun lem-ui-render-comments (comments &optional type sort)
   "Render COMMENTS, a list of comment objects.
 TYPE
 SORT.
