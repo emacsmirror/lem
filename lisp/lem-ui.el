@@ -906,30 +906,9 @@ Simple means we just read a string."
 (defun lem-ui-render-comment (comment &optional sort)
   "Render single COMMENT.
 SORT must be a member of `lem-comment-sort-types'."
-  (let-alist comment
-    (let ((content (when .comment.content
-                     (lem-ui-render-body .comment.content))))
-      (insert
-       (propertize
-        (concat
-         "\n"
-         (lem-ui-top-byline nil nil
-                            .creator.name
-                            .counts.score
-                            .comment.published)
-         "\n"
-         (or content "")
-         "\n"
-         (lem-ui-bt-byline .counts.child_count .comment.id)
-         "\n"
-         lem-ui-horiz-bar
-         "\n")
-        'json comment
-        'id .comment.id
-        'post-id .comment.post_id
-        'community-id .post.community_id
-        'creator-id .creator.id
-        'type (caar comment))))))
+  (insert
+   (lem-ui-format-comment comment)
+   "\n"))
 
 (defun lem-ui-render-comments (comments &optional buffer type sort)
   "Render COMMENTS, a list of comment objects.
@@ -939,11 +918,9 @@ For viewing a plain list of comments, not a hierarchy."
   (cl-loop for x in comments
            do (lem-ui-render-comment x sort)))
 
-;; (setq lem-post-comments (lem-get-post-comments "1235982" "651145" "New"))
-;; (setq lem-post-comments (lem-get-post-comments "1235982" nil "New"))
-
 ;;; THREADED COMMENTS:
-;; Path: "The path / tree location of a comment, separated by dots, ending with the comment's id. Ex: 0.24.27"
+;; Path: "The path / tree location of a comment, separated by dots, ending
+;; with the comment's id. Ex: 0.24.27"
 ;; https://github.com/LemmyNet/lemmy/blob/63d3759c481ff2d7594d391ae86e881e2aeca56d/crates/db_schema/src/source/comment.rs#L39
 
 (defvar-local lem-comments-raw nil)
@@ -1037,8 +1014,8 @@ Parent-fun for `hierarchy-add-tree'."
 (defun lem-ui-render-post-comments (post-id &optional sort)
   "Render a hierarchy of post's comments.
 POST-ID is the post's id."
-  (let* ( ;(post-id (number-to-string .post.id))
-         (comments (lem-api-get-post-comments post-id "All" sort "160"))
+  ;; TODO: TYPE_ and LIMIT:
+  (let* ((comments (lem-api-get-post-comments post-id "All" sort "160"))
          (unique-comments (cl-remove-duplicates comments)))
     (lem-ui--build-and-render-comments-hierarchy unique-comments)))
 
