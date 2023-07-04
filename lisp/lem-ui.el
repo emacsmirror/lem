@@ -687,21 +687,15 @@ Saved items can be viewed in your profile, like bookmarks."
 TYPE must be one of `lem-listing-types'.
 SORT must be one of `lem-sort-types'."
   (interactive)
-  ;; FIXME: we rly don't need to have to ask for these now that we have type
-  ;; cycling. Make Customize defaults or just set them and go.
-  (let* ((type (or type (completing-read "View communities: "
-                                         lem-listing-types)))
-         (sort (or sort (completing-read "Sorted by: " ; or custom default
-                                         lem-sort-types)))
-         (limit (or limit (read-string "Number of results [max 50]: ")))
-         (json (lem-list-communities type sort limit))
+  (let* ((json (lem-list-communities type sort limit))
          (list (alist-get 'communities json))
          (buffer (format "*lem-communities*")))
     (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode nil
       (cl-loop for c in list
                for id = (alist-get 'id (alist-get 'community c))
                for view = (lem-get-community (number-to-string id) nil)
-               do (lem-ui-render-community view buffer :stats :view))
+               do (lem-ui-render-community view :stats :view))
+      (lem-ui-set-buffer-spec type sort #'lem-ui-view-communities)
       (goto-char (point-min)))))
 
 (defun lem-ui-subscribe-to-community-at-point ()
@@ -784,7 +778,7 @@ If STRING, return one, else number."
 TYPE
 SORT."
   (cl-loop for x in communities
-           do (lem-ui-render-community x :stats)))
+           do (lem-ui-render-community x :stats :view)))
 
 (defun lem-ui-render-community (community &optional stats view)
   "Render header details for COMMUNITY.
