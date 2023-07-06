@@ -572,8 +572,12 @@ ID is the item's id."
         str)
     (with-temp-buffer
       (insert body)
-      ;; FIXME: doesn't render usernames as links:
-      (markdown-standalone buf)
+      (goto-char (point-min))
+      (let ((replaced (string-replace "@" "\\@" (buffer-string))))
+        (erase-buffer)
+        (insert replaced)
+        ;; FIXME: doesn't render usernames as links:
+        (markdown-standalone buf))
       (with-current-buffer buf
         (shr-render-buffer (current-buffer))
         (re-search-forward "\n\n" nil :no-error)
