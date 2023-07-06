@@ -778,7 +778,7 @@ If STRING, return one, else number."
 TYPE
 SORT."
   (cl-loop for x in communities
-           do (lem-ui-render-community x :stats :view)))
+           do (lem-ui-render-community x :stats)))
 
 (defun lem-ui-render-community (community &optional stats view)
   "Render header details for COMMUNITY.
