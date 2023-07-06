@@ -572,6 +572,7 @@ ID is the item's id."
         str)
     (with-temp-buffer
       (insert body)
+      ;; FIXME: doesn't render usernames as links:
       (markdown-standalone buf)
       (with-current-buffer buf
         (shr-render-buffer (current-buffer))
