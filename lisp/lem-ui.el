@@ -751,7 +751,7 @@ PAGE is the page number of items to display, a string."
                   (alist-get 'posts
                              (lem-get-posts nil sort limit id nil page))))) ; no sorting
     (lem-ui-with-buffer buf 'lem-mode nil
-      (lem-ui-render-community community nil :stats :view)
+      (lem-ui-render-community community :stats :view)
       (if (eq item 'comments)
           (progn
             (insert (lem-ui-format-heading "comments"))
