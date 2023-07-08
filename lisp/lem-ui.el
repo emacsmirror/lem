@@ -258,9 +258,11 @@ STATS."
                 (let-alist (alist-get 'person x)
                   (insert
                    (concat
-                    (propertize (or .display_name .name)
-                                'id (number-to-string .id)
-                                'url .actor_id)
+                    (lem-ui--propertize-link-item (or .display_name .name)
+                                                  .id 'user)
+                    ;; (propertize (or .display_name .name)
+                    ;;             'id (number-to-string .id)
+                    ;;             'url .actor_id)
                     " | "))))
               admins-list)
         (insert "\n" lem-ui-horiz-bar "\n")))
@@ -486,8 +488,28 @@ etc.")
         (item-type (get-text-property (point) 'lem-tab-stop)))
     (cond ((eq item-type 'community)
            (lem-ui-view-community community-id))
+          ((and (eq item-type 'user)
+                creator-id)
+           (lem-ui-view-user creator-id))
+          ;; admin display in instance header:
+          ;; (type user, but id not creator-id)
           ((eq item-type 'user)
-           (lem-ui-view-user creator-id)))))
+           (lem-ui-view-user id)))))
+;; (t
+;; (lem-ui-view-user id)))))
+
+(defun lem-ui--propertize-link-item (item id type)
+  ""
+  (propertize item
+              ;; 'shr-url user-url
+              'keymap lem-ui--link-map
+              'button t
+              'category 'shr
+              'follow-link t
+              'mouse-face 'highlight
+              'id id
+              'lem-tab-stop type
+              'face 'underline))
 
 (defun lem-ui-top-byline (title url username score timestamp
                                 &optional community community-url featured-p)
@@ -505,28 +527,12 @@ FEATURED-P means the item is pinned."
       (if url
           (concat url "\n")
         "")
-      (propertize username
-                  ;; 'shr-url user-url
-                  'keymap lem-ui--link-map
-                  'button t
-                  'category 'shr
-                  'follow-link t
-                  'mouse-face 'highlight
-                  'lem-tab-stop 'user
-                  'face 'underline)
+      (lem-ui--propertize-link-item username nil 'user)
       (when community
         (concat
          (propertize " to "
                      'face font-lock-comment-face)
-         (propertize community
-                     'shr-url community-url
-                     'keymap lem-ui--link-map
-                     'button t
-                     'category 'shr
-                     'follow-link t
-                     'face 'underline
-                     'lem-tab-stop 'community
-                     'mouse-face 'highlight)))
+         (lem-ui--propertize-link-item community nil 'community)))
       (propertize
        (concat
         " | "
