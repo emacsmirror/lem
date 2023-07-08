@@ -317,7 +317,9 @@ discussion_languages, default_post_language."
   "Returns a list of community objects."
   (type- sort limit page))
 
+;; (lem-list-communities "All")
 ;; (lem-list-communities "Subscribed")
+;; (lem-list-communities "Local")
 
 (lem-request "post" "follow-community" "community/follow"
   (community-id)
@@ -510,6 +512,8 @@ Without any id or name, get instance comments."
            ;; page saved_only
            community-id community-name page))
 
+;; (lem-get-comments "1694468")
+
 (defun lem-api-get-post-comments (post-id &optional type sort limit) ; page saved_only
   "Get comments for POST-ID.
 TYPE must be member of `lem-listing-types'.
@@ -518,6 +522,7 @@ LIMIT is the amount of results to return."
   (lem-get-comments post-id nil type sort limit))
 
 ;; (lem-get-post-comments "1485706" "All")
+;; (lem-api-get-post-comments "44280" "All")
 ;; (lem-get-post-comments "1235982" "All")
 
 (defun lem-api-get-comment-children (parent-id &optional type sort limit) ; page saved_only
