@@ -94,7 +94,7 @@ SLOT is a symbol, either post, comment, user, or community.
 STRING means return as string, else return number.
 TYPE is the name of the ID property to get."
   (let ((id (lem-ui--property (or type 'id))))
-    (if string
+    (if (and string id)
         (number-to-string id)
       id)))
 
