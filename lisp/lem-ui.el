@@ -251,20 +251,19 @@ STATS."
                              .communities)))
     ;; admins:
     ;; TODO: refactor mods/admins display:
-    (let* ((admins-list (alist-get 'admins instance))
-           (admins (mapcar (lambda (x)
-                             (let-alist (alist-get 'person x)
-                               (list (number-to-string .id)
-                                     (or .display_name .name) .actor_id)))
-                           admins-list)))
-      (when admins
-        (insert "admins: "
-                (mapconcat (lambda (x)
-                             (mapconcat #'identity x " "))
-                           admins " | ")
-                "\n"
-                lem-ui-horiz-bar
-                "\n")))
+    (let* ((admins-list (alist-get 'admins instance)))
+      (when admins-list
+        (insert "admins: ")
+        (mapc (lambda (x)
+                (let-alist (alist-get 'person x)
+                  (insert
+                   (concat
+                    (propertize (or .display_name .name)
+                                'id (number-to-string .id)
+                                'url .actor_id)
+                    " | "))))
+              admins-list)
+        (insert "\n" lem-ui-horiz-bar "\n")))
     (insert "\n")))
 
 ;;; VIEWS SORTING AND TYPES
