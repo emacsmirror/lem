@@ -384,14 +384,14 @@ Returns a post_view, a community_view, moderators, and online count."
 ;; (setq lem-test-post (lem-get-post "1341246"))
 
 (lem-request "get" "get-posts" "post/list"
-  (&optional type- sort limit community-id community-name page) ;saved_only
+  (&optional type- sort limit page community-id community-name) ;saved_only
   "List posts for the args provided.
 TYPE- must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return.
 COMMUNITY-ID and COMMUNITY-NAME are the community to get posts from.
 Without either arg, get instance posts."
-  (type- sort limit community-id community-name page))
+  (type- sort limit page community-id community-name))
 
 ;; (lem-get-posts "All")
 ;; (lem-get-posts "Subscribed" "Active")
@@ -400,22 +400,22 @@ Without either arg, get instance posts."
 ;; (lem-get-posts nil nil nil "86881" nil "2")
 
 (defun lem-api-list-posts-community-by-id (community-id
-                                           &optional type sort limit)
+                                           &optional type sort limit page)
   "List posts for COMMUNITY-ID.
 TYPE must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return."
-  (lem-get-posts type sort limit community-id))
+  (lem-get-posts type sort limit page community-id))
 
 ;; (lem-api-list-posts-community-by-id "14856")
 
 (defun lem-api-list-posts-community-by-name (community-name
-                                             &optional type sort limit)
+                                             &optional type sort limit page)
   "List posts for COMMUNITY-NAME.
 TYPE must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return."
-  (lem-get-posts type sort limit nil community-name))
+  (lem-get-posts type sort limit page nil community-name))
 
 ;; https://join-lemmy.org/api/interfaces/CreatePost.html
 (lem-request "post" "create-post" "post"
@@ -500,30 +500,31 @@ Returns a comment_view, recipient_ids, and form_id."
 ;;     (format "Comment created: %s" comment)))
 
 (lem-request "get" "get-comments" "comment/list"
-  (&optional post-id parent-id type- sort limit
-             ;; page saved_only
-             community-id community-name page)
+  (&optional post-id parent-id type- sort limit page
+             ;; saved_only
+             community-id community-name)
   "SORT must be a member of `lem-sort-types'.
 LISTING-TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return.
 COMMUNITY-ID and COMMUNITY-NAME are the community to get posts from.
 Without any id or name, get instance comments."
-  (post-id parent-id type- sort limit
-           ;; page saved_only
-           community-id community-name page))
+  (post-id parent-id type- sort limit page
+           ;; saved_only
+           community-id community-name))
 
 ;; (lem-get-comments "1694468")
 
-(defun lem-api-get-post-comments (post-id &optional type sort limit) ; page saved_only
+(defun lem-api-get-post-comments (post-id &optional type sort limit page) ; saved_only
   "Get comments for POST-ID.
 TYPE must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return."
-  (lem-get-comments post-id nil type sort limit))
+  (lem-get-comments post-id nil type sort limit page))
 
 ;; (lem-get-post-comments "1485706" "All")
 ;; (lem-api-get-post-comments "44280" "All")
 ;; (lem-get-post-comments "1235982" "All")
+;; (lem-api-get-post-comments "1865094" "All" nil "50" 2)
 
 (defun lem-api-get-comment-children (parent-id &optional type sort limit) ; page saved_only
   "Get comments for PARENT-ID.

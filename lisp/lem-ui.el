@@ -207,7 +207,7 @@ SORT must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return."
   (let* ((instance (lem-get-instance))
-         (posts (lem-get-posts type sort limit nil nil page)) ; sort here too?
+         (posts (lem-get-posts type sort limit page)) ; sort here too?
          (posts (alist-get 'posts posts))
          (buf (get-buffer-create "*lem-instance*")))
     (lem-ui-with-buffer buf 'lem-mode nil
@@ -472,7 +472,7 @@ LIMIT."
     (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
       (lem-ui-render-post post sort :community)
       (lem-ui-render-post-comments id)
-      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post)
+      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post 1)
       (goto-char (point-min))))) ; limit
 
 (defvar lem-ui--link-map
@@ -764,9 +764,9 @@ PAGE is the page number of items to display, a string."
                  sort))
          (items (if (eq item 'comments)
                     (alist-get 'comments
-                               (lem-get-comments nil nil nil sort limit id nil page))
+                               (lem-get-comments nil nil nil sort limit page id))
                   (alist-get 'posts
-                             (lem-get-posts nil sort limit id nil page))))) ; no sorting
+                             (lem-get-posts nil sort limit page id))))) ; no sorting
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-community community :stats :view)
       (if (eq item 'comments)
@@ -941,11 +941,12 @@ For viewing a plain list of comments, not a hierarchy."
   (let ((list (alist-get 'comments comments)))
     (lem-ui--build-hierarchy list)) ; sets `lem-comments-hierarchy'
   (with-current-buffer (get-buffer-create "*lem-post*")
-    (hierarchy-print
-     lem-comments-hierarchy
-     (lambda (item indent)
-       (lem-ui-format-comment item indent))
-     (lem-ui-symbol 'reply-bar))))
+    (let ((inhibit-read-only t))
+      (hierarchy-print
+       lem-comments-hierarchy
+       (lambda (item indent)
+         (lem-ui-format-comment item indent))
+       (lem-ui-symbol 'reply-bar)))))
 
 (defun lem-ui-get-comment-path (comment)
   "Get path value from COMMENT."
@@ -1026,10 +1027,23 @@ POST-ID is the post's id.
 SORT must be a member of `lem-sort-types'."
   ;; TODO: TYPE_ default:
   (let* ((comments (lem-api-get-post-comments
-                    post-id "All" sort  lem-ui-comments-limit))
-         (unique-comments (cl-remove-duplicates comments))
-         (ids ()))
+                    post-id "All" sort lem-ui-comments-limit))
+         (unique-comments (cl-remove-duplicates comments)))
     (lem-ui--build-and-render-comments-hierarchy unique-comments)))
+
+(defun lem-ui-more-comments ()
+  "Add one more page of comments to the current view."
+  (interactive)
+  (let* ((page (1+ (lem-ui-get-buffer-spec :page)))
+         (id (number-to-string (save-excursion
+                                 (goto-char (point-min))
+                                 (lem-ui--property 'id))))
+         (sort (lem-ui-get-buffer-spec :sort))
+         (comments (lem-api-get-post-comments id "All" sort
+                                              lem-ui-comments-limit page)))
+    ;; TODO: remove comments in `lem-ui-current-comments'
+    (goto-char (point-max))
+    (lem-ui--build-and-render-comments-hierarchy comments)))
 
 (defun lem-ui-view-comment-post ()
   "View post of comment at point."
