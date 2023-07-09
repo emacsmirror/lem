@@ -925,7 +925,7 @@ For viewing a plain list of comments, not a hierarchy."
 ;; Path: "The path / tree location of a comment, separated by dots, ending
 ;; with the comment's id. Ex: 0.24.27"
 ;; https://github.com/LemmyNet/lemmy/blob/63d3759c481ff2d7594d391ae86e881e2aeca56d/crates/db_schema/src/source/comment.rs#L39
-
+(defvar-local lem-comments-hierarchy nil)
 (defvar-local lem-comments-raw nil)
 
 (defun lem-ui--build-and-render-comments-hierarchy (comments)
@@ -939,6 +939,11 @@ For viewing a plain list of comments, not a hierarchy."
      (lambda (item indent)
        (lem-ui-format-comment item indent))
      (lem-ui-symbol 'reply-bar))))
+
+(defun lem-ui-get-comment-path (comment)
+  "Get path value from COMMENT."
+  (alist-get 'path
+             (alist-get 'comment comment)))
 
 (defun lem-ui--parent-id (comment)
   "Return the parent id of COMMENT as a number.
@@ -963,16 +968,9 @@ Parent-fun for `hierarchy-add-tree'."
                 (alist-get 'id com))))
      list)))
 
-(defun lem-ui-get-comment-path (comment)
-  "Get path value from COMMENT."
-  (alist-get 'path
-             (alist-get 'comment comment)))
-
 (defun lem-ui-split-path (path)
   "Call split string on PATH with \".\" separator."
   (split-string path "\\."))
-
-(defvar-local lem-comments-hierarchy nil)
 
 (defun lem-ui--build-hierarchy (comments)
   "Build a hierarchy of COMMENTS using `hierarchy.el'."
