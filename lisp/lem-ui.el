@@ -930,6 +930,7 @@ For viewing a plain list of comments, not a hierarchy."
 
 (defun lem-ui--build-and-render-comments-hierarchy (comments)
   "Build `lem-comments-hierarchy', a hierarchy, from COMMENTS, and render."
+  (setq lem-comments-raw comments)
   (let ((list (alist-get 'comments comments)))
     (lem-ui--build-hierarchy list)) ; sets `lem-comments-hierarchy'
   (with-current-buffer (get-buffer-create "*lem-post*")
