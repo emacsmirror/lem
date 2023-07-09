@@ -32,12 +32,19 @@
 (require 'hierarchy)
 (require 'lem-api)
 
+;;; UTILITIES
+(defvar lem-ui-comments-limit "50"
+  "The number of comments to request for a post. Server maximum
+appears to be 50.")
+
+(defvar-local lem-ui-current-comments nil
+  "A list holding the ids of all comments in the current view. Used
+for pagination.")
+
 (defvar lem-ui-horiz-bar
   (if (char-displayable-p ?―)
       (make-string 12 ?―)
     (make-string 12 ?-)))
-
-;;; UTILITIES
 
 (defcustom lem-ui-symbols
   '((reply     . ("💬" . "R"))
@@ -991,6 +998,7 @@ Parent-fun for `hierarchy-add-tree'."
           (indent-str (when indent
                         (make-string indent (string-to-char
                                              (lem-ui-symbol 'reply-bar))))))
+      (push .comment.id lem-ui-current-comments) ; pagination
       (propertize
        (concat
         (lem-ui-top-byline nil nil
@@ -1016,9 +1024,11 @@ Parent-fun for `hierarchy-add-tree'."
   "Render a hierarchy of post's comments.
 POST-ID is the post's id.
 SORT must be a member of `lem-sort-types'."
-  ;; TODO: TYPE_ and LIMIT:
-  (let* ((comments (lem-api-get-post-comments post-id "All" sort "50"))
-         (unique-comments (cl-remove-duplicates comments)))
+  ;; TODO: TYPE_ default:
+  (let* ((comments (lem-api-get-post-comments
+                    post-id "All" sort  lem-ui-comments-limit))
+         (unique-comments (cl-remove-duplicates comments))
+         (ids ()))
     (lem-ui--build-and-render-comments-hierarchy unique-comments)))
 
 (defun lem-ui-view-comment-post ()
