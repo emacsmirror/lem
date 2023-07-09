@@ -32,12 +32,19 @@
 (require 'hierarchy)
 (require 'lem-api)
 
+;;; UTILITIES
+(defvar lem-ui-comments-limit "50"
+  "The number of comments to request for a post. Server maximum
+appears to be 50.")
+
+(defvar-local lem-ui-current-comments nil
+  "A list holding the ids of all comments in the current view. Used
+for pagination.")
+
 (defvar lem-ui-horiz-bar
   (if (char-displayable-p ?―)
       (make-string 12 ?―)
     (make-string 12 ?-)))
-
-;;; UTILITIES
 
 (defcustom lem-ui-symbols
   '((reply     . ("💬" . "R"))
@@ -94,7 +101,7 @@ SLOT is a symbol, either post, comment, user, or community.
 STRING means return as string, else return number.
 TYPE is the name of the ID property to get."
   (let ((id (lem-ui--property (or type 'id))))
-    (if string
+    (if (and string id)
         (number-to-string id)
       id)))
 
@@ -200,7 +207,7 @@ SORT must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return."
   (let* ((instance (lem-get-instance))
-         (posts (lem-get-posts type sort limit nil nil page)) ; sort here too?
+         (posts (lem-get-posts type sort limit page)) ; sort here too?
          (posts (alist-get 'posts posts))
          (buf (get-buffer-create "*lem-instance*")))
     (lem-ui-with-buffer buf 'lem-mode nil
@@ -251,20 +258,21 @@ STATS."
                              .communities)))
     ;; admins:
     ;; TODO: refactor mods/admins display:
-    (let* ((admins-list (alist-get 'admins instance))
-           (admins (mapcar (lambda (x)
-                             (let-alist (alist-get 'person x)
-                               (list (number-to-string .id)
-                                     (or .display_name .name) .actor_id)))
-                           admins-list)))
-      (when admins
-        (insert "admins: "
-                (mapconcat (lambda (x)
-                             (mapconcat #'identity x " "))
-                           admins " | ")
-                "\n"
-                lem-ui-horiz-bar
-                "\n")))
+    (let* ((admins-list (alist-get 'admins instance)))
+      (when admins-list
+        (insert "admins: ")
+        (mapc (lambda (x)
+                (let-alist (alist-get 'person x)
+                  (insert
+                   (concat
+                    (lem-ui--propertize-link-item (or .display_name .name)
+                                                  .id 'user)
+                    ;; (propertize (or .display_name .name)
+                    ;;             'id (number-to-string .id)
+                    ;;             'url .actor_id)
+                    " | "))))
+              admins-list)
+        (insert "\n" lem-ui-horiz-bar "\n")))
     (insert "\n")))
 
 ;;; VIEWS SORTING AND TYPES
@@ -464,7 +472,7 @@ LIMIT."
     (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
       (lem-ui-render-post post sort :community)
       (lem-ui-render-post-comments id)
-      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post)
+      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post 1)
       (goto-char (point-min))))) ; limit
 
 (defvar lem-ui--link-map
@@ -487,8 +495,28 @@ etc.")
         (item-type (get-text-property (point) 'lem-tab-stop)))
     (cond ((eq item-type 'community)
            (lem-ui-view-community community-id))
+          ((and (eq item-type 'user)
+                creator-id)
+           (lem-ui-view-user creator-id))
+          ;; admin display in instance header:
+          ;; (type user, but id not creator-id)
           ((eq item-type 'user)
-           (lem-ui-view-user creator-id)))))
+           (lem-ui-view-user id)))))
+;; (t
+;; (lem-ui-view-user id)))))
+
+(defun lem-ui--propertize-link-item (item id type)
+  ""
+  (propertize item
+              ;; 'shr-url user-url
+              'keymap lem-ui--link-map
+              'button t
+              'category 'shr
+              'follow-link t
+              'mouse-face 'highlight
+              'id id
+              'lem-tab-stop type
+              'face 'underline))
 
 (defun lem-ui-top-byline (title url username score timestamp
                                 &optional community community-url featured-p)
@@ -506,28 +534,12 @@ FEATURED-P means the item is pinned."
       (if url
           (concat url "\n")
         "")
-      (propertize username
-                  ;; 'shr-url user-url
-                  'keymap lem-ui--link-map
-                  'button t
-                  'category 'shr
-                  'follow-link t
-                  'mouse-face 'highlight
-                  'lem-tab-stop 'user
-                  'face 'underline)
+      (lem-ui--propertize-link-item username nil 'user)
       (when community
         (concat
          (propertize " to "
                      'face font-lock-comment-face)
-         (propertize community
-                     'shr-url community-url
-                     'keymap lem-ui--link-map
-                     'button t
-                     'category 'shr
-                     'follow-link t
-                     'face 'underline
-                     'lem-tab-stop 'community
-                     'mouse-face 'highlight)))
+         (lem-ui--propertize-link-item community nil 'community)))
       (propertize
        (concat
         " | "
@@ -572,7 +584,12 @@ ID is the item's id."
         str)
     (with-temp-buffer
       (insert body)
-      (markdown-standalone buf)
+      (goto-char (point-min))
+      (let ((replaced (string-replace "@" "\\@" (buffer-string))))
+        (erase-buffer)
+        (insert replaced)
+        ;; FIXME: doesn't render usernames as links:
+        (markdown-standalone buf))
       (with-current-buffer buf
         (shr-render-buffer (current-buffer))
         (re-search-forward "\n\n" nil :no-error)
@@ -747,11 +764,11 @@ PAGE is the page number of items to display, a string."
                  sort))
          (items (if (eq item 'comments)
                     (alist-get 'comments
-                               (lem-get-comments nil nil nil sort limit id nil page))
+                               (lem-get-comments nil nil nil sort limit page id))
                   (alist-get 'posts
-                             (lem-get-posts nil sort limit id nil page))))) ; no sorting
+                             (lem-get-posts nil sort limit page id))))) ; no sorting
     (lem-ui-with-buffer buf 'lem-mode nil
-      (lem-ui-render-community community nil :stats :view)
+      (lem-ui-render-community community :stats :view)
       (if (eq item 'comments)
           (progn
             (insert (lem-ui-format-heading "comments"))
@@ -777,7 +794,7 @@ If STRING, return one, else number."
 TYPE
 SORT."
   (cl-loop for x in communities
-           do (lem-ui-render-community x :stats :view)))
+           do (lem-ui-render-community x :stats)))
 
 (defun lem-ui-render-community (community &optional stats view)
   "Render header details for COMMUNITY.
@@ -915,7 +932,7 @@ For viewing a plain list of comments, not a hierarchy."
 ;; Path: "The path / tree location of a comment, separated by dots, ending
 ;; with the comment's id. Ex: 0.24.27"
 ;; https://github.com/LemmyNet/lemmy/blob/63d3759c481ff2d7594d391ae86e881e2aeca56d/crates/db_schema/src/source/comment.rs#L39
-
+(defvar-local lem-comments-hierarchy nil)
 (defvar-local lem-comments-raw nil)
 
 (defun lem-ui--build-and-render-comments-hierarchy (comments)
@@ -924,11 +941,17 @@ For viewing a plain list of comments, not a hierarchy."
   (let ((list (alist-get 'comments comments)))
     (lem-ui--build-hierarchy list)) ; sets `lem-comments-hierarchy'
   (with-current-buffer (get-buffer-create "*lem-post*")
-    (hierarchy-print
-     lem-comments-hierarchy
-     (lambda (item indent)
-       (lem-ui-format-comment item indent))
-     (lem-ui-symbol 'reply-bar))))
+    (let ((inhibit-read-only t))
+      (hierarchy-print
+       lem-comments-hierarchy
+       (lambda (item indent)
+         (lem-ui-format-comment item indent))
+       (lem-ui-symbol 'reply-bar)))))
+
+(defun lem-ui-get-comment-path (comment)
+  "Get path value from COMMENT."
+  (alist-get 'path
+             (alist-get 'comment comment)))
 
 (defun lem-ui--parent-id (comment)
   "Return the parent id of COMMENT as a number.
@@ -953,16 +976,9 @@ Parent-fun for `hierarchy-add-tree'."
                 (alist-get 'id com))))
      list)))
 
-(defun lem-ui-get-comment-path (comment)
-  "Get path value from COMMENT."
-  (alist-get 'path
-             (alist-get 'comment comment)))
-
 (defun lem-ui-split-path (path)
   "Call split string on PATH with \".\" separator."
   (split-string path "\\."))
-
-(defvar-local lem-comments-hierarchy nil)
 
 (defun lem-ui--build-hierarchy (comments)
   "Build a hierarchy of COMMENTS using `hierarchy.el'."
@@ -983,6 +999,7 @@ Parent-fun for `hierarchy-add-tree'."
           (indent-str (when indent
                         (make-string indent (string-to-char
                                              (lem-ui-symbol 'reply-bar))))))
+      (push .comment.id lem-ui-current-comments) ; pagination
       (propertize
        (concat
         (lem-ui-top-byline nil nil
@@ -1008,10 +1025,25 @@ Parent-fun for `hierarchy-add-tree'."
   "Render a hierarchy of post's comments.
 POST-ID is the post's id.
 SORT must be a member of `lem-sort-types'."
-  ;; TODO: TYPE_ and LIMIT:
-  (let* ((comments (lem-api-get-post-comments post-id "All" sort "160"))
+  ;; TODO: TYPE_ default:
+  (let* ((comments (lem-api-get-post-comments
+                    post-id "All" sort lem-ui-comments-limit))
          (unique-comments (cl-remove-duplicates comments)))
     (lem-ui--build-and-render-comments-hierarchy unique-comments)))
+
+(defun lem-ui-more-comments ()
+  "Add one more page of comments to the current view."
+  (interactive)
+  (let* ((page (1+ (lem-ui-get-buffer-spec :page)))
+         (id (number-to-string (save-excursion
+                                 (goto-char (point-min))
+                                 (lem-ui--property 'id))))
+         (sort (lem-ui-get-buffer-spec :sort))
+         (comments (lem-api-get-post-comments id "All" sort
+                                              lem-ui-comments-limit page)))
+    ;; TODO: remove comments in `lem-ui-current-comments'
+    (goto-char (point-max))
+    (lem-ui--build-and-render-comments-hierarchy comments)))
 
 (defun lem-ui-view-comment-post ()
   "View post of comment at point."

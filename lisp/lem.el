@@ -113,7 +113,7 @@ Load current user's instance posts."
   (let* ((name (read-string "Username: "))
          (password (read-string "Password: "))
          (login-response (lem-login name password)))
-    (setq lem-auth-token (alist-get 'jwt json))))
+    (setq lem-auth-token (alist-get 'jwt login-response))))
 
 (defun lem-set-user-id (username)
   ""
