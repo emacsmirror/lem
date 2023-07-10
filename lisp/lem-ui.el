@@ -465,6 +465,31 @@ LIMIT is the max results to return."
       (funcall type-fun data)))) ; and say a prayer to the function signature
                                         ; gods
 
+(defun lem-ui-lookup-call (type data fun &optional string)
+  ""
+  (let* ((thing (alist-get type data))
+         (id (lem-ui--id-from-json thing type string)))
+    (funcall fun id)))
+
+(defun lem-ui-url-lookup (&optional url)
+  ""
+  (interactive)
+  (let* ((query (or url
+                    (thing-at-point-url-at-point)
+                    (lem-ui--property 'shr-url)
+                    (read-string "Lookup URL: ")))
+         (response (lem-resolve-object query)))
+    (cond ((equal 'person (caar response))
+           (lem-ui-lookup-call 'person response 'lem-ui-view-user :str))
+          ((equal 'comment (caar response))
+           (lem-ui-lookup-call 'comment response 'lem-ui-view-comment-post :str))
+          ((equal 'post (caar response))
+           (lem-ui-lookup-call 'post response 'lem-ui-view-post :str))
+          ((equal 'community (caar response))
+           (lem-ui-lookup-call 'community response 'lem-ui-view-community :str))
+          (t
+           (message "unknown lookup response.")))))
+
 ;;; POSTS
 
 (defun lem-ui-view-post-at-point ()
