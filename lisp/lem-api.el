@@ -212,7 +212,6 @@ LIMIT is the amount of results to return."
 ;;; SEARCH
 (lem-request "get" "search" "search"
   (q &optional type- listing-type sort limit page community-name community-id) ;  creator-id
-  ;; limit page sort)
   "Search for QUERY.
 TYPE- must be a member of `lem-search-types'. Defaults to All.
 COMMUNITY-ID and CREATOR-ID are numbers.
@@ -244,6 +243,11 @@ LIMIT and PAGE are numbers."
     (q &optional type- listing-type sort limit page community-name community-id) ;  creator-id
   ""
   (lem-search q "Comments" listing-type sort limit page community-name community-id))
+
+(lem-request "get" "resolve-object" "resolve_object"
+  (q)
+  "Do a webfinger lookup for query Q."
+  (q))
 
 ;;; AUTH
 (lem-request "post" "login" "user/login"
@@ -277,13 +281,14 @@ Returns a person_view, comments, posts, moderates objects."
   (lem-get-person username nil sort limit page))
 
 ;; (lem-api-get-person-by-id "8511")
-;; (lem-get-person-by-id "899775")
+;; (lem-api-get-person-by-id "899775")
 
 ;; (setq lem-user-me (lem-api-get-person-by-name "blawsybogsy"))
 
 ;; TODO: block user
 
 ;;; NOTIFS
+;; TODO: allow this to be called with kw arg and handle boolean str:
 (lem-request "get" "get-mentions" "user/mention"
   (&optional unread-only)
   "Get mentions for the current user.
@@ -293,6 +298,7 @@ Returns a mentions list."
 ;; (lem-get-mentions "true")
 ;; (lem-get-mentions)
 
+;; TODO: allow this to be called with kw arg and handle boolean str:
 (lem-request "get" "get-replies" "user/replies"
   (&optional unread-only)
   "Get replies for the current user.
