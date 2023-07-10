@@ -782,11 +782,18 @@ LIMIT is the max results to return."
       (goto-char (point-min)))))
 
 (defun lem-ui-subscribe-to-community-at-point ()
-  "."
+  "Subscribe to community at point."
   (interactive)
   (lem-ui-with-id
-      ;; TODO: needs feedback!
-      (lem-follow-community id)
+      (if (not (equal 'community (lem-ui--item-type)))
+          (message "no community at point?")
+        (let ((fol (lem-follow-community id)))
+          (if-let ((comm (alist-get 'community
+                                    (alist-get 'community_view fol)))
+                   (name (or (alist-get 'title comm)
+                             (alist-get 'name comm))))
+              (message "community %s followed!" name)
+            (message "something went wrong."))))
     :number))
 
 (defun lem-ui-view-community-at-point ()
