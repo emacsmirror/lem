@@ -156,12 +156,13 @@ Load current user's instance posts."
     token))
 
 (defun lem-login-set-token ()
-  "Login for user NAME with PASSWORD."
+  "Login and set current user details."
   (interactive)
   (let* ((name (read-string "Username: ")))
-    ;; if we have stored token, just set var:
+    ;; if we have stored token, just set vars:
     (if-let ((token (lem-auth-fetch-token name)))
-        (setq lem-auth-token token)
+        (setq lem-auth-token token
+              lem-current-user name)
       ;; else login manually, store token, and set var:
       (let ((password (read-string "Password: "))
             (login-response (lem-login name password))
@@ -171,7 +172,7 @@ Load current user's instance posts."
       (setq lem-current-user name))))
 
 (defun lem-set-user-id (username)
-  "Set `lem-user-id' for USERNAME."
+  "Set `lem-user-id' to that of USERNAME."
   (let* ((user (lem-api-get-person-by-name username))
          (person (alist-get 'person_view user))
          (id (alist-get 'id (alist-get 'person person))))
