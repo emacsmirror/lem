@@ -207,13 +207,13 @@ SORT must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return."
   (let* ((instance (lem-get-instance))
-         (posts (lem-get-posts type sort limit page)) ; sort here too?
+         (posts (lem-get-posts type sort limit page))
          (posts (alist-get 'posts posts))
          (buf (get-buffer-create "*lem-instance*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-instance instance :stats)
       (lem-ui-render-posts posts sort :community :trim)
-      (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance page)
+      (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance 'instance page)
       (goto-char (point-min)))))
 
 (defun lem-ui-view-instance-full (_args)
