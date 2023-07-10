@@ -73,21 +73,42 @@
 (defconst lem-user-view-types
   '("overview" "posts" "comments"))
 
-(defun lem-user-view-type-p ()
-  ""
+(defun lem-user-view-type-p (str)
+  "Return t if STR is in `lem-user-view-types'."
   (cl-member str lem-user-view-types :test 'equal))
 
 ;;; CUSTOMIZE
 
+(defun lem-map-customize-options (list)
+  "Return a choice/const list from LIST, for customize options."
+  (append '(choice)
+          (mapcar (lambda (x)
+                    `(const ,x))
+                  list)))
+
+(defcustom lem-default-sort-type "Active"
+  "The default sort type to use."
+  :type
+  (lem-map-customize-options lem-sort-types))
+
+(defcustom lem-default-comment-sort-type "Hot"
+  "The default comment sort type to use."
+  :type
+  (lem-map-customize-options lem-comment-sort-types))
+
+(defcustom lem-default-listing-type "All"
+  "The default listing type to use."
+  :type
+  (lem-map-customize-options lem-listing-types))
 
 ;;; MAP
+
 (defvar lem-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") #'lem-ui-cycle-listing-type)
     (define-key map (kbd "C-c C-s") #'lem-ui-cycle-sort)
     (define-key map (kbd "n") #'lem-next-item)
     (define-key map (kbd "p") #'lem-prev-item)
-
     (define-key map (kbd "RET") #'lem-ui-view-thing-at-point)
     (define-key map (kbd "C") #'lem-ui-view-community-at-point)
     (define-key map (kbd "s") #'lem-ui-jump-to-subscribed)
@@ -105,7 +126,7 @@ Load current user's instance posts."
   (interactive)
   (unless lem-auth-token
     (lem-login-set-token))
-  (lem-ui-view-instance "All" "Active")) ; TODO: add customize defaults
+  (lem-ui-view-instance lem-default-listing-type lem-default-sort-type))
 
 (defun lem-login-set-token ()
   "Login for user NAME with PASSWORD."
@@ -116,7 +137,7 @@ Load current user's instance posts."
     (setq lem-auth-token (alist-get 'jwt login-response))))
 
 (defun lem-set-user-id (username)
-  ""
+  "Set `lem-user-id' for USERNAME."
   (let* ((user (lem-api-get-person-by-name username))
          (person (alist-get 'person_view user))
          (id (alist-get 'id (alist-get 'person person))))
