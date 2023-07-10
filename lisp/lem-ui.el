@@ -95,12 +95,21 @@ NAME is not part of the symbol table, '?' is returned."
   "Return the type property of item at point."
   (lem-ui--property 'type))
 
-(defun lem-ui--get-id (&optional string type)
+(defun lem-ui--id-from-prop (&optional string type)
   "Return id as a string, from alist KEY in JSON.
 SLOT is a symbol, either post, comment, user, or community.
 STRING means return as string, else return number.
 TYPE is the name of the ID property to get."
   (let ((id (lem-ui--property (or type 'id))))
+    (if (and string id)
+        (number-to-string id)
+      id)))
+
+(defun lem-ui--id-from-json (json type &optional string)
+  ""
+  (let ((id
+         (alist-get 'id
+                    (alist-get type json))))
     (if (and string id)
         (number-to-string id)
       id)))
@@ -132,7 +141,7 @@ NUMBER means return ID as a number."
   (declare (debug 'body)
            (indent 1))
   `(let* ((json (lem-ui-thing-json))
-          (id (lem-ui--get-id (if ,number nil :string))))
+          (id (lem-ui--id-from-prop (if ,number nil :string))))
      ,body))
 
 ;;; BUFFER DETAILS
@@ -282,7 +291,7 @@ STATS."
   "Get id of the view item, a post or user."
   (save-excursion
     (goto-char (point-min))
-    (lem-ui--get-id :string)))
+    (lem-ui--id-from-prop :string)))
 
 (defun lem-ui-cycle-funcall (fun type sort call-type &optional id post-p)
   "Cal FUN with args TYPE SORT and ID.
@@ -491,9 +500,9 @@ etc.")
 (defun lem-ui--follow-link-at-point ()
   "Follow link at point."
   (interactive)
-  (let ((id (lem-ui--get-id :string 'id))
-        (creator-id (lem-ui--get-id :string 'creator-id))
-        (community-id (lem-ui--get-id :string 'community-id))
+  (let ((id (lem-ui--id-from-prop :string 'id))
+        (creator-id (lem-ui--id-from-prop :string 'creator-id))
+        (community-id (lem-ui--id-from-prop :string 'community-id))
         (item-type (get-text-property (point) 'lem-tab-stop)))
     (cond ((eq item-type 'community)
            (lem-ui-view-community community-id))
@@ -653,7 +662,7 @@ TRIM means trim each post for length."
   "Save item at point.
 Saved items can be viewed in your profile, like bookmarks."
   (interactive)
-  (let ((id (lem-ui--get-id))
+  (let ((id (lem-ui--id-from-prop))
         (type (lem-ui--item-type)))
     (cond ((eq type 'post)
            (lem-save-post id)
@@ -887,7 +896,7 @@ Simple means we just read a string."
          (type (lem-ui--item-type))
          (content (read-string "Reply: "))
          (post-id (if (equal type 'post)
-                      (lem-ui--get-id)
+                      (lem-ui--id-from-prop)
                     (when-let ((post (alist-get 'post json)))
                       (alist-get 'id post))))
          (comment-id (when (equal type 'comment)
