@@ -209,6 +209,7 @@ LIMIT is the amount of results to return."
   (let* ((instance (lem-get-instance))
          (posts (lem-get-posts type sort limit page))
          (posts (alist-get 'posts posts))
+         (sort (or sort lem-default-sort-type))
          (buf (get-buffer-create "*lem-instance*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-instance instance :stats)
@@ -468,7 +469,8 @@ LIMIT is the max results to return."
 SORT must be a member of `lem-comment-sort-types.'
 LIMIT."
   (let* ((post-view (lem-get-post id))
-         (post (alist-get 'post_view post-view)))
+         (post (alist-get 'post_view post-view))
+         (sort (or sort lem-default-comment-sort-type)))
     (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
       (lem-ui-render-post post sort :community)
       (lem-ui-render-post-comments id)
@@ -760,8 +762,8 @@ PAGE is the page number of items to display, a string."
          ;; in case we set community posts, then switch to comments:
          (sort (if (eq item 'comments)
                    (unless (lem-comment-sort-type-p sort)
-                     (car lem-comment-sort-types))
-                 sort))
+                     lem-default-comment-sort-type)
+                 (or sort lem-default-sort-type)))
          (items (if (eq item 'comments)
                     (alist-get 'comments
                                (lem-get-comments nil nil nil sort limit page id))
@@ -1118,6 +1120,7 @@ VIEW-TYPE must be a member of `lem-user-view-types'.
 SORT must be a member of `lem-sort-types'.
 LIMIT is max items to show."
   (let ((json (lem-api-get-person-by-id id sort limit))
+        (sort (or sort lem-default-sort-type))
         (buf (get-buffer-create "*lem-user*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (let-alist json
