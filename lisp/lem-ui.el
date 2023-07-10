@@ -473,26 +473,52 @@ STRING means ID should be a string."
          (id (lem-ui--id-from-json thing type string)))
     (funcall fun id)))
 
+(defun lem-fedilike-url-p (query)
+  "Check if QUERY resembles a fediverse URL."
+  ;; calqued off https://github.com/tuskyapp/Tusky/blob/c8fc2418b8f5458a817bba221d025b822225e130/app/src/main/java/com/keylesspalace/tusky/BottomSheetActivity.kt
+  ;; thx to Conny Duck!
+  (let* ((uri-parsed (url-generic-parse-url query))
+         (query (url-filename uri-parsed)))
+    (save-match-data
+      (or (string-match "^/@[^/]+$" query)
+          (string-match "^/@[^/]+/[[:digit:]]+$" query)
+          (string-match "^/user[s]?/[[:alnum:]]+$" query)
+          (string-match "^/notice/[[:alnum:]]+$" query)
+          (string-match "^/objects/[-a-f0-9]+$" query)
+          (string-match "^/notes/[a-z0-9]+$" query)
+          (string-match "^/display/[-a-f0-9]+$" query)
+          (string-match "^/profile/[[:alpha:]]+$" query)
+          (string-match "^/p/[[:alpha:]]+/[[:digit:]]+$" query)
+          (string-match "^/[[:alpha:]]+$" query)
+          (string-match "^/u/[[:alpha:]]+$" query)
+          (string-match "^/c/[[:alnum:]]+$" query)
+          (string-match "^/post/[[:digit:]]+$" query)
+          (string-match "^/comment/[[:digit:]]+$" query)))))
+
 (defun lem-ui-url-lookup (&optional url)
   "Perform a webfinger lookup on URL and load the result in `lem.el'.
 Or url at point, or text prop 'shr-url, or read a URL in the minibuffer.
 Lemmy supports lookups for users, posts, comments and communities."
   (interactive)
-  (let* ((query (or url
-                    (thing-at-point-url-at-point)
-                    (lem-ui--property 'shr-url)
-                    (read-string "Lookup URL: ")))
-         (response (lem-resolve-object query)))
-    (cond ((equal 'person (caar response))
-           (lem-ui-lookup-call 'person response 'lem-ui-view-user :str))
-          ((equal 'comment (caar response))
-           (lem-ui-lookup-call 'comment response 'lem-ui-view-comment-post :str))
-          ((equal 'post (caar response))
-           (lem-ui-lookup-call 'post response 'lem-ui-view-post :str))
-          ((equal 'community (caar response))
-           (lem-ui-lookup-call 'community response 'lem-ui-view-community :str))
-          (t
-           (message "unknown lookup response.")))))
+  (let ((query (or url
+                   (thing-at-point-url-at-point)
+                   (lem-ui--property 'shr-url)
+                   (read-string "Lookup URL: "))))
+    (if (not (lem-fedilike-url-p query))
+        (browse-url query)
+      (message "Performing lookup...")
+      (let ((response (lem-resolve-object query)))
+        (cond ((equal 'person (caar response))
+               (lem-ui-lookup-call 'person response 'lem-ui-view-user :str))
+              ((equal 'comment (caar response))
+               (lem-ui-lookup-call 'comment response 'lem-ui-view-comment-post :str))
+              ((equal 'post (caar response))
+               (lem-ui-lookup-call 'post response 'lem-ui-view-post :str))
+              ((equal 'community (caar response))
+               (lem-ui-lookup-call 'community response 'lem-ui-view-community :str))
+              (t
+               (message "unknown lookup response.")
+               (browse-url query)))))))
 
 ;;; POSTS
 
