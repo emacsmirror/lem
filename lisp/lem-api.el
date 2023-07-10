@@ -125,7 +125,7 @@
 ;; removeCommunity
 ;; removePost
 ;; resolveCommentReport
-;; resolveObject
+;; resolveObject DONE
 ;; resolvePostReport
 ;; resolvePrivateMessageReport
 ;; saveComment DONE
@@ -152,6 +152,7 @@
 (defvar lem-auth-token nil
   "A user auth token for a lemmy instance.
 Logging in will set this. You can also save it in your init.el.")
+
 
 ;;; MACRO
 (defmacro lem-request
@@ -221,7 +222,8 @@ LIMIT and PAGE are numbers."
 
 ;; (lem-search "emacs" "Posts")
 (defun lem-api-search (q type)
-  "TYPE must be a member of `lem-search-types'. Defaults to All."
+  "Search for Q.
+TYPE must be a member of `lem-search-types'. Defaults to All."
   (lem-search q type ))
 
 (defun lem-api-search-users
@@ -292,7 +294,8 @@ Returns a person_view, comments, posts, moderates objects."
 (lem-request "get" "get-mentions" "user/mention"
   (&optional unread-only)
   "Get mentions for the current user.
-Returns a mentions list."
+Returns a mentions list.
+UNREAD-ONLY is a string, either \"true\" or \"false\"."
   (unread-only))
 
 ;; (lem-get-mentions "true")
@@ -302,7 +305,8 @@ Returns a mentions list."
 (lem-request "get" "get-replies" "user/replies"
   (&optional unread-only)
   "Get replies for the current user.
-Returns a list of comment_reply objects."
+Returns a list of comment_reply objects.
+UNREAD-ONLY is a string, either \"true\" or \"false\"."
   (unread-only))
 
 ;; (lem-get-replies "true")
