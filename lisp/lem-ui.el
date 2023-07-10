@@ -34,12 +34,12 @@
 
 ;;; UTILITIES
 (defvar lem-ui-comments-limit "50"
-  "The number of comments to request for a post. Server maximum
-appears to be 50.")
+  "The number of comments to request for a post.
+Server maximum appears to be 50.")
 
 (defvar-local lem-ui-current-comments nil
-  "A list holding the ids of all comments in the current view. Used
-for pagination.")
+  "A list holding the ids of all comments in the current view.
+Used for pagination.")
 
 (defvar lem-ui-horiz-bar
   (if (char-displayable-p ?―)
@@ -106,7 +106,8 @@ TYPE is the name of the ID property to get."
       id)))
 
 (defun lem-ui--id-from-json (json type &optional string)
-  ""
+  "Return the ID of json object JSON, of TYPE.
+If STRING, return the id as a string."
   (let ((id
          (alist-get 'id
                     (alist-get type json))))
@@ -466,13 +467,16 @@ LIMIT is the max results to return."
                                         ; gods
 
 (defun lem-ui-lookup-call (type data fun &optional string)
-  ""
+  "Call FUN on ID of item of TYPE, from DATA.
+STRING means ID should be a string."
   (let* ((thing (alist-get type data))
          (id (lem-ui--id-from-json thing type string)))
     (funcall fun id)))
 
 (defun lem-ui-url-lookup (&optional url)
-  ""
+  "Perform a webfinger lookup on URL and load the result in `lem.el'.
+Or url at point, or text prop 'shr-url, or read a URL in the minibuffer.
+Lemmy supports lookups for users, posts, comments and communities."
   (interactive)
   (let* ((query (or url
                     (thing-at-point-url-at-point)
@@ -542,7 +546,7 @@ etc.")
 ;; (lem-ui-view-user id)))))
 
 (defun lem-ui--propertize-link-item (item id type)
-  ""
+  "Propertize a link ITEM with ID and TYPE."
   (propertize item
               ;; 'shr-url user-url
               'keymap lem-ui--link-map
@@ -1178,7 +1182,7 @@ LIMIT is max items to show."
         (goto-char (point-min))))))
 
 (defun lem-ui-view-own-profile ()
-  ""
+  "View profile of the current user."
   (interactive)
   (let ((id (number-to-string
              (lem-set-user-id lem-current-user))))
