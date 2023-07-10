@@ -443,28 +443,31 @@ SORT-OR-TYPE is either sort or type."
   "Do a search for one of the types in `lem-search-types'.
 LIMIT is the max results to return."
   (interactive)
-  (let* ((type (downcase (lem-ui-read-type "Search type: " lem-search-types)))
-         ;; LISTING/SORT doesn't make sense for all search types, eg users!:
+  (let* ((types ; remove not-yet-implemented search types:
+          (remove "Url"
+                  (remove "All" lem-search-types)))
+         (type (downcase (lem-ui-read-type "Search type: " types)))
+         ;; FIXME: LISTING/SORT doesn't make sense for all search types, eg users!:
          (listing-type (lem-ui-read-type "Listing type: " lem-listing-types))
          (sort (lem-ui-read-type "Sort by: " lem-sort-types))
-         (limit (or limit (read-string "Results [max 50]: ")))
          (query (read-string "Query: "))
          (type-fun (intern (concat "lem-ui-render-" type)))
          (buf-name (format "*lem-search-%s*" type))
          (buf (get-buffer-create buf-name))
          ;; TODO: handle all search args: community, page, limit
-         (response (lem-search query (capitalize type) listing-type sort limit))
+         (response (lem-search query (capitalize type) listing-type sort
+                               lem-ui-comments-limit))
          (data (alist-get (intern type) response)))
     ;; TODO: render other responses:
     ;; ("All" TODO
     ;; "Comments" DONE
     ;; "Posts" DONE
     ;; "Communities" DONE
-    ;; "Users"
+    ;; "Users" DONE
     ;; "Url") TODO
     (lem-ui-with-buffer buf 'lem-mode nil
-      (funcall type-fun data)))) ; and say a prayer to the function signature
-                                        ; gods
+      ;; and say a prayer to the function signature gods:
+      (funcall type-fun data))))
 
 (defun lem-ui-lookup-call (type data fun &optional string)
   "Call FUN on ID of item of TYPE, from DATA.
