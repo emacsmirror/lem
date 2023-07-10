@@ -1139,6 +1139,13 @@ LIMIT is max items to show."
         (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user)
         (goto-char (point-min))))))
 
+(defun lem-ui-view-own-profile ()
+  ""
+  (interactive)
+  (let ((id (number-to-string
+             (lem-set-user-id lem-current-user))))
+    (lem-ui-view-user id)))
+
 ;; TODO: view own profile: full sort types
 ;; overview/comments/posts/saved listings
 ;; list of communities moderated
