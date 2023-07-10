@@ -14,7 +14,7 @@ New endpoints are trivial to add with the =lem-request= macro.
 
 * Logging in
 
-See =lem-login= and =lem-login-set-token=. Lemmy has not implemented OAUth and only requires an =auth= parameter with a token that you receive as a response to logging in with username and password. If you log in with =lem.el=, =lem-auth-token= will be set to the value of the token received. You can then set it in your init file to not have to log in again.
+The first time you call =lem= you'll be asked for your username and password. Upon logging in, your authentication details will be saved in a plstore under your emacs directory. You "shouldn't" have to provide your password again.
 
 * NB: API instability
 
