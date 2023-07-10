@@ -30,12 +30,12 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 - [-] finish implementing limit
 - [-] pagination
 - [-] add more items to buffer
+- [-] =lem.plstore=
 - [ ] improve rich text rendering of content and bylines
 - [ ] update current buffer
 - [ ] image loading logic (from mastodon.el)
 - [ ] timestamp logic (from mastodon.el)
 - [ ] rich compose interface (from mastodon.el)
-- [ ] =~/.authinfo.gpg=
   
 * todos DONE (UI layer)
 

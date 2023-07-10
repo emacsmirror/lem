@@ -39,6 +39,9 @@
 (defvar lem-user-id nil
   "The ID of the current user.")
 
+(defvar lem-current-user nil
+  "The name of the current user.")
+
 ;;; TYPES
 (defconst lem-listing-types
   '("All" ; "Community" removed?
@@ -128,13 +131,44 @@ Load current user's instance posts."
     (lem-login-set-token))
   (lem-ui-view-instance lem-default-listing-type lem-default-sort-type))
 
+(defcustom lem-auth-file (concat user-emacs-directory "lem.plstore")
+  "File path where Lemmy access tokens are stored."
+  :group 'mastodon
+  :type 'file)
+
+(defun lem-auth-store-token (username token)
+  "Store lemmy jwt TOKEN for USERNAME."
+  (let ((plstore (plstore-open lem-auth-file))
+        (print-length nil)
+        (print-level nil))
+    (plstore-put plstore username nil `(:jwt ,token))
+    (plstore-save plstore)
+    (plstore-close plstore)))
+
+(defun lem-auth-fetch-token (username)
+  "Return jwt token for USERNAME"
+  (let* ((plstore (plstore-open lem-auth-file))
+         (print-length nil)
+         (print-level nil)
+         (entry (plstore-get plstore username))
+         (token (plist-get (cdr entry) :jwt)))
+    (plstore-close plstore)
+    token))
+
 (defun lem-login-set-token ()
   "Login for user NAME with PASSWORD."
   (interactive)
-  (let* ((name (read-string "Username: "))
-         (password (read-string "Password: "))
-         (login-response (lem-login name password)))
-    (setq lem-auth-token (alist-get 'jwt login-response))))
+  (let* ((name (read-string "Username: ")))
+    ;; if we have stored token, just set var:
+    (if-let ((token (lem-auth-fetch-token name)))
+        (setq lem-auth-token token)
+      ;; else login manually, store token, and set var:
+      (let ((password (read-string "Password: "))
+            (login-response (lem-login name password))
+            (token (alist-get 'jwt login-response)))
+        (lem-auth-store-token name token)
+        (setq lem-auth-token token))
+      (setq lem-current-user name))))
 
 (defun lem-set-user-id (username)
   "Set `lem-user-id' for USERNAME."
