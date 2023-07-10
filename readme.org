@@ -10,11 +10,11 @@ Currently, most of the basic endpoints are implemented, and most but not all par
 
 New endpoints are trivial to add with the =lem-request= macro.
 
-=lem-ui.el= is our own basic interface layer. It's new and necro, but coming along fast. It takes some inspiration from =mastodon.el=, as that's what I know, and a lot of work has gone into it.
+=lem-ui.el= is our own basic interface layer. It's new and a bit necro, but coming along fast. It takes some inspiration from =mastodon.el=, as that's what I know, and a lot of work has gone into it.
 
 * Logging in
 
-See =lem-login= and =lem-login-set-token=. Lemmy has not yet implemented OAUth and only requires an =auth= parameter with a token that you receive as a response to logging in with username and password. If you log in with =lem.el=, =lem-auth-token= will be set to the value of the token received. You can then set it in your init file to not have to log in again.
+See =lem-login= and =lem-login-set-token=. Lemmy has not implemented OAUth and only requires an =auth= parameter with a token that you receive as a response to logging in with username and password. If you log in with =lem.el=, =lem-auth-token= will be set to the value of the token received. You can then set it in your init file to not have to log in again.
 
 * NB: API instability
 
@@ -28,8 +28,8 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 
 - [-] tabstop navigation logic (from mastodon.el)
 - [-] finish implementing limit
-- [ ] pagination
-- [ ] add more items to buffer
+- [-] pagination
+- [-] add more items to buffer
 - [ ] improve rich text rendering of content and bylines
 - [ ] update current buffer
 - [ ] image loading logic (from mastodon.el)
@@ -107,6 +107,7 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 | s       | lem-ui-jump-to-subscribed              | Prompt for a subscribed community and view it.                 |
 |         | lem-ui-like-item                       | Like (upvote) item at point.                                   |
 |         | lem-ui-message-user-at-point           | Send private message to user at point.                         |
+|         | lem-ui-more-comments                   | Add one more page of comments to the current view.             |
 |         | lem-ui-new-post-simple                 | .                                                              |
 |         | lem-ui-reply-simple                    | Reply to post or comment at point.                             |
 |         | lem-ui-save-item                       | Save item at point.                                            |
@@ -119,7 +120,6 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 |         | lem-ui-view-item-user                  | View user of item at point.                                    |
 |         | lem-ui-view-post-at-point              | .                                                              |
 |         | lem-ui-view-replies                    | View reply comments to the current user.                       |
-|         | lem-ui-view-saved-items                |                                                                |
 |         | lem-ui-view-saved-posts                | View saved posts of the current user, or of user with ID.      |
 | RET     | lem-ui-view-thing-at-point             | View post, community or user at point.                         |
 |         | lem-ui-view-user-at-point              | View user at point.                                            |
