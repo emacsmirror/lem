@@ -534,7 +534,7 @@ etc.")
   "Format a top byline for post with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
 COMMUNITY and COMMUNITY-URL are those of the community the item belongs to.
 FEATURED-P means the item is pinned."
-  (let ((url (lem-ui--render-url url)))
+  (let ((url (lem-ui-render-url url)))
     (propertize
      (concat
       (if title
@@ -577,7 +577,7 @@ ID is the item's id."
                        'face font-lock-comment-face))
    'byline-bottom t))
 
-(defun lem-ui--render-url (url)
+(defun lem-ui-render-url (url)
   "Render URL, a plain non-html string."
   (when url
     (let ((parsed (url-generic-parse-url url))
@@ -617,7 +617,7 @@ Optionally render post's COMMUNITY.
 Optionally TRIM post length.
 SORT must be a member of `lem-sort-types'."
   (let-alist post
-    (let ((url (lem-ui--render-url .post.url))
+    (let ((url (lem-ui-render-url .post.url))
           (body (when .post.body
                   (lem-ui-render-body .post.body))))
       (insert
