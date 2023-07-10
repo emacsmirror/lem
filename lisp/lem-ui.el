@@ -932,6 +932,10 @@ Simple means we just read a string."
       (let-alist response
         (message "Comment created: %s" .comment_view.comment.content)))))
 
+(defun lem-ui-view-replies ()
+  "View unread replies."
+  (lem-ui-view-replies :unread))
+
 (defun lem-ui-view-replies (&optional unread)
   "View reply comments to the current user.
 Optionally only view UNREAD items."
