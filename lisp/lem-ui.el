@@ -34,12 +34,12 @@
 
 ;;; UTILITIES
 (defvar lem-ui-comments-limit "50"
-  "The number of comments to request for a post. Server maximum
-appears to be 50.")
+  "The number of comments to request for a post.
+Server maximum appears to be 50.")
 
 (defvar-local lem-ui-current-comments nil
-  "A list holding the ids of all comments in the current view. Used
-for pagination.")
+  "A list holding the ids of all comments in the current view.
+Used for pagination.")
 
 (defvar lem-ui-horiz-bar
   (if (char-displayable-p ?―)
@@ -95,12 +95,22 @@ NAME is not part of the symbol table, '?' is returned."
   "Return the type property of item at point."
   (lem-ui--property 'type))
 
-(defun lem-ui--get-id (&optional string type)
+(defun lem-ui--id-from-prop (&optional string type)
   "Return id as a string, from alist KEY in JSON.
 SLOT is a symbol, either post, comment, user, or community.
 STRING means return as string, else return number.
 TYPE is the name of the ID property to get."
   (let ((id (lem-ui--property (or type 'id))))
+    (if (and string id)
+        (number-to-string id)
+      id)))
+
+(defun lem-ui--id-from-json (json type &optional string)
+  "Return the ID of json object JSON, of TYPE.
+If STRING, return the id as a string."
+  (let ((id
+         (alist-get 'id
+                    (alist-get type json))))
     (if (and string id)
         (number-to-string id)
       id)))
@@ -132,7 +142,7 @@ NUMBER means return ID as a number."
   (declare (debug 'body)
            (indent 1))
   `(let* ((json (lem-ui-thing-json))
-          (id (lem-ui--get-id (if ,number nil :string))))
+          (id (lem-ui--id-from-prop (if ,number nil :string))))
      ,body))
 
 ;;; BUFFER DETAILS
@@ -207,13 +217,14 @@ SORT must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return."
   (let* ((instance (lem-get-instance))
-         (posts (lem-get-posts type sort limit page)) ; sort here too?
+         (posts (lem-get-posts type sort limit page))
          (posts (alist-get 'posts posts))
+         (sort (or sort lem-default-sort-type))
          (buf (get-buffer-create "*lem-instance*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-instance instance :stats)
       (lem-ui-render-posts posts sort :community :trim)
-      (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance page)
+      (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance 'instance page)
       (goto-char (point-min)))))
 
 (defun lem-ui-view-instance-full (_args)
@@ -281,7 +292,7 @@ STATS."
   "Get id of the view item, a post or user."
   (save-excursion
     (goto-char (point-min))
-    (lem-ui--get-id :string)))
+    (lem-ui--id-from-prop :string)))
 
 (defun lem-ui-cycle-funcall (fun type sort call-type &optional id post-p)
   "Cal FUN with args TYPE SORT and ID.
@@ -432,28 +443,85 @@ SORT-OR-TYPE is either sort or type."
   "Do a search for one of the types in `lem-search-types'.
 LIMIT is the max results to return."
   (interactive)
-  (let* ((type (downcase (lem-ui-read-type "Search type: " lem-search-types)))
-         ;; LISTING/SORT doesn't make sense for all search types, eg users!:
+  (let* ((types ; remove not-yet-implemented search types:
+          (remove "Url"
+                  (remove "All" lem-search-types)))
+         (type (downcase (lem-ui-read-type "Search type: " types)))
+         ;; FIXME: LISTING/SORT doesn't make sense for all search types, eg users!:
          (listing-type (lem-ui-read-type "Listing type: " lem-listing-types))
          (sort (lem-ui-read-type "Sort by: " lem-sort-types))
-         (limit (or limit (read-string "Results [max 50]: ")))
          (query (read-string "Query: "))
          (type-fun (intern (concat "lem-ui-render-" type)))
          (buf-name (format "*lem-search-%s*" type))
          (buf (get-buffer-create buf-name))
          ;; TODO: handle all search args: community, page, limit
-         (response (lem-search query (capitalize type) listing-type sort limit))
+         (response (lem-search query (capitalize type) listing-type sort
+                               lem-ui-comments-limit))
          (data (alist-get (intern type) response)))
     ;; TODO: render other responses:
     ;; ("All" TODO
     ;; "Comments" DONE
     ;; "Posts" DONE
     ;; "Communities" DONE
-    ;; "Users"
+    ;; "Users" DONE
     ;; "Url") TODO
     (lem-ui-with-buffer buf 'lem-mode nil
-      (funcall type-fun data)))) ; and say a prayer to the function signature
-                                        ; gods
+      ;; and say a prayer to the function signature gods:
+      (funcall type-fun data))))
+
+(defun lem-ui-lookup-call (type data fun &optional string)
+  "Call FUN on ID of item of TYPE, from DATA.
+STRING means ID should be a string."
+  (let* ((thing (alist-get type data))
+         (id (lem-ui--id-from-json thing type string)))
+    (funcall fun id)))
+
+(defun lem-fedilike-url-p (query)
+  "Check if QUERY resembles a fediverse URL."
+  ;; calqued off https://github.com/tuskyapp/Tusky/blob/c8fc2418b8f5458a817bba221d025b822225e130/app/src/main/java/com/keylesspalace/tusky/BottomSheetActivity.kt
+  ;; thx to Conny Duck!
+  (let* ((uri-parsed (url-generic-parse-url query))
+         (query (url-filename uri-parsed)))
+    (save-match-data
+      (or (string-match "^/@[^/]+$" query)
+          (string-match "^/@[^/]+/[[:digit:]]+$" query)
+          (string-match "^/user[s]?/[[:alnum:]]+$" query)
+          (string-match "^/notice/[[:alnum:]]+$" query)
+          (string-match "^/objects/[-a-f0-9]+$" query)
+          (string-match "^/notes/[a-z0-9]+$" query)
+          (string-match "^/display/[-a-f0-9]+$" query)
+          (string-match "^/profile/[[:alpha:]]+$" query)
+          (string-match "^/p/[[:alpha:]]+/[[:digit:]]+$" query)
+          (string-match "^/[[:alpha:]]+$" query)
+          (string-match "^/u/[[:alpha:]]+$" query)
+          (string-match "^/c/[[:alnum:]]+$" query)
+          (string-match "^/post/[[:digit:]]+$" query)
+          (string-match "^/comment/[[:digit:]]+$" query)))))
+
+(defun lem-ui-url-lookup (&optional url)
+  "Perform a webfinger lookup on URL and load the result in `lem.el'.
+Or url at point, or text prop 'shr-url, or read a URL in the minibuffer.
+Lemmy supports lookups for users, posts, comments and communities."
+  (interactive)
+  (let ((query (or url
+                   (thing-at-point-url-at-point)
+                   (lem-ui--property 'shr-url)
+                   (read-string "Lookup URL: "))))
+    (if (not (lem-fedilike-url-p query))
+        (browse-url query)
+      (message "Performing lookup...")
+      (let ((response (lem-resolve-object query)))
+        (cond ((equal 'person (caar response))
+               (lem-ui-lookup-call 'person response 'lem-ui-view-user :str))
+              ((equal 'comment (caar response))
+               (lem-ui-lookup-call 'comment response 'lem-ui-view-comment-post :str))
+              ((equal 'post (caar response))
+               (lem-ui-lookup-call 'post response 'lem-ui-view-post :str))
+              ((equal 'community (caar response))
+               (lem-ui-lookup-call 'community response 'lem-ui-view-community :str))
+              (t
+               (message "unknown lookup response.")
+               (browse-url query)))))))
 
 ;;; POSTS
 
@@ -468,7 +536,8 @@ LIMIT is the max results to return."
 SORT must be a member of `lem-comment-sort-types.'
 LIMIT."
   (let* ((post-view (lem-get-post id))
-         (post (alist-get 'post_view post-view)))
+         (post (alist-get 'post_view post-view))
+         (sort (or sort lem-default-comment-sort-type)))
     (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
       (lem-ui-render-post post sort :community)
       (lem-ui-render-post-comments id)
@@ -489,9 +558,9 @@ etc.")
 (defun lem-ui--follow-link-at-point ()
   "Follow link at point."
   (interactive)
-  (let ((id (lem-ui--get-id :string 'id))
-        (creator-id (lem-ui--get-id :string 'creator-id))
-        (community-id (lem-ui--get-id :string 'community-id))
+  (let ((id (lem-ui--id-from-prop :string 'id))
+        (creator-id (lem-ui--id-from-prop :string 'creator-id))
+        (community-id (lem-ui--id-from-prop :string 'community-id))
         (item-type (get-text-property (point) 'lem-tab-stop)))
     (cond ((eq item-type 'community)
            (lem-ui-view-community community-id))
@@ -506,7 +575,7 @@ etc.")
 ;; (lem-ui-view-user id)))))
 
 (defun lem-ui--propertize-link-item (item id type)
-  ""
+  "Propertize a link ITEM with ID and TYPE."
   (propertize item
               ;; 'shr-url user-url
               'keymap lem-ui--link-map
@@ -523,7 +592,7 @@ etc.")
   "Format a top byline for post with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
 COMMUNITY and COMMUNITY-URL are those of the community the item belongs to.
 FEATURED-P means the item is pinned."
-  (let ((url (lem-ui--render-url url)))
+  (let ((url (lem-ui-render-url url)))
     (propertize
      (concat
       (if title
@@ -566,7 +635,7 @@ ID is the item's id."
                        'face font-lock-comment-face))
    'byline-bottom t))
 
-(defun lem-ui--render-url (url)
+(defun lem-ui-render-url (url)
   "Render URL, a plain non-html string."
   (when url
     (let ((parsed (url-generic-parse-url url))
@@ -606,7 +675,7 @@ Optionally render post's COMMUNITY.
 Optionally TRIM post length.
 SORT must be a member of `lem-sort-types'."
   (let-alist post
-    (let ((url (lem-ui--render-url .post.url))
+    (let ((url (lem-ui-render-url .post.url))
           (body (when .post.body
                   (lem-ui-render-body .post.body))))
       (insert
@@ -651,7 +720,7 @@ TRIM means trim each post for length."
   "Save item at point.
 Saved items can be viewed in your profile, like bookmarks."
   (interactive)
-  (let ((id (lem-ui--get-id))
+  (let ((id (lem-ui--id-from-prop))
         (type (lem-ui--item-type)))
     (cond ((eq type 'post)
            (lem-save-post id)
@@ -716,15 +785,22 @@ LIMIT is the max results to return."
       (goto-char (point-min)))))
 
 (defun lem-ui-subscribe-to-community-at-point ()
-  "."
+  "Subscribe to community at point."
   (interactive)
   (lem-ui-with-id
-      ;; TODO: needs feedback!
-      (lem-follow-community id)
+      (if (not (equal 'community (lem-ui--item-type)))
+          (message "no community at point?")
+        (let ((fol (lem-follow-community id)))
+          (if-let ((comm (alist-get 'community
+                                    (alist-get 'community_view fol)))
+                   (name (or (alist-get 'title comm)
+                             (alist-get 'name comm))))
+              (message "community %s followed!" name)
+            (message "something went wrong."))))
     :number))
 
 (defun lem-ui-view-community-at-point ()
-  "."
+  "View community at point."
   (interactive)
   (lem-ui-with-id
       (let ((community (lem-get-community id)))
@@ -760,8 +836,8 @@ PAGE is the page number of items to display, a string."
          ;; in case we set community posts, then switch to comments:
          (sort (if (eq item 'comments)
                    (unless (lem-comment-sort-type-p sort)
-                     (car lem-comment-sort-types))
-                 sort))
+                     lem-default-comment-sort-type)
+                 (or sort lem-default-sort-type)))
          (items (if (eq item 'comments)
                     (alist-get 'comments
                                (lem-get-comments nil nil nil sort limit page id))
@@ -885,7 +961,7 @@ Simple means we just read a string."
          (type (lem-ui--item-type))
          (content (read-string "Reply: "))
          (post-id (if (equal type 'post)
-                      (lem-ui--get-id)
+                      (lem-ui--id-from-prop)
                     (when-let ((post (alist-get 'post json)))
                       (alist-get 'id post))))
          (comment-id (when (equal type 'comment)
@@ -896,11 +972,15 @@ Simple means we just read a string."
       (let-alist response
         (message "Comment created: %s" .comment_view.comment.content)))))
 
+(defun lem-ui-view-replies ()
+  "View unread replies."
+  (lem-ui-view-replies :unread))
+
 (defun lem-ui-view-replies (&optional unread)
   "View reply comments to the current user.
 Optionally only view UNREAD items."
   (interactive)
-  (let* ((replies (lem-get-replies unread))
+  (let* ((replies (lem-get-replies (if unread "true" nil)))
          (list (alist-get 'replies replies))
          (buf (get-buffer-create "*lem-replies*")))
     (lem-ui-with-buffer buf 'lem-mode nil
@@ -1118,6 +1198,7 @@ VIEW-TYPE must be a member of `lem-user-view-types'.
 SORT must be a member of `lem-sort-types'.
 LIMIT is max items to show."
   (let ((json (lem-api-get-person-by-id id sort limit))
+        (sort (or sort lem-default-sort-type))
         (buf (get-buffer-create "*lem-user*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (let-alist json
@@ -1135,6 +1216,13 @@ LIMIT is max items to show."
                (lem-ui-render-comments .comments view-type sort)))
         (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user)
         (goto-char (point-min))))))
+
+(defun lem-ui-view-own-profile ()
+  "View profile of the current user."
+  (interactive)
+  (let ((id (number-to-string
+             (lem-set-user-id lem-current-user))))
+    (lem-ui-view-user id)))
 
 ;; TODO: view own profile: full sort types
 ;; overview/comments/posts/saved listings

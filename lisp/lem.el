@@ -39,6 +39,9 @@
 (defvar lem-user-id nil
   "The ID of the current user.")
 
+(defvar lem-current-user nil
+  "The name of the current user.")
+
 ;;; TYPES
 (defconst lem-listing-types
   '("All" ; "Community" removed?
@@ -73,21 +76,42 @@
 (defconst lem-user-view-types
   '("overview" "posts" "comments"))
 
-(defun lem-user-view-type-p ()
-  ""
+(defun lem-user-view-type-p (str)
+  "Return t if STR is in `lem-user-view-types'."
   (cl-member str lem-user-view-types :test 'equal))
 
 ;;; CUSTOMIZE
 
+(defun lem-map-customize-options (list)
+  "Return a choice/const list from LIST, for customize options."
+  (append '(choice)
+          (mapcar (lambda (x)
+                    `(const ,x))
+                  list)))
+
+(defcustom lem-default-sort-type "Active"
+  "The default sort type to use."
+  :type
+  (lem-map-customize-options lem-sort-types))
+
+(defcustom lem-default-comment-sort-type "Hot"
+  "The default comment sort type to use."
+  :type
+  (lem-map-customize-options lem-comment-sort-types))
+
+(defcustom lem-default-listing-type "All"
+  "The default listing type to use."
+  :type
+  (lem-map-customize-options lem-listing-types))
 
 ;;; MAP
+
 (defvar lem-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") #'lem-ui-cycle-listing-type)
     (define-key map (kbd "C-c C-s") #'lem-ui-cycle-sort)
     (define-key map (kbd "n") #'lem-next-item)
     (define-key map (kbd "p") #'lem-prev-item)
-
     (define-key map (kbd "RET") #'lem-ui-view-thing-at-point)
     (define-key map (kbd "C") #'lem-ui-view-community-at-point)
     (define-key map (kbd "s") #'lem-ui-jump-to-subscribed)
@@ -105,18 +129,50 @@ Load current user's instance posts."
   (interactive)
   (unless lem-auth-token
     (lem-login-set-token))
-  (lem-ui-view-instance "All" "Active")) ; TODO: add customize defaults
+  (lem-ui-view-instance lem-default-listing-type lem-default-sort-type))
+
+(defcustom lem-auth-file (concat user-emacs-directory "lem.plstore")
+  "File path where Lemmy access tokens are stored."
+  :group 'mastodon
+  :type 'file)
+
+(defun lem-auth-store-token (username token)
+  "Store lemmy jwt TOKEN for USERNAME."
+  (let ((plstore (plstore-open lem-auth-file))
+        (print-length nil)
+        (print-level nil))
+    (plstore-put plstore username nil `(:jwt ,token))
+    (plstore-save plstore)
+    (plstore-close plstore)))
+
+(defun lem-auth-fetch-token (username)
+  "Return jwt token for USERNAME."
+  (let* ((plstore (plstore-open lem-auth-file))
+         (print-length nil)
+         (print-level nil)
+         (entry (plstore-get plstore username))
+         (token (plist-get (cdr entry) :jwt)))
+    (plstore-close plstore)
+    token))
 
 (defun lem-login-set-token ()
-  "Login for user NAME with PASSWORD."
+  "Login and set current user details."
   (interactive)
-  (let* ((name (read-string "Username: "))
-         (password (read-string "Password: "))
-         (login-response (lem-login name password)))
-    (setq lem-auth-token (alist-get 'jwt login-response))))
+  (let* ((name (read-string "Username: ")))
+    ;; if we have stored token, just set vars:
+    (if-let ((token (lem-auth-fetch-token name)))
+        (setq lem-auth-token token
+              lem-current-user name)
+      ;; else login manually, store token, and set var:
+      (let ((password (read-string "Password: "))
+            (login-response (lem-login name password))
+            (token (alist-get 'jwt login-response)))
+        (lem-auth-store-token name token)
+        (setq lem-auth-token token))
+      (setq lem-current-user name))))
 
 (defun lem-set-user-id (username)
-  ""
+  "Set `lem-user-id' to that of USERNAME."
   (let* ((user (lem-api-get-person-by-name username))
          (person (alist-get 'person_view user))
          (id (alist-get 'id (alist-get 'person person))))
