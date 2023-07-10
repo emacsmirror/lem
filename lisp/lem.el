@@ -146,7 +146,7 @@ Load current user's instance posts."
     (plstore-close plstore)))
 
 (defun lem-auth-fetch-token (username)
-  "Return jwt token for USERNAME"
+  "Return jwt token for USERNAME."
   (let* ((plstore (plstore-open lem-auth-file))
          (print-length nil)
          (print-level nil)

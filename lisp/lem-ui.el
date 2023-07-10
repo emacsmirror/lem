@@ -797,7 +797,7 @@ LIMIT is the max results to return."
     :number))
 
 (defun lem-ui-view-community-at-point ()
-  "."
+  "View community at point."
   (interactive)
   (lem-ui-with-id
       (let ((community (lem-get-community id)))
