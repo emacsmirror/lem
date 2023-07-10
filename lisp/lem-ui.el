@@ -936,7 +936,7 @@ Simple means we just read a string."
   "View reply comments to the current user.
 Optionally only view UNREAD items."
   (interactive)
-  (let* ((replies (lem-get-replies unread))
+  (let* ((replies (lem-get-replies (if unread "true" nil)))
          (list (alist-get 'replies replies))
          (buf (get-buffer-create "*lem-replies*")))
     (lem-ui-with-buffer buf 'lem-mode nil
