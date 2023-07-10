@@ -26,19 +26,20 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 
 * TODOS / doing (UI layer)
 
-- [-] tabstop navigation logic (from mastodon.el)
 - [-] finish implementing limit
 - [-] pagination
 - [-] add more items to buffer
-- [-] =lem.plstore=
 - [ ] improve rich text rendering of content and bylines
 - [ ] update current buffer
+- [-] tabstop navigation logic (from mastodon.el)
 - [ ] image loading logic (from mastodon.el)
 - [ ] timestamp logic (from mastodon.el)
 - [ ] rich compose interface (from mastodon.el)
   
 * todos DONE (UI layer)
 
+- [-] =lem.plstore= for auth token
+- [X] webfinger lookups
 - [X] proper buffer naming/separation
 - [X] view saved posts
 - [X] comment threads (uwu!)
@@ -91,35 +92,37 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 #+END_SRC
 
 #+RESULTS:
-| Binding | Command                                | Description                                                    |
-|---------+----------------------------------------+----------------------------------------------------------------|
-|         | lem                                    | Open lem, a Lemmy client.                                      |
-|         | lem-login-set-token                    | Login for user NAME with PASSWORD.                             |
-|         | lem-mode                               | Major mode for Lemmy, the federated link-aggregator and forum. |
-| n       | lem-next-item                          | Move to next item.                                             |
-| p       | lem-prev-item                          | Move to prev item.                                             |
-|         | lem-ui--follow-link-at-point           | Follow link at point.                                          |
-|         | lem-ui-choose-sort                     | Read a sort type and load it.                                  |
-|         | lem-ui-choose-type                     | Read a listing type and load it.                               |
-| C-c C-c | lem-ui-cycle-listing-type              | Cycle view between `lem-listing-types'.                        |
-| C-c C-s | lem-ui-cycle-sort                      | Cycle view between some `lem-sort-types'.                      |
-|         | lem-ui-dislike-item                    | Dislike (downvote) item at point.                              |
-| s       | lem-ui-jump-to-subscribed              | Prompt for a subscribed community and view it.                 |
-|         | lem-ui-like-item                       | Like (upvote) item at point.                                   |
-|         | lem-ui-message-user-at-point           | Send private message to user at point.                         |
-|         | lem-ui-more-comments                   | Add one more page of comments to the current view.             |
-|         | lem-ui-new-post-simple                 | .                                                              |
-|         | lem-ui-reply-simple                    | Reply to post or comment at point.                             |
-|         | lem-ui-save-item                       | Save item at point.                                            |
-|         | lem-ui-search                          | Do a search for one of the types in `lem-search-types'.        |
-| S       | lem-ui-subscribe-to-community-at-point | .                                                              |
-|         | lem-ui-view-comment-post               | View post of comment at point.                                 |
-|         | lem-ui-view-communities                | View Lemmy communities.                                        |
-| C       | lem-ui-view-community-at-point         | .                                                              |
-|         | lem-ui-view-item-community             | View community of item at point.                               |
-|         | lem-ui-view-item-user                  | View user of item at point.                                    |
-|         | lem-ui-view-post-at-point              | .                                                              |
-|         | lem-ui-view-replies                    | View reply comments to the current user.                       |
-|         | lem-ui-view-saved-posts                | View saved posts of the current user, or of user with ID.      |
-| RET     | lem-ui-view-thing-at-point             | View post, community or user at point.                         |
-|         | lem-ui-view-user-at-point              | View user at point.                                            |
+| Binding | Command                                | Description                                                        |
+|---------+----------------------------------------+--------------------------------------------------------------------|
+|         | lem                                    | Open lem, a Lemmy client.                                          |
+|         | lem-login-set-token                    | Login and set current user details.                                |
+|         | lem-mode                               | Major mode for Lemmy, the federated link-aggregator and forum.     |
+| n       | lem-next-item                          | Move to next item.                                                 |
+| p       | lem-prev-item                          | Move to prev item.                                                 |
+|         | lem-ui--follow-link-at-point           | Follow link at point.                                              |
+|         | lem-ui-choose-sort                     | Read a sort type and load it.                                      |
+|         | lem-ui-choose-type                     | Read a listing type and load it.                                   |
+| C-c C-c | lem-ui-cycle-listing-type              | Cycle view between `lem-listing-types'.                            |
+| C-c C-s | lem-ui-cycle-sort                      | Cycle view between some `lem-sort-types'.                          |
+|         | lem-ui-dislike-item                    | Dislike (downvote) item at point.                                  |
+| s       | lem-ui-jump-to-subscribed              | Prompt for a subscribed community and view it.                     |
+|         | lem-ui-like-item                       | Like (upvote) item at point.                                       |
+|         | lem-ui-message-user-at-point           | Send private message to user at point.                             |
+|         | lem-ui-more-comments                   | Add one more page of comments to the current view.                 |
+|         | lem-ui-new-post-simple                 | .                                                                  |
+|         | lem-ui-reply-simple                    | Reply to post or comment at point.                                 |
+|         | lem-ui-save-item                       | Save item at point.                                                |
+|         | lem-ui-search                          | Do a search for one of the types in `lem-search-types'.            |
+| S       | lem-ui-subscribe-to-community-at-point | Subscribe to community at point.                                   |
+|         | lem-ui-url-lookup                      | Perform a webfinger lookup on URL and load the result in `lem.el'. |
+|         | lem-ui-view-comment-post               | View post of comment at point.                                     |
+|         | lem-ui-view-communities                | View Lemmy communities.                                            |
+| C       | lem-ui-view-community-at-point         | View community at point.                                           |
+|         | lem-ui-view-item-community             | View community of item at point.                                   |
+|         | lem-ui-view-item-user                  | View user of item at point.                                        |
+|         | lem-ui-view-own-profile                | View profile of the current user.                                  |
+|         | lem-ui-view-post-at-point              | .                                                                  |
+|         | lem-ui-view-replies                    | View reply comments to the current user.                           |
+|         | lem-ui-view-saved-posts                | View saved posts of the current user, or of user with ID.          |
+| RET     | lem-ui-view-thing-at-point             | View post, community or user at point.                             |
+|         | lem-ui-view-user-at-point              | View user at point.                                                |
