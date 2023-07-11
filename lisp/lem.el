@@ -161,15 +161,17 @@ Load current user's instance posts."
   (let* ((name (read-string "Username: ")))
     ;; if we have stored token, just set vars:
     (if-let ((token (lem-auth-fetch-token name)))
-        (setq lem-auth-token token
-              lem-current-user name)
+        (progn (setq lem-auth-token token
+                     lem-current-user name)
+               (lem-set-user-id name))
       ;; else login manually, store token, and set var:
       (let ((password (read-string "Password: "))
             (login-response (lem-login name password))
             (token (alist-get 'jwt login-response)))
         (lem-auth-store-token name token)
-        (setq lem-auth-token token))
-      (setq lem-current-user name))))
+        (setq lem-auth-token token
+              lem-current-user name)
+        (lem-set-user-id name)))))
 
 (defun lem-set-user-id (username)
   "Set `lem-user-id' to that of USERNAME."

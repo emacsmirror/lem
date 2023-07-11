@@ -493,7 +493,7 @@ STRING means ID should be a string."
           (string-match "^/profile/[[:alpha:]]+$" query)
           (string-match "^/p/[[:alpha:]]+/[[:digit:]]+$" query)
           (string-match "^/[[:alpha:]]+$" query)
-          (string-match "^/u/[[:alpha:]]+$" query)
+          (string-match "^/u/[_[:alpha:]]+$" query)
           (string-match "^/c/[[:alnum:]]+$" query)
           (string-match "^/post/[[:digit:]]+$" query)
           (string-match "^/comment/[[:digit:]]+$" query)))))
@@ -808,7 +808,7 @@ LIMIT is the max results to return."
 
 (defun lem-ui--communities-alist (communities)
   "Return an alist of name/description and ID from COMMUNITIES."
-  (cl-loop for item in (alist-get 'communities communities)
+  (cl-loop for item in communities
            collect (let-alist item
                      (cons (concat .community.name " | "
                                    (string-limit .community.description 40))
@@ -817,7 +817,7 @@ LIMIT is the max results to return."
 (defun lem-ui-jump-to-subscribed ()
   "Prompt for a subscribed community and view it."
   (interactive)
-  (let* ((communities (lem-list-communities "Subscribed"))
+  (let* ((communities (lem-api-get-subscribed-communities))
          (list (lem-ui--communities-alist communities))
          (choice (completing-read "Jump to community: "
                                   list))
@@ -962,15 +962,14 @@ Simple means we just read a string."
          (content (read-string "Reply: "))
          (post-id (if (equal type 'post)
                       (lem-ui--id-from-prop)
-                    (when-let ((post (alist-get 'post json)))
-                      (alist-get 'id post))))
+                    (lem-ui--id-from-json json 'post)))
          (comment-id (when (equal type 'comment)
-                       (when-let ((comment (alist-get 'comment json)))
-                         (alist-get 'id comment))))
+                       (lem-ui--id-from-json json 'comment)))
          (response (lem-create-comment post-id content comment-id)))
     (when response
       (let-alist response
-        (message "Comment created: %s" .comment_view.comment.content)))))
+        (message "Comment created: %s" .comment_view.comment.content)
+        (lem-ui-view-post (number-to-string post-id))))))
 
 (defun lem-ui-view-replies ()
   "View unread replies."
