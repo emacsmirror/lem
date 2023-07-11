@@ -181,6 +181,9 @@ See `fedi-request'."
      ,json ,headers))
 
 ;;; INSTANCES
+;; FIXME: this doesn't always send auth token! it does when i edebug the
+;; expanded macro.
+;; TODO: error handle if not auth token sent
 (lem-request "get" "get-instance" "site"
   ()
   "Get instance details.
@@ -189,6 +192,19 @@ federated_instances, all_languages, discussion_languages, and
 taglines.")
 
 ;; (lem-get-instance)
+
+(defun lem-api-get-current-user ()
+  "Get data for the current user, from the site endpoint.
+Returns a local_user_view, containing local_user object, person object, counts object, follows list containing community objects, moderates list of community objects, community_blocks, person_blocks, and discussion_languages."
+  (let ((site (lem-get-instance)))
+    (alist-get 'my_user site)))
+
+(defun lem-api-get-subscribed-communities ()
+  "Return the data of the current user's subscribed communities.
+Returns follows data, from under my_user, from the site endpoint."
+  (let* ((current-user (lem-api-get-current-user))
+         (fols (alist-get 'follows current-user)))
+    fols))
 
 (lem-request "get" "get-site-metadata" "post/site_metadata"
   (url)
@@ -267,6 +283,8 @@ Returns a person_view, comments, posts, moderates objects."
   (username person-id sort limit page community-id)
   nil
   (saved-only))
+
+;; (lem-get-person nil "8511")
 
 (defun lem-api-get-person-saved-only (person-id)
   ""

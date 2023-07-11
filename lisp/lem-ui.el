@@ -808,7 +808,7 @@ LIMIT is the max results to return."
 
 (defun lem-ui--communities-alist (communities)
   "Return an alist of name/description and ID from COMMUNITIES."
-  (cl-loop for item in (alist-get 'communities communities)
+  (cl-loop for item in communities
            collect (let-alist item
                      (cons (concat .community.name " | "
                                    (string-limit .community.description 40))
@@ -817,8 +817,7 @@ LIMIT is the max results to return."
 (defun lem-ui-jump-to-subscribed ()
   "Prompt for a subscribed community and view it."
   (interactive)
-  ;; FIXME: doesn't list communities just subscribed to?
-  (let* ((communities (lem-list-communities "Subscribed"))
+  (let* ((communities (lem-api-get-subscribed-communities))
          (list (lem-ui--communities-alist communities))
          (choice (completing-read "Jump to community: "
                                   list))
