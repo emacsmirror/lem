@@ -155,39 +155,83 @@ Logging in will set this. You can also save it in your init.el.")
 
 
 ;;; MACRO
-(defmacro lem-request
+(defmacro lem-define-request
     (method name endpoint
-            &optional args docstring params man-params opt-bools json headers unauthorized)
-  "Create http request function NAME, using http METHOD, for ENDPOINT.
+            &optional args docstring params man-params opt-bools json headers
+            unauthorized)
+  "Create a http request function NAME, using http METHOD, for ENDPOINT.
 ARGS are for the function.
-PARAMS is an alist of form parameters to send with the request.
-AUTHORIZED means submit an auth alist to params.
+PARAMS is an list of elements from which to build an alist of
+form parameters to send with the request.
+MAN-PARAMS is an alist, to append to the one created from PARAMS.
 JSON means to encode params as a JSON payload.
 HEADERS is an alist that will be bound as `url-request-extra-headers'.
-To use this macro, you first need to set `fedi-package-prefix' to
-the name of your package.
-See `fedi-request'."
+
+This macro is designed to generate functions for fetching data
+from JSON APIs.
+
+To use it, you first need to set `fedi-package-prefix' to the
+name of your package, and set `fedi-instance-url' to the URL of
+an instance of your fedi service.
+
+The name of functions generated with this will be the result of:
+\(concat fedi-package-prefix \"-\" name).
+
+The full URL for the endpoint is constructed by `fedi-http--api',
+which see. ENDPOINT does not require a preceding slash.
+
+For example, to make a GET request, called PKG-search to endpoint /search:
+
+\(fedi-request \"get\" \"search\" \"search\"
+  (q)
+  \"Make a GET request.
+Q is the search query.\"
+  \\=(q))
+
+This macro doesn't handle authenticated requests, as these differ
+between services. But you can easily wrap it in another macro
+that handles auth by providing info using HEADERS or AUTH-PARAM."
   (declare (debug t)
            (indent 3))
-  `(fedi-request ,method ,name ,endpoint
-     ,args ,docstring ,params
-     ;; add auth param to manual-params:
-     ,(unless unauthorized
-        (if man-params
-            (append `(,man-params)
-                    ;; this runs only when we call a resulting funtion:
-                    '(list (cons "auth" (or lem-auth-token
-                                            (lem-auth-fetch-token)))))
-          '(list (cons "auth" (or lem-auth-token
-                                  (lem-auth-fetch-token))))))
-     ,opt-bools
-     ,json ,headers))
+  (let ((req-fun (intern (concat "fedi-http--" method))))
+    `(defun ,(intern (concat fedi-package-prefix "-" name)) ,args
+       ,docstring
+       (let* ((req-url (fedi-http--api ,endpoint))
+              (url-request-method ,(upcase method))
+              (url-request-extra-headers ,headers)
+              (auth `(("auth" . ,(or lem-auth-token
+                                     (lem-auth-fetch-token)))))
+              ;; FIXME: combine bools and man-params: one takes "true" the other 't as val
+              ;; i think it's just because one is json parsed one not
+              (bools (remove nil
+                             (list ,@(fedi-make-params-alist
+                                      opt-bools #'fedi-arg-when-boolean))))
+              (params-alist (remove nil
+                                    (list ,@(fedi-make-params-alist
+                                             params #'fedi-arg-when-expr))))
+              (params (if ,man-params
+                          (append ,man-params params-alist)
+                        params-alist))
+              (params (if ,unauthorized
+                          (append params bools)
+                        (append auth params bools)))
+              (response
+               (cond ((or (equal ,method "post")
+                          (equal ,method "put"))
+                      ;; FIXME: deal with headers nil arg here:
+                      (funcall #',req-fun req-url params nil ,json))
+                     (t
+                      (funcall #',req-fun req-url params)))))
+         (fedi-http--triage response
+                            (lambda ()
+                              (with-current-buffer response
+                                (fedi-http--process-json))))))))
 
 ;;; INSTANCES
 ;; FIXME: this doesn't always send auth token! it does when i edebug the
 ;; expanded macro.
 ;; TODO: error handle if not auth token sent
-(lem-request "get" "get-instance" "site"
+(lem-define-request "get" "get-instance" "site"
   ()
   "Get instance details.
 Returns a site_view, admins list, online count, version, my_user,
@@ -209,7 +253,7 @@ Returns follows data, from under my_user, from the site endpoint."
          (fols (alist-get 'follows current-user)))
     fols))
 
-(lem-request "get" "get-site-metadata" "post/site_metadata"
+(lem-define-request "get" "get-site-metadata" "post/site_metadata"
   (url)
   "Get site metadata for URL, any Lemmy instance."
   (url))
@@ -223,14 +267,14 @@ SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return."
   (lem-get-posts type sort limit))
 
-;; (setq lem-test-inst-posts (lem-get-instance-posts "Subscribed"))
+;; (setq lem-test-inst-posts (lem-api-get-instance-posts "Subscribed"))
 
-(lem-request "get" "get-federated-instances" "federated_instances")
+(lem-define-request "get" "get-federated-instances" "federated_instances")
 
 ;; (lem-get-federated-instances)
 
 ;;; SEARCH
-(lem-request "get" "search" "search"
+(lem-define-request "get" "search" "search"
   (q &optional type- listing-type sort limit page community-name community-id) ;  creator-id
   "Search for QUERY.
 TYPE- must be a member of `lem-search-types'. Defaults to All.
@@ -243,7 +287,7 @@ LIMIT and PAGE are numbers."
 (defun lem-api-search (q type)
   "Search for Q.
 TYPE must be a member of `lem-search-types'. Defaults to All."
-  (lem-search q type ))
+  (lem-search q type))
 
 (defun lem-api-search-users
     (q &optional type- listing-type sort limit page community-name community-id) ;  creator-id
@@ -265,13 +309,15 @@ TYPE must be a member of `lem-search-types'. Defaults to All."
   ""
   (lem-search q "Comments" listing-type sort limit page community-name community-id))
 
-(lem-request "get" "resolve-object" "resolve_object"
+(lem-define-request "get" "resolve-object" "resolve_object"
   (q)
   "Do a webfinger lookup for query Q."
   (q))
 
+;; (lem-resolve-object "https://lemmy.ml/u/blawsybogsy")
+
 ;;; AUTH
-(lem-request "post" "login" "user/login"
+(lem-define-request "post" "login" "user/login"
   (username-or-email password)
   "Log in to `fedi-instance-url' with NAME and PASSWORD."
   (username-or-email password)
@@ -279,7 +325,7 @@ TYPE must be a member of `lem-search-types'. Defaults to All."
   :json nil :unauthed)
 
 ;;; USERS / PERSON
-(lem-request "get" "get-person" "user"
+(lem-define-request "get" "get-person" "user"
   (&optional username person-id sort limit page community-id saved-only)
   "Get person with ID.
 Returns a person_view, comments, posts, moderates objects."
@@ -287,7 +333,7 @@ Returns a person_view, comments, posts, moderates objects."
   nil
   (saved-only))
 
-;; (lem-get-person nil "8511")
+;; (lem-get-person nil "8511" nil nil nil nil :s)
 
 (defun lem-api-get-person-saved-only (person-id)
   ""
@@ -312,7 +358,7 @@ Returns a person_view, comments, posts, moderates objects."
 
 ;;; NOTIFS
 ;; TODO: allow this to be called with kw arg and handle boolean str:
-(lem-request "get" "get-mentions" "user/mention"
+(lem-define-request "get" "get-mentions" "user/mention"
   (&optional unread-only)
   "Get mentions for the current user.
 Returns a mentions list.
@@ -323,7 +369,7 @@ UNREAD-ONLY is a string, either \"true\" or \"false\"."
 ;; (lem-get-mentions)
 
 ;; TODO: allow this to be called with kw arg and handle boolean str:
-(lem-request "get" "get-replies" "user/replies"
+(lem-define-request "get" "get-replies" "user/replies"
   (&optional unread-only)
   "Get replies for the current user.
 Returns a list of comment_reply objects.
@@ -334,7 +380,7 @@ UNREAD-ONLY is a string, either \"true\" or \"false\"."
 ;; (lem-get-replies)
 
 ;;; COMMUNITIES
-(lem-request "get" "get-community" "community"
+(lem-define-request "get" "get-community" "community"
   (&optional id name)
   "Get community with ID or NAME.
 Returns a community_view, site, moderators, online count,
@@ -344,7 +390,7 @@ discussion_languages, default_post_language."
 ;; (lem-get-community nil "96200")
 
 ;; FIXME: doesn't return new subscriptions, but web UI shows them:
-(lem-request "get" "list-communities" "community/list"
+(lem-define-request "get" "list-communities" "community/list"
   (&optional type- sort limit page)
   "Returns a list of community objects."
   (type- sort limit page))
@@ -353,12 +399,12 @@ discussion_languages, default_post_language."
 ;; (lem-list-communities "Subscribed")
 ;; (lem-list-communities "Local")
 
-(lem-request "post" "follow-community" "community/follow"
+(lem-define-request "post" "follow-community" "community/follow"
   (community-id)
   "Follow a community with COMMUNITY-ID.
 Returns a community_view and discussion_languages."
   (community-id)
-  ("follow" . t)
+  '(("follow" . t))
   nil :json)
 
 ;; (lem-follow-community 14711)
@@ -373,7 +419,7 @@ Returns a community_view and discussion_languages."
 ;;   (when (equal subed "Subscribed")
 ;;     (format "Subscribed to %s [%s]" name desc)))
 
-(lem-request "post" "create-community" "community"
+(lem-define-request "post" "create-community" "community"
   (name title &optional banner description discussion-languages
         icon nsfw mods-only-post)
   "Create a community with NAME.
@@ -384,23 +430,23 @@ Returns a community_view and discussion_languages."
 
 ;; (lem-create-community "communeity" "com")
 
-(lem-request "post" "delete-community" "community/delete"
+(lem-define-request "post" "delete-community" "community/delete"
   (community-id)
   "Delete community with COMMUNITY-ID, a number.
 Returns a community_view and discussion_languages."
   (community-id)
-  ("deleted" . t)
+  '(("deleted" . t))
   nil :json)
 
 ;; (lem-delete-community 98302)
 
 
 ;; TODO: block community
-(lem-request "post" "block-community" "community/block"
+(lem-define-request "post" "block-community" "community/block"
   (community-id)
   "Block community with COMMUNITY-ID"
   (community-id)
-  ("block" . t)
+  '(("block" . t))
   nil :json)
 
 ;; (lem-block-community 96200)
@@ -408,7 +454,7 @@ Returns a community_view and discussion_languages."
 ;; TODO: hide community
 
 ;;; POSTS
-(lem-request "get" "get-post" "post"
+(lem-define-request "get" "get-post" "post"
   (id)
   "Get post with ID.
 Returns a post_view, a community_view, moderators, and online count."
@@ -416,7 +462,7 @@ Returns a post_view, a community_view, moderators, and online count."
 
 ;; (setq lem-test-post (lem-get-post "1341246"))
 
-(lem-request "get" "get-posts" "post/list"
+(lem-define-request "get" "get-posts" "post/list"
   (&optional type- sort limit page community-id community-name) ;saved_only
   "List posts for the args provided.
 TYPE- must be member of `lem-listing-types'.
@@ -451,7 +497,7 @@ LIMIT is the amount of results to return."
   (lem-get-posts type sort limit page nil community-name))
 
 ;; https://join-lemmy.org/api/interfaces/CreatePost.html
-(lem-request "post" "create-post" "post"
+(lem-define-request "post" "create-post" "post"
   (name community-id &optional body url nsfw honeypot language-id)
   "Create a new post with NAME, on community with COMMUNITY-ID.
 BODY is the post's content. URL is its link.
@@ -469,7 +515,7 @@ Returns a post_view."
 ;;   (when name
 ;;     (format "Post created: %s" name)))
 
-(lem-request "post" "like-post" "post/like"
+(lem-define-request "post" "like-post" "post/like"
   (post-id score)
   "Like post with POST-ID.
 SCORE is a number, either 0, 1 to upvote, and -1 to downvote.
@@ -479,7 +525,7 @@ Returns a post_view."
 
 ;; (lem-like-post 1341246 1)
 
-(lem-request "put" "edit-post" "post"
+(lem-define-request "put" "edit-post" "post"
   (post-id name &optional body url) ; nsfw url lang-id
   "Edit post with ID, giving it a NEW-NAME, and NEW-BODY and NEW-URL.
 Returns a post_view."
@@ -488,16 +534,16 @@ Returns a post_view."
 
 ;; (lem-edit-post 1341246 "blaodh" "trep")
 
-(lem-request "post" "delete-post" "post/delete"
+(lem-define-request "post" "delete-post" "post/delete"
   (post-id)
   ""
   (post-id)
-  ("deleted" . t)
+  '(("deleted" . t))
   nil :json)
 
 ;; (lem-delete-post 1341246)
 
-(lem-request "post" "report-post" "post/report"
+(lem-define-request "post" "report-post" "post/report"
   (post-id reason)
   "Report post with ID to instance moderator, giving REASON, a string.
 Returns a post_report_view."
@@ -508,7 +554,7 @@ Returns a post_report_view."
 ;; <https://join-lemmy.org/api/interfaces/GetComments.html>
 ;; To get posts for a federated community by name, use name@instance.tld .
 
-(lem-request "get" "get-comment" "comment"
+(lem-define-request "get" "get-comment" "comment"
   (id)
   "Get comment with ID.
 Returns a comment_view, recipient_ids, and form_id."
@@ -516,7 +562,7 @@ Returns a comment_view, recipient_ids, and form_id."
 
 ;; (lem-get-comment "765662")
 
-(lem-request "post" "create-comment" "comment"
+(lem-define-request "post" "create-comment" "comment"
   (post-id content &optional parent-id)
   "Create a comment on post POST-ID, with CONTENT.
 PARENT-ID is the parent comment to reply to.
@@ -533,7 +579,7 @@ Returns a comment_view, recipient_ids, and form_id."
 ;;   (when comment
 ;;     (format "Comment created: %s" comment)))
 
-(lem-request "get" "get-comments" "comment/list"
+(lem-define-request "get" "get-comments" "comment/list"
   (&optional post-id parent-id type- sort limit page
              ;; saved_only
              community-id community-name)
@@ -585,7 +631,7 @@ LIMIT is the amount of results to return."
 ;; (lem-get-community-comments-by-id "96200")
 ;; (lem-get-community-comments-by-name "emacs")
 
-(lem-request "put" "edit-comment" "comment"
+(lem-define-request "put" "edit-comment" "comment"
   (comment-id content)
   "Edit comment with ID, providing content NEW-STR.
 To get the old text for editing, you first need to fetch the comment.
@@ -595,7 +641,7 @@ Returns a comment_view, recipient_ids, and form_id."
 
 ;; (lem-edit-comment 765662 "tasdfl;k")
 
-(lem-request "post" "like-comment" "comment/like"
+(lem-define-request "post" "like-comment" "comment/like"
   (comment-id score)
   "Like comment with COMMENT-ID.
 SCORE is a number, either 0, 1 to upvote, and -1 to downvote.
@@ -605,16 +651,16 @@ Returns a comment_view."
 
 ;; (lem-like-comment 765662 1)
 
-(lem-request "post" "delete-comment" "comment/delete"
+(lem-define-request "post" "delete-comment" "comment/delete"
   (comment-id)
   ""
   (comment-id)
-  ("deleted" . t)
+  '(("deleted" . t))
   nil :json)
 
 ;; (lem-delete-comment 765662)
 
-(lem-request "post" "report-comment" "comment/report"
+(lem-define-request "post" "report-comment" "comment/report"
   (comment-id reason)
   "Report comment with ID to instance moderator, giving REASON, a string.
 Returns comment_report_view."
@@ -624,7 +670,7 @@ Returns comment_report_view."
 ;; (lem-report-comment 765662 "test") ; broken
 
 ;;; PRIVATE MESSAGES
-(lem-request "get" "get-private-messages" "private_message/list"
+(lem-define-request "get" "get-private-messages" "private_message/list"
   (&optional unread-only)
   "Get private messages for the current user.
 Returns private_messages."
@@ -632,7 +678,7 @@ Returns private_messages."
 
 ;; (lem-get-private-messages "true")
 
-(lem-request "post" "send-private-message" "private_message"
+(lem-define-request "post" "send-private-message" "private_message"
   (content recipient-id)
   "Sent a private message CONTENT to user with RECIPIENT-ID.
 Returns a private_message_view."
@@ -647,11 +693,11 @@ Returns a private_message_view."
 
 ;;; SAVING
 
-(lem-request "put" "save-post" "post/save"
+(lem-define-request "put" "save-post" "post/save"
   (post-id)
   "Save post with POST-ID, a number."
   (post-id)
-  ("save" . t)
+  '(("save" . t))
   nil :json)
 
 ;; eg ids:
