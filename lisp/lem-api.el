@@ -175,8 +175,11 @@ See `fedi-request'."
      ,(unless unauthorized
         (if man-params
             (append `(,man-params)
-                    `(("auth" . ,lem-auth-token)))
-          `(("auth" . ,lem-auth-token))))
+                    ;; this runs only when we call a resulting funtion:
+                    '(list (cons "auth" (or lem-auth-token
+                                            (lem-auth-fetch-token)))))
+          '(list (cons "auth" (or lem-auth-token
+                                  (lem-auth-fetch-token))))))
      ,opt-bools
      ,json ,headers))
 
