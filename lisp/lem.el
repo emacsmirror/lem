@@ -159,7 +159,8 @@ Load current user's instance posts."
 (defun lem-login-set-token ()
   "Login and set current user details."
   (interactive)
-  (let* ((name (read-string "Username: ")))
+  (let* ((name (or lem-current-user
+                   (read-string "Username: "))))
     ;; if we have stored token, just set vars:
     (if-let ((token (lem-auth-fetch-token name)))
         (progn (setq lem-auth-token token
