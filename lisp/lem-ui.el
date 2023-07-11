@@ -962,15 +962,14 @@ Simple means we just read a string."
          (content (read-string "Reply: "))
          (post-id (if (equal type 'post)
                       (lem-ui--id-from-prop)
-                    (when-let ((post (alist-get 'post json)))
-                      (alist-get 'id post))))
+                    (lem-ui--id-from-json json 'post)))
          (comment-id (when (equal type 'comment)
-                       (when-let ((comment (alist-get 'comment json)))
-                         (alist-get 'id comment))))
+                       (lem-ui--id-from-json json 'comment)))
          (response (lem-create-comment post-id content comment-id)))
     (when response
       (let-alist response
-        (message "Comment created: %s" .comment_view.comment.content)))))
+        (message "Comment created: %s" .comment_view.comment.content)
+        (lem-ui-view-post (number-to-string post-id))))))
 
 (defun lem-ui-view-replies ()
   "View unread replies."
