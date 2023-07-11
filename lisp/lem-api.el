@@ -322,6 +322,7 @@ discussion_languages, default_post_language."
 
 ;; (lem-get-community nil "96200")
 
+;; FIXME: doesn't return new subscriptions, but web UI shows them:
 (lem-request "get" "list-communities" "community/list"
   (&optional type- sort limit page)
   "Returns a list of community objects."
@@ -340,6 +341,7 @@ Returns a community_view and discussion_languages."
   nil :json)
 
 ;; (lem-follow-community 14711)
+;; (lem-follow-community 88259)
 
 ;; cb:
 ;; (let* ((json (fedi-http--process-json))
@@ -501,6 +503,7 @@ Returns a comment_view, recipient_ids, and form_id."
   (post-id content parent-id)
   nil nil :json)
 
+;; (lem-create-comment 1367490 "toot toot")
 ;; (lem-create-comment 1341246 "replying via lem.el")
 
 ;; cb:

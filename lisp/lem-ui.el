@@ -817,6 +817,7 @@ LIMIT is the max results to return."
 (defun lem-ui-jump-to-subscribed ()
   "Prompt for a subscribed community and view it."
   (interactive)
+  ;; FIXME: doesn't list communities just subscribed to?
   (let* ((communities (lem-list-communities "Subscribed"))
          (list (lem-ui--communities-alist communities))
          (choice (completing-read "Jump to community: "
