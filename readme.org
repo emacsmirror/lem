@@ -29,8 +29,9 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 - [-] finish implementing limit
 - [-] pagination
 - [-] add more items to buffer
-- [ ] improve rich text rendering of content and bylines
 - [ ] update current buffer
+- [ ] webfinger lookup bindings for all links
+- [ ] improve rich text rendering of content and bylines
 - [-] tabstop navigation logic (from mastodon.el)
 - [ ] image loading logic (from mastodon.el)
 - [ ] timestamp logic (from mastodon.el)
@@ -50,16 +51,18 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 - [X] view user
 - [X] list users
 - [X] view post and comments
-- [X] adjust listing type and sort for views
+- [X] adjust listing type and sort for current view
 - [X] buffer macro
 - [X] simple reply
 - [X] simple private message
 - [X] subscribe to community
+- [X] jump to subscribed community
 - [X] search by type: user, community, post, comment, all
 - [X] prev/next item
 - [X] render post/comment body as markdown
 - [X] generic like/dislike cmds
 - [X] "save" items [bookmarking]
+-
 
 * lem commands index
 #+BEGIN_SRC emacs-lisp :results table :colnames '("Binding" "Command" "Description") :exports results
