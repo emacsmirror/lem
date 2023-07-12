@@ -157,7 +157,7 @@ Logging in will set this. You can also save it in your init.el.")
 ;;; MACRO
 (defmacro lem-define-request
     (method name endpoint
-            &optional args docstring params man-params json headers
+            &optional args docstring params man-params headers
             unauthorized)
   "Create a http request function NAME, using http METHOD, for ENDPOINT.
 ARGS are for the function.
@@ -214,7 +214,7 @@ that handles auth by providing info using HEADERS or AUTH-PARAM."
                (cond ((or (equal ,method "post")
                           (equal ,method "put"))
                       ;; FIXME: deal with headers nil arg here:
-                      (funcall #',req-fun req-url params nil ,json))
+                      (funcall #',req-fun req-url params nil :json))
                      (t
                       (funcall #',req-fun req-url params)))))
          (fedi-http--triage response
@@ -313,7 +313,7 @@ TYPE must be a member of `lem-search-types'. Defaults to All."
   (username-or-email password)
   "Log in to `fedi-instance-url' with NAME and PASSWORD."
   (username-or-email password)
-  nil :json nil :unauthed)
+  nil nil :unauthed)
 
 ;;; USERS / PERSON
 (lem-define-request "get" "get-person" "user"
@@ -395,8 +395,7 @@ discussion_languages, default_post_language."
   "Follow a community with COMMUNITY-ID.
 Returns a community_view and discussion_languages."
   (community-id)
-  '(("follow" . t))
-  :json)
+  '(("follow" . t)))
 
 ;; (lem-follow-community 14711)
 ;; (lem-follow-community 88259)
@@ -416,8 +415,7 @@ Returns a community_view and discussion_languages."
   "Create a community with NAME.
 Returns a community_view and discussion_languages."
   (name title banner description discussion-languages
-        icon nsfw posting-restricted-to-mods)
-  nil :json)
+        icon nsfw posting-restricted-to-mods))
 
 ;; (lem-create-community "communeity" "com")
 
@@ -426,19 +424,16 @@ Returns a community_view and discussion_languages."
   "Delete community with COMMUNITY-ID, a number.
 Returns a community_view and discussion_languages."
   (community-id)
-  '(("deleted" . t))
-  :json)
+  '(("deleted" . t)))
 
 ;; (lem-delete-community 98302)
-
 
 ;; TODO: block community
 (lem-define-request "post" "block-community" "community/block"
   (community-id)
   "Block community with COMMUNITY-ID"
   (community-id)
-  '(("block" . t))
-  :json)
+  '(("block" . t)))
 
 ;; (lem-block-community 96200)
 
@@ -494,8 +489,7 @@ LIMIT is the amount of results to return."
 BODY is the post's content. URL is its link.
 NSFW and HONEYPOT not yet implemented.
 Returns a post_view."
-  (name community-id body url nsfw honeypot language-id)
-  nil :json)
+  (name community-id body url nsfw honeypot language-id))
 
 ;; (lem-create-post "tootle on" 96200 "hooley-dooley") ; always cross-posts?
 
@@ -511,8 +505,7 @@ Returns a post_view."
   "Like post with POST-ID.
 SCORE is a number, either 0, 1 to upvote, and -1 to downvote.
 Returns a post_view."
-  (post-id score)
-  nil :json)
+  (post-id score))
 
 ;; (lem-like-post 1341246 1)
 
@@ -520,8 +513,7 @@ Returns a post_view."
   (post-id name &optional body url) ; nsfw url lang-id
   "Edit post with ID, giving it a NEW-NAME, and NEW-BODY and NEW-URL.
 Returns a post_view."
-  (post-id name body url) ; nsfw url lang-id
-  nil :json)
+  (post-id name body url)) ; nsfw url lang-id
 
 ;; (lem-edit-post 1341246 "blaodh" "trep")
 
@@ -529,8 +521,7 @@ Returns a post_view."
   (post-id)
   ""
   (post-id)
-  '(("deleted" . t))
-  :json)
+  '(("deleted" . t)))
 
 ;; (lem-delete-post 1341246)
 
@@ -538,8 +529,7 @@ Returns a post_view."
   (post-id reason)
   "Report post with ID to instance moderator, giving REASON, a string.
 Returns a post_report_view."
-  (post-id reason)
-  nil :json)
+  (post-id reason))
 
 ;;; COMMENTS
 ;; <https://join-lemmy.org/api/interfaces/GetComments.html>
@@ -558,8 +548,7 @@ Returns a comment_view, recipient_ids, and form_id."
   "Create a comment on post POST-ID, with CONTENT.
 PARENT-ID is the parent comment to reply to.
 Returns a comment_view, recipient_ids, and form_id."
-  (post-id content parent-id)
-  nil :json)
+  (post-id content parent-id))
 
 ;; (lem-create-comment 1367490 "toot toot")
 ;; (lem-create-comment 1341246 "replying via lem.el")
@@ -627,8 +616,7 @@ LIMIT is the amount of results to return."
   "Edit comment with ID, providing content NEW-STR.
 To get the old text for editing, you first need to fetch the comment.
 Returns a comment_view, recipient_ids, and form_id."
-  (comment-id content)
-  nil :json)
+  (comment-id content))
 
 ;; (lem-edit-comment 765662 "tasdfl;k")
 
@@ -637,8 +625,7 @@ Returns a comment_view, recipient_ids, and form_id."
   "Like comment with COMMENT-ID.
 SCORE is a number, either 0, 1 to upvote, and -1 to downvote.
 Returns a comment_view."
-  (comment-id score)
-  nil :json)
+  (comment-id score))
 
 ;; (lem-like-comment 765662 1)
 
@@ -646,8 +633,7 @@ Returns a comment_view."
   (comment-id)
   ""
   (comment-id)
-  '(("deleted" . t))
-  :json)
+  '(("deleted" . t)))
 
 ;; (lem-delete-comment 765662)
 
@@ -655,8 +641,7 @@ Returns a comment_view."
   (comment-id reason)
   "Report comment with ID to instance moderator, giving REASON, a string.
 Returns comment_report_view."
-  (comment-id reason)
-  nil :json)
+  (comment-id reason))
 
 ;; (lem-report-comment 765662 "test") ; broken
 
@@ -673,12 +658,11 @@ Returns private_messages."
   (content recipient-id)
   "Sent a private message CONTENT to user with RECIPIENT-ID.
 Returns a private_message_view."
-  (content recipient-id)
-  nil :json)
+  (content recipient-id))
 
 ;; (lem-send-private-message "test" 899775)
 
-;; (lem-create-comment 1235982 "test" :json)
+;; (lem-create-comment 1235982 "test")
 ;; (setq lem-post-comments (lem-get-post-comments "1235982"))
 ;; (setq lem-comm (lem-community-posts "14856"))
 
@@ -688,8 +672,7 @@ Returns a private_message_view."
   (post-id)
   "Save post with POST-ID, a number."
   (post-id)
-  '(("save" . t))
-  :json)
+  '(("save" . t)))
 
 ;; eg ids:
 ;; emacs community: 14856
