@@ -278,9 +278,6 @@ STATS."
                    (concat
                     (lem-ui--propertize-link-item (or .display_name .name)
                                                   .id 'user)
-                    ;; (propertize (or .display_name .name)
-                    ;;             'id (number-to-string .id)
-                    ;;             'url .actor_id)
                     " | "))))
               admins-list)
         (insert "\n" lem-ui-horiz-bar "\n")))
@@ -872,20 +869,24 @@ SORT."
   (cl-loop for x in communities
            do (lem-ui-render-community x :stats)))
 
-(defun lem-ui-render-community (community &optional stats view)
+(defun lem-ui-render-community (community &optional stats view brief)
   "Render header details for COMMUNITY.
 BUFFER is the one to render in, a string.
 STATS are the community's stats to print.
-VIEW means COMMUNITY is a community_view."
+VIEW means COMMUNITY is a community_view.
+BRIEF means show fewer details, it is used on the current user's
+profile page."
   (let ((community (if view
                        (alist-get 'community_view community)
                      community)))
     (let-alist community
-      (let ((desc (if view
-                      (when .community.description
-                        (lem-ui-render-body .community.description))
-                    (when .description
-                      (lem-ui-render-body .description)))))
+      (let ((desc (if brief
+                      ""
+                    (if view
+                        (when .community.description
+                          (lem-ui-render-body .community.description))
+                      (when .description
+                        (lem-ui-render-body .description))))))
         (insert
          (propertize
           (concat
@@ -895,11 +896,12 @@ VIEW means COMMUNITY is a community_view."
            (lem-ui-font-lock-comment .community.name)
            "\n"
            (lem-ui-font-lock-comment .community.actor_id)
-           "\n"
-           desc
-           "\n"
-           lem-ui-horiz-bar
-           "\n")
+           (unless brief
+             "\n"
+             desc
+             "\n"
+             lem-ui-horiz-bar
+             "\n"))
           'json community
           'byline-top t ; next/prev hack
           'id .community.id
@@ -909,22 +911,24 @@ VIEW means COMMUNITY is a community_view."
         (lem-ui-render-stats .counts.subscribers
                              .counts.posts
                              .counts.comments))
-      (insert .subscribed "\n"))
+      (unless brief
+        (insert .subscribed "\n")))
     ;; mods:
-    (let* ((mods-list (alist-get 'moderators community))
-           (mods (mapcar (lambda (x)
-                           (let-alist (alist-get 'moderator x)
-                             (list (number-to-string .id)
-                                   (or .display_name .name) .actor_id)))
-                         mods-list)))
-      (when mods
-        (insert "mods: "
-                (mapconcat (lambda (x)
-                             (mapconcat #'identity x " "))
-                           mods " | ")
-                "\n"
-                lem-ui-horiz-bar
-                "\n")))
+    (unless brief
+      (let* ((mods-list (alist-get 'moderators community))
+             (mods (mapcar (lambda (x)
+                             (let-alist (alist-get 'moderator x)
+                               (list (number-to-string .id)
+                                     (or .display_name .name) .actor_id)))
+                           mods-list)))
+        (when mods
+          (insert "mods: "
+                  (mapconcat (lambda (x)
+                               (mapconcat #'identity x " "))
+                             mods " | ")
+                  "\n"
+                  lem-ui-horiz-bar
+                  "\n"))))
     (insert "\n")))
 
 (defun lem-ui-render-stats (subscribers posts comments
@@ -1191,17 +1195,29 @@ If DISLIKE, dislike (downvote) it."
       'id .person.id
       'type (caar json)))))
 
-(defun lem-ui-view-user (id &optional view-type sort limit)
+(defun lem-ui-render-user-subscriptions (json)
+  ""
+  (cl-loop for community in json
+           do (lem-ui-render-community community nil nil :subscription)))
+
+(defun lem-ui-view-user (id &optional view-type sort limit current-user)
   "View user with ID.
 VIEW-TYPE must be a member of `lem-user-view-types'.
 SORT must be a member of `lem-sort-types'.
-LIMIT is max items to show."
-  (let ((json (lem-api-get-person-by-id id sort limit))
+LIMIT is max items to show.
+CURRENT-USER means we are displaying the current user's profile."
+  (let ((user-json (lem-api-get-person-by-id id sort limit))
         (sort (or sort lem-default-sort-type))
         (buf (get-buffer-create "*lem-user*")))
     (lem-ui-with-buffer buf 'lem-mode nil
-      (let-alist json
-        (lem-ui-render-user .person_view)
+      (when current-user
+        (let-alist current-user
+          (lem-ui-render-user .local_user_view)
+          (insert "Subscribed communities:\n")
+          (lem-ui-render-user-subscriptions .follows)))
+      (let-alist user-json
+        (unless current-user
+          (lem-ui-render-user .person_view))
         (cond ((equal view-type "posts")
                (insert (lem-ui-format-heading "posts"))
                (lem-ui-render-posts .posts sort :community :trim))
@@ -1219,9 +1235,13 @@ LIMIT is max items to show."
 (defun lem-ui-view-own-profile ()
   "View profile of the current user."
   (interactive)
-  (let ((id (number-to-string
-             (lem-set-user-id lem-current-user))))
-    (lem-ui-view-user id)))
+  (let* ((current-user (lem-api-get-current-user)))
+    (lem-ui-view-user (number-to-string lem-user-id) nil nil nil current-user)))
+
+;; (let ((id (or lem-user-id
+;;               (number-to-string
+;;                (lem-set-user-id lem-current-user)))))
+;;   (lem-ui-view-user id)))
 
 ;; TODO: view own profile: full sort types
 ;; overview/comments/posts/saved listings

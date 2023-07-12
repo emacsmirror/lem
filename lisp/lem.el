@@ -145,12 +145,13 @@ Load current user's instance posts."
     (plstore-save plstore)
     (plstore-close plstore)))
 
-(defun lem-auth-fetch-token (username)
+;;;###autoload
+(defun lem-auth-fetch-token (&optional username)
   "Return jwt token for USERNAME."
   (let* ((plstore (plstore-open lem-auth-file))
          (print-length nil)
          (print-level nil)
-         (entry (plstore-get plstore username))
+         (entry (plstore-get plstore (or lem-current-user username)))
          (token (plist-get (cdr entry) :jwt)))
     (plstore-close plstore)
     token))
@@ -158,7 +159,8 @@ Load current user's instance posts."
 (defun lem-login-set-token ()
   "Login and set current user details."
   (interactive)
-  (let* ((name (read-string "Username: ")))
+  (let* ((name (or lem-current-user
+                   (read-string "Username: "))))
     ;; if we have stored token, just set vars:
     (if-let ((token (lem-auth-fetch-token name)))
         (progn (setq lem-auth-token token
