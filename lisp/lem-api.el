@@ -292,7 +292,7 @@ TYPE must be a member of `lem-search-types'. Defaults to All."
 (defun lem-api-search-users
     (q &optional type- listing-type sort limit page community-name community-id) ;  creator-id
   ""
-  (lem-api-search q "Users" listing-type sort limit page community-name community-id))
+  (lem-search q "Users" listing-type sort limit page community-name community-id))
 
 (defun lem-api-search-posts
     (q &optional type- listing-type sort limit page community-name community-id) ;  creator-id
