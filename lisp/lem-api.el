@@ -35,17 +35,13 @@
 ;; See the commented example calls under the definitions below. This should
 ;; probably be amended for consistency.
 
-;; Code hacked up together roughly, using:
+;; Code hacked together using:
 ;; <https://join-lemmy.org/api/classes/LemmyHttp.html>
 ;; <https://github.com/LemmyNet/lemmyBB/tree/main/src/api>
 ;; <https://github.com/LemmyNet/lemmy/blob/main/src/api_routes_http.rs>
 
-;; TODO: consider returning only the value of the objects returned, else
-;; probably every request has to be followed by an (alist-get 'object object)
-;; call. But some return a list of objects.
-
 ;; The signature of the functions aims to be like so:
-;; (function main-arg [secondary-art] &optional type sort limit page [tertiary args])
+;; (function main-arg [secondary-arg] &optional type sort limit page [tertiary args])
 ;; so that we can reliably handle type, sort, limit, page params
 
 ;; Lemmy API methods list:
@@ -153,6 +149,7 @@
   "A user auth token for a lemmy instance.
 Logging in will set this. You can also save it in your init.el.")
 
+(autoload 'lem-auth-fetch-token "lem")
 
 ;;; MACRO
 (defmacro lem-define-request
@@ -169,7 +166,7 @@ MAN-PARAMS is an alist, to append to the one created from PARAMS.
 They are manual, meaning that that the key and arg don't have to
 be the same. This can be used for boolean parameters. If the
 request sends encoded JSON data (ie POST or PUT), MAN-PARAMS
-should be formatted as plain emacs lisp: \'((\"boolean\" . t))',
+should be formatted as plain Emacs Lisp: \'((\"boolean\" . t))',
 if the request sends query string parameters (GET, etc.), then
 MAN-PARAMS should be formatted as strings only: \'((\"boolean\" .
 \"true\"))'.
