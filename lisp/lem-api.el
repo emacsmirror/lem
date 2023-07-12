@@ -321,9 +321,11 @@ TYPE must be a member of `lem-search-types'. Defaults to All."
   "Get person with ID.
 Returns a person_view, comments, posts, moderates objects."
   (username person-id sort limit page community-id)
-  '(("saved_only" . "true")))
+  ;; FIXME: this requires json string, while other params require plain lisp:
+  (when saved-only
+    '(("saved_only" . "true"))))
 
-;; (lem-get-person nil "8511" nil nil nil nil :saved)
+;; (lem-get-person nil "8511" nil nil nil nil)
 
 (defun lem-api-get-person-saved-only (person-id)
   ""
@@ -379,7 +381,6 @@ discussion_languages, default_post_language."
 
 ;; (lem-get-community nil "96200")
 
-;; FIXME: doesn't return new subscriptions, but web UI shows them:
 (lem-define-request "get" "list-communities" "community/list"
   (&optional type- sort limit page)
   "Returns a list of community objects."
