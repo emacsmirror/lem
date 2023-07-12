@@ -161,10 +161,19 @@ Logging in will set this. You can also save it in your init.el.")
             unauthorized)
   "Create a http request function NAME, using http METHOD, for ENDPOINT.
 ARGS are for the function.
-PARAMS is an list of elements from which to build an alist of
-form parameters to send with the request.
+PARAMS is a plain list of elements from which to build an alist
+of form parameters to send with the request. The value of the
+corresponding arg must match the key of the parameter.
+
 MAN-PARAMS is an alist, to append to the one created from PARAMS.
-JSON means to encode params as a JSON payload.
+They are manual, meaning that that the key and arg don't have to
+be the same. This can be used for boolean parameters. If the
+request sends encoded JSON data (ie POST or PUT), MAN-PARAMS
+should be formatted as plain emacs lisp: \'((\"boolean\" . t))',
+if the request sends query string parameters (GET, etc.), then
+MAN-PARAMS should be formatted as strings only: \'((\"boolean\" .
+\"true\"))'.
+
 HEADERS is an alist that will be bound as `url-request-extra-headers'.
 
 This macro is designed to generate functions for fetching data
@@ -175,22 +184,18 @@ name of your package, and set `fedi-instance-url' to the URL of
 an instance of your fedi service.
 
 The name of functions generated with this will be the result of:
-\(concat fedi-package-prefix \"-\" name).
+\(concat fedi-package-prefix \"-\" NAME).
 
 The full URL for the endpoint is constructed by `fedi-http--api',
 which see. ENDPOINT does not require a preceding slash.
 
-For example, to make a GET request, called PKG-search to endpoint /search:
+For example, to define a GET request, called PKG-search to endpoint /search:
 
 \(fedi-request \"get\" \"search\" \"search\"
   (q)
   \"Make a GET request.
 Q is the search query.\"
-  \\=(q))
-
-This macro doesn't handle authenticated requests, as these differ
-between services. But you can easily wrap it in another macro
-that handles auth by providing info using HEADERS or AUTH-PARAM."
+  \\=(q))."
   (declare (debug t)
            (indent 3))
   (let ((req-fun (intern (concat "fedi-http--" method))))
@@ -234,7 +239,10 @@ taglines.")
 
 (defun lem-api-get-current-user ()
   "Get data for the current user, from the site endpoint.
-Returns a local_user_view, containing local_user object, person object, counts object, follows list containing community objects, moderates list of community objects, community_blocks, person_blocks, and discussion_languages."
+Returns a local_user_view, containing local_user object, person
+object, counts object, follows list containing community objects,
+moderates list of community objects, community_blocks,
+person_blocks, and discussion_languages."
   (let ((site (lem-get-instance)))
     (alist-get 'my_user site)))
 
