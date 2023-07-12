@@ -362,10 +362,12 @@ Returns a person_view, comments, posts, moderates objects."
   (&optional unread-only)
   "Get mentions for the current user.
 Returns a mentions list.
-UNREAD-ONLY is a string, either \"true\" or \"false\"."
-  (unread-only))
+UNREAD-ONLY means to only return unread items."
+  nil
+  (when unread-only
+    '(("unread_only" . "true"))))
 
-;; (lem-get-mentions "true")
+;; (lem-get-mentions :unread)
 ;; (lem-get-mentions)
 
 ;; TODO: allow this to be called with kw arg and handle boolean str:
@@ -373,10 +375,12 @@ UNREAD-ONLY is a string, either \"true\" or \"false\"."
   (&optional unread-only)
   "Get replies for the current user.
 Returns a list of comment_reply objects.
-UNREAD-ONLY is a string, either \"true\" or \"false\"."
-  (unread-only))
+UNREAD-ONLY means to only return unread items."
+  nil
+  (when unread-only
+    '(("unread_only" . "true"))))
 
-;; (lem-get-replies "true")
+;; (lem-get-replies :unread)
 ;; (lem-get-replies)
 
 ;;; COMMUNITIES
