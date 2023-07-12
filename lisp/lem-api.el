@@ -423,7 +423,7 @@ Returns a community_view and discussion_languages."
 
 (lem-define-request "post" "create-community" "community"
   (name title &optional banner description discussion-languages
-        icon nsfw mods-only-post)
+        icon nsfw posting-restricted-to-mods)
   "Create a community with NAME.
 Returns a community_view and discussion_languages."
   (name title banner description discussion-languages
