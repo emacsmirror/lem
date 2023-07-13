@@ -168,9 +168,10 @@ NUMBER means return ID as a number."
 SORT must be a member of `lem-sort-types'.
 LISTING-TYPE must be member of `lem-listing-types'.
 ITEM is a symbol, either posts or comments."
+  ;; TODO: allow us to set a single element:
   (setq lem-ui-buffer-spec
-        `(:sort ,sort :listing-type ,listing-type :view-fun ,view-fun
-                :item-type ,item :page ,page)))
+        `(:listing-type ,listing-type :sort ,sort :view-fun ,view-fun
+                        :item ,item :page ,page)))
 
 (defun lem-ui-get-buffer-spec (key)
   "Return value of KEY in `lem-ui-buffer-spec'."
@@ -1133,6 +1134,15 @@ SORT must be a member of `lem-sort-types'."
          (unique-comments (cl-remove-duplicates comments)))
     (lem-ui--build-and-render-comments-hierarchy unique-comments)))
 
+(defun lem-ui-remove-displayed-comments (comments)
+  "Remove comment from COMMENTS if it is in `lem-ui-current-comments'."
+  (cl-remove-if
+   (lambda (x)
+     (let ((id (alist-get 'id
+                          (alist-get 'comment x))))
+       (cl-member id lem-ui-current-comments)))
+   (alist-get 'comments comments)))
+
 (defun lem-ui-more-comments ()
   "Add one more page of comments to the current view."
   (interactive)
@@ -1141,11 +1151,20 @@ SORT must be a member of `lem-sort-types'."
                                  (goto-char (point-min))
                                  (lem-ui--property 'id))))
          (sort (lem-ui-get-buffer-spec :sort))
-         (comments (lem-api-get-post-comments id "All" sort
-                                              lem-ui-comments-limit page)))
-    ;; TODO: remove comments in `lem-ui-current-comments'
+         (all-comments (lem-api-get-post-comments id "All" sort
+                                                  lem-ui-comments-limit
+                                                  (number-to-string page)))
+         (no-duplicates (lem-ui-remove-displayed-comments all-comments)))
+    (setf (alist-get 'comments all-comments)
+          no-duplicates)
+    (lem-ui-set-buffer-spec (lem-ui-get-buffer-spec :listing-type)
+                            (lem-ui-get-buffer-spec :sort)
+                            (lem-ui-get-buffer-spec :view-fun)
+                            (lem-ui-get-buffer-spec :item)
+                            page)
     (goto-char (point-max))
-    (lem-ui--build-and-render-comments-hierarchy comments)))
+    ;; NB: `lem-ui-current-comments' is updated during rendering:
+    (lem-ui--build-and-render-comments-hierarchy all-comments)))
 
 (defun lem-ui-view-comment-post ()
   "View post of comment at point."
