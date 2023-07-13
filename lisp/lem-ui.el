@@ -46,6 +46,18 @@ Used for pagination.")
       (make-string 12 ?―)
     (make-string 12 ?-)))
 
+(defun lem-ui-format-heading (name)
+  "Format a heading for NAME, a string."
+  (propertize
+   (concat " " lem-ui-horiz-bar "\n "
+           (upcase name)
+           "\n " lem-ui-horiz-bar "\n")
+   'face 'success))
+
+(defun lem-ui-insert-heading (name)
+  "Insert heading for NAME, a string."
+  (insert (lem-ui-format-heading name)))
+
 (defcustom lem-ui-symbols
   '((reply     . ("💬" . "R"))
     (boost     . ("🔁" . "B"))
@@ -116,6 +128,7 @@ If STRING, return the id as a string."
       id)))
 
 ;;; MACROS
+
 (defmacro lem-ui-with-buffer (buffer mode-fun other-window &rest body)
   "Evaluate BODY in a new or existing buffer called BUFFER.
 MODE-FUN is called to set the major mode.
@@ -146,6 +159,7 @@ NUMBER means return ID as a number."
      ,body))
 
 ;;; BUFFER DETAILS
+
 (defvar-local lem-ui-buffer-spec nil
   "A plist containing details about the current lem buffer.")
 
@@ -728,15 +742,20 @@ Saved items can be viewed in your profile, like bookmarks."
           (t
            (message "You can only save posts and comments.")))))
 
-(defun lem-ui-view-saved-posts (&optional id)
+(defun lem-ui-view-saved-items (&optional id sort limit page)
   "View saved posts of the current user, or of user with ID."
   (interactive)
   (let* ((saved-only (lem-api-get-person-saved-only
-                      (number-to-string (or id lem-user-id))))
+                      (number-to-string (or id lem-user-id))
+                      sort (or limit lem-ui-comments-limit) page))
          (posts (alist-get 'posts saved-only))
-         (buffer (format "*lem-saved-posts*")))
+         (comments (alist-get 'comments saved-only))
+         (buffer (format "*lem-saved-items*")))
     (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode nil
-      (lem-ui-render-posts posts buffer)
+      (lem-ui-insert-heading "SAVED POSTS")
+      (lem-ui-render-posts posts)
+      (lem-ui-insert-heading "SAVED COMMENTS")
+      (lem-ui-render-comments comments)
       (goto-char (point-min)))))
 
 ;;; CREATE A POST
@@ -844,9 +863,9 @@ PAGE is the page number of items to display, a string."
       (lem-ui-render-community community :stats :view)
       (if (eq item 'comments)
           (progn
-            (insert (lem-ui-format-heading "comments"))
+            (lem-ui-insert-heading "comments")
             (lem-ui-render-comments items nil sort)) ; no type
-        (insert (lem-ui-format-heading "posts"))
+        (lem-ui-insert-heading "posts")
         (lem-ui-render-posts items buf sort)) ; no children
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-community item page)
       (goto-char (point-min)))))
@@ -1219,13 +1238,13 @@ CURRENT-USER means we are displaying the current user's profile."
         (unless current-user
           (lem-ui-render-user .person_view))
         (cond ((equal view-type "posts")
-               (insert (lem-ui-format-heading "posts"))
+               (lem-ui-insert-heading "posts")
                (lem-ui-render-posts .posts sort :community :trim))
               ((equal view-type "comments")
-               (insert (lem-ui-format-heading "comments"))
+               (lem-ui-insert-heading "comments")
                (lem-ui-render-comments .comments view-type sort))
               (t ; no arg: overview
-               (insert (lem-ui-format-heading "overview"))
+               (lem-ui-insert-heading "overview")
                ;; TODO: insert mixed comments/posts
                (lem-ui-render-posts .posts sort :community :trim)
                (lem-ui-render-comments .comments view-type sort)))
@@ -1256,14 +1275,6 @@ CURRENT-USER means we are displaying the current user's profile."
         (let ((str (number-to-string user)))
           (lem-ui-view-user str 'overview))
       (message "No user item at point?"))))
-
-(defun lem-ui-format-heading (name)
-  "Format a heading for NAME."
-  (propertize
-   (concat " " lem-ui-horiz-bar "\n "
-           (upcase name)
-           "\n " lem-ui-horiz-bar "\n")
-   'face 'success))
 
 (defun lem-ui-view-user-at-point ()
   "View user at point."

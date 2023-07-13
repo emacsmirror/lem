@@ -333,9 +333,9 @@ Returns a person_view, comments, posts, moderates objects."
 ;; (lem-get-person nil "8511" nil nil nil nil)
 ;; (lem-get-person nil "8511" nil nil nil nil :saved-only)
 
-(defun lem-api-get-person-saved-only (person-id)
+(defun lem-api-get-person-saved-only (person-id &optional sort limit page)
   ""
-  (lem-get-person nil person-id nil nil nil nil :saved-only))
+  (lem-get-person nil person-id sort limit page nil :saved-only))
 
 ;; (setq lem-saved-only-test (lem-api-get-person-saved-only "8511"))
 
@@ -685,6 +685,12 @@ Returns a private_message_view."
   (post-id)
   "Save post with POST-ID, a number."
   (post-id)
+  '(("save" . t)))
+
+(lem-define-request "put" "save-comment" "comment/save"
+  (comment-id)
+  "Save comment with COMMENT-ID, a number."
+  (comment-id)
   '(("save" . t)))
 
 ;; eg ids:
