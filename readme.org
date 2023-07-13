@@ -26,10 +26,8 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 
 * TODOS / doing (UI layer)
 
-- [-] finish implementing limit
-- [-] pagination
-- [-] add more items to buffer
-- [ ] update current buffer
+- [-] finish pagination/add older items to buffer
+- [ ] update current buffer with new items
 - [ ] webfinger lookup bindings for all links
 - [ ] improve rich text rendering of content and bylines
 - [-] tabstop navigation logic (from mastodon.el)
@@ -62,7 +60,6 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 - [X] render post/comment body as markdown
 - [X] generic like/dislike cmds
 - [X] "save" items [bookmarking]
--
 
 * lem commands index
 #+BEGIN_SRC emacs-lisp :results table :colnames '("Binding" "Command" "Description") :exports results
