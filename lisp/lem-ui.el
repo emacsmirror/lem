@@ -1143,6 +1143,7 @@ SORT must be a member of `lem-sort-types'."
        (cl-member id lem-ui-current-comments)))
    (alist-get 'comments comments)))
 
+;; TODO: generic more functionality
 (defun lem-ui-more-comments ()
   "Add one more page of comments to the current view."
   (interactive)
@@ -1194,6 +1195,8 @@ If DISLIKE, dislike (downvote) it."
             (progn (funcall fun id score)
                    (message "%s %s %sliked!" type id (if dislike "dis" "")))
           (message "No post or comment at point?")))))
+
+;; TODO: unlike item?
 
 (defun lem-ui-dislike-item ()
   "Dislike (downvote) item at point."
