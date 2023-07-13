@@ -158,9 +158,12 @@ Logging in will set this. You can also save it in your init.el.")
             unauthorized)
   "Create a http request function NAME, using http METHOD, for ENDPOINT.
 ARGS are for the function.
+
 PARAMS is a plain list of elements from which to build an alist
-of form parameters to send with the request. The value of the
-corresponding arg must match the key of the parameter.
+of form parameters to send with the request. The name of the
+corresponding arg must match the key of the parameter (i.e. if
+the API parameter is \"person_id\", the corresponding arg, and
+param in the request must both be \"person-id\").
 
 MAN-PARAMS is an alist, to append to the one created from PARAMS.
 They are manual, meaning that that the key and arg don't have to
