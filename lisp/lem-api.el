@@ -93,7 +93,7 @@
 ;; getReportCount
 ;; getSite DONE
 ;; getSiteMetadata DONE
-;; getUnreadCount
+;; getUnreadCount TODO
 ;; getUnreadRegistrationApplicationCount
 ;; leaveAdmin
 ;; likeComment DONE
@@ -105,11 +105,11 @@
 ;; listRegistrationApplications
 ;; lockPost
 ;; login DONE
-;; markAllAsRead
-;; markCommentReplyAsRead
-;; markPersonMentionAsRead
-;; markPostAsRead
-;; markPrivateMessageAsRead
+;; markAllAsRead TODO
+;; markCommentReplyAsRead TODO
+;; markPersonMentionAsRead TODO
+;; markPostAsRead TODO
+;; markPrivateMessageAsRead TODO
 ;; passwordChangeAfterReset
 ;; passwordReset
 ;; purgeComment
@@ -129,7 +129,7 @@
 ;; saveUserSettings
 ;; search DONE
 ;; transferCommunity
-;; uploadImage
+;; uploadImage TODO
 ;; verifyEmail
 
 ;;; Code:
