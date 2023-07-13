@@ -798,7 +798,7 @@ LIMIT is the max results to return."
                for id = (alist-get 'id (alist-get 'community c))
                for view = (lem-get-community (number-to-string id) nil)
                do (lem-ui-render-community view :stats :view))
-      (lem-ui-set-buffer-spec type sort #'lem-ui-view-communities)
+      (lem-ui-set-buffer-spec type sort #'lem-ui-view-communities 'communities)
       (goto-char (point-min)))))
 
 (defun lem-ui-subscribe-to-community-at-point ()
@@ -1270,7 +1270,8 @@ CURRENT-USER means we are displaying the current user's profile."
                ;; TODO: insert mixed comments/posts
                (lem-ui-render-posts .posts sort :community :trim)
                (lem-ui-render-comments .comments view-type sort)))
-        (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user)
+        ;; FIXME: don't confuse view-type and listing-type (fix cycling too):
+        (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user 'user)
         (goto-char (point-min))))))
 
 (defun lem-ui-view-own-profile ()
