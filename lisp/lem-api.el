@@ -352,10 +352,17 @@ Returns a person_view, comments, posts, moderates objects."
 
 ;; (setq lem-user-me (lem-api-get-person-by-name "blawsybogsy"))
 
-;; TODO: block user
+(lem-define-request "post" "block-user" "user/block"
+  (person-id)
+  "Block user with PERSON-ID.
+Returns a person_view plus a blocked boolean."
+  (person-id)
+  '(("block" . t)))
+
+;; (lem-block-person ??)
 
 ;;; NOTIFS
-;; TODO: allow this to be called with kw arg and handle boolean str:
+
 (lem-define-request "get" "get-mentions" "user/mention"
   (&optional unread-only)
   "Get mentions for the current user.
@@ -368,7 +375,6 @@ UNREAD-ONLY means to only return unread items."
 ;; (lem-get-mentions :unread)
 ;; (lem-get-mentions)
 
-;; TODO: allow this to be called with kw arg and handle boolean str:
 (lem-define-request "get" "get-replies" "user/replies"
   (&optional unread-only)
   "Get replies for the current user.
@@ -438,10 +444,10 @@ Returns a community_view and discussion_languages."
 
 ;; (lem-delete-community 98302)
 
-;; TODO: block community
 (lem-define-request "post" "block-community" "community/block"
   (community-id)
-  "Block community with COMMUNITY-ID"
+  "Block community with COMMUNITY-ID.
+Returns a community_view plus a blocked boolean."
   (community-id)
   '(("block" . t)))
 
