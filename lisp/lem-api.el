@@ -592,9 +592,7 @@ Without any id or name, get instance comments."
 TYPE must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return."
-  (lem-get-comments post-id nil type sort limit page)
-  (when saved-only
-    '(("saved_only" . "true"))))
+  (lem-get-comments post-id nil type sort limit page nil nil saved-only))
 
 ;; (lem-get-post-comments "1485706" "All")
 ;; (lem-api-get-post-comments "44280" "All")
