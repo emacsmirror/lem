@@ -171,7 +171,7 @@ ITEM is a symbol, either posts or comments."
   ;; TODO: allow us to set a single element:
   (setq lem-ui-buffer-spec
         `(:listing-type ,listing-type :sort ,sort :view-fun ,view-fun
-                        :item ,item :page ,page)))
+                        :item ,item :page ,(or page 1))))
 
 (defun lem-ui-get-buffer-spec (key)
   "Return value of KEY in `lem-ui-buffer-spec'."
@@ -553,7 +553,7 @@ LIMIT."
     (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
       (lem-ui-render-post post sort :community)
       (lem-ui-render-post-comments id)
-      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post 1)
+      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)
       (goto-char (point-min))))) ; limit
 
 (defvar lem-ui--link-map
