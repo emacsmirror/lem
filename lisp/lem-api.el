@@ -353,12 +353,12 @@ Returns a person_view, comments, posts, moderates objects."
 (defun lem-api-get-person-posts (person-id &optional sort limit page)
   ""
   (let ((person (lem-api-get-person-by-id person-id sort limit page)))
-    (assoc 'posts person)))
+    (list (assoc 'posts person))))
 
 (defun lem-api-get-person-comments (person-id &optional sort limit page)
   ""
   (let ((person (lem-api-get-person-by-id person-id sort limit page)))
-    (assoc 'comments person)))
+    (list (assoc 'comments person))))
 
 ;; (lem-api-get-person-by-id "8511")
 ;; (lem-api-get-person-by-id "899775")

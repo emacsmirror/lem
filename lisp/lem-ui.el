@@ -1169,16 +1169,16 @@ ITEMS should be an alist of the form '\(plural-name ((items-list))\)'."
                               'lem-ui-render-comments)))
         ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-instance)
          (lem-ui-more-items 'post 'lem-api-get-instance-posts
-                            'lem-ui-render-posts))))
+                            'lem-ui-render-posts))
+        ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-user)
+         ;; TODO: user overview view type:
+         (if (equal (lem-ui-get-buffer-spec :item) "posts")
+             (lem-ui-more-items 'post 'lem-api-get-person-posts
+                                'lem-ui-render-posts)
+           (lem-ui-more-items 'comment 'lem-api-get-person-comments
+                              'lem-ui-render-comments)))
+        (t (message "More type not implemented yet"))))
 
-;; DOING: generic more functionality:
-;; more post comments DONE
-;; more instance posts DONE
-;; more community posts DONE
-;; more community comments DONE
-;; more user overview TODO
-;; more user posts TODO
-;; more user comments TODO
 (defun lem-ui-more-items (type get-fun render-fun)
   "Add one more page of items of TYPE to the current view.
 GET-FUN is the name of a function to fetch more items.
@@ -1190,18 +1190,23 @@ RENDER-FUN is the name of a function to render them."
          (sort (lem-ui-get-buffer-spec :sort))
          (all-items
           ;; get-instance-posts have no need of id arg:
-          (if (eq get-fun 'lem-api-get-instance-posts)
-              (funcall get-fun
-                       (or (lem-ui-get-buffer-spec :listing-type) "All")
-                       sort
-                       lem-ui-comments-limit
-                       (number-to-string page))
-            (funcall get-fun
-                     id
-                     (or (lem-ui-get-buffer-spec :listing-type) "All")
-                     sort
-                     lem-ui-comments-limit
-                     (number-to-string page))))
+          (cond ((eq get-fun 'lem-api-get-instance-posts)
+                 (funcall get-fun
+                          (or (lem-ui-get-buffer-spec :listing-type) "All")
+                          sort
+                          lem-ui-comments-limit
+                          (number-to-string page)))
+                ;; user funs have no list-type arg:
+                ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-user)
+                 (funcall get-fun id sort
+                          lem-ui-comments-limit (number-to-string page)))
+                (t
+                 (funcall get-fun
+                          id
+                          (or (lem-ui-get-buffer-spec :listing-type) "All")
+                          sort
+                          lem-ui-comments-limit
+                          (number-to-string page)))))
          (no-duplicates (lem-ui-remove-displayed-items all-items type)))
     (setf (alist-get (lem-ui-plural-symbol type) all-items)
           no-duplicates)
@@ -1324,7 +1329,7 @@ CURRENT-USER means we are displaying the current user's profile."
                (lem-ui-render-posts .posts sort :community :trim)
                (lem-ui-render-comments .comments view-type sort)))
         ;; FIXME: don't confuse view-type and listing-type (fix cycling too):
-        (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user 'user)
+        (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user view-type)
         (goto-char (point-min))))))
 
 (defun lem-ui-view-own-profile ()
