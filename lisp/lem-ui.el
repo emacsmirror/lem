@@ -37,8 +37,8 @@
   "The number of comments to request for a post.
 Server maximum appears to be 50.")
 
-(defvar-local lem-ui-current-comments nil
-  "A list holding the ids of all comments in the current view.
+(defvar-local lem-ui-current-items nil
+  "A list holding the ids of all items in the current view.
 Used for pagination.")
 
 (defvar lem-ui-horiz-bar
@@ -327,7 +327,7 @@ For a community view, cycle between posts and comments."
   ;; FIXME: remove posts/comments from this logic/binding
   (interactive)
   (let* ((type (lem-ui-get-buffer-spec :listing-type))
-         (item-type (lem-ui-get-buffer-spec :item-type))
+         (item-type (lem-ui-get-buffer-spec :item))
          (sort (lem-ui-get-buffer-spec :sort))
          (view-fun (lem-ui-get-buffer-spec :view-fun))
          (id (lem-ui-get-view-id))
@@ -857,9 +857,11 @@ PAGE is the page number of items to display, a string."
                  (or sort lem-default-sort-type)))
          (items (if (eq item 'comments)
                     (alist-get 'comments
-                               (lem-get-comments nil nil nil sort limit page id))
+                               (lem-api-get-community-comments
+                                id nil sort limit page))
                   (alist-get 'posts
-                             (lem-get-posts nil sort limit page id))))) ; no sorting
+                             (lem-api-list-posts-community-by-id
+                              id nil sort limit page))))) ; no sorting
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-community community :stats :view)
       (if (eq item 'comments)
@@ -1102,7 +1104,7 @@ Parent-fun for `hierarchy-add-tree'."
           (indent-str (when indent
                         (make-string indent (string-to-char
                                              (lem-ui-symbol 'reply-bar))))))
-      (push .comment.id lem-ui-current-comments) ; pagination
+      (push .comment.id lem-ui-current-items) ; pagination
       (propertize
        (concat
         (lem-ui-top-byline nil nil
@@ -1134,29 +1136,72 @@ SORT must be a member of `lem-sort-types'."
          (unique-comments (cl-remove-duplicates comments)))
     (lem-ui--build-and-render-comments-hierarchy unique-comments)))
 
-(defun lem-ui-remove-displayed-comments (comments)
-  "Remove comment from COMMENTS if it is in `lem-ui-current-comments'."
+(defun lem-ui-plural-symbol (symbol)
+  "Return a plural of SYMBOL."
+  (intern
+   (concat (symbol-to-string symbol) "s")))
+
+(defun lem-ui-remove-displayed-items (items type)
+  "Remove comment from ITEMS if it is in `lem-ui-current-items'.
+TYPE is the item type."
   (cl-remove-if
    (lambda (x)
      (let ((id (alist-get 'id
-                          (alist-get 'comment x))))
-       (cl-member id lem-ui-current-comments)))
-   (alist-get 'comments comments)))
+                          (alist-get type x))))
+       (cl-member id lem-ui-current-items)))
+   (alist-get (lem-ui-plural-symbol type)
+              items)))
 
-;; TODO: generic more functionality
-(defun lem-ui-more-comments ()
-  "Add one more page of comments to the current view."
+(defun lem-ui-more ()
+  "Append more items to the current view."
+  (interactive)
+  (cond ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-post)
+         (lem-ui-more-items 'comment 'lem-api-get-post-comments
+                            'lem-ui--build-and-render-comments-hierarchy))
+        ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-community)
+         (if (eq (lem-ui-get-buffer-spec :item) 'posts)
+             (lem-ui-more-items 'post 'lem-api-get-community-posts-by-id
+                                'lem-ui-render-posts)
+           (lem-ui-more-items 'comment 'lem-api-get-community-comments-by-id
+                              'lem-ui-render-comments)))
+        ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-instance)
+         (lem-ui-more-items 'post 'lem-api-get-instance-posts
+                            'lem-ui-render-posts))))
+
+;; DOING: generic more functionality:
+;; more post comments DONE
+;; more instance posts DONE
+;; more community posts DONE
+;; more community comments DONE
+;; more user overview TODO
+;; more user posts TODO
+;; more user comments TODO
+(defun lem-ui-more-items (type get-fun render-fun)
+  "Add one more page of items of TYPE to the current view.
+GET-FUN is the name of a function to fetch more items.
+RENDER-FUN is the name of a function to render them."
   (interactive)
   (let* ((page (1+ (lem-ui-get-buffer-spec :page)))
          (id (number-to-string (save-excursion
                                  (goto-char (point-min))
                                  (lem-ui--property 'id))))
          (sort (lem-ui-get-buffer-spec :sort))
-         (all-comments (lem-api-get-post-comments id "All" sort
-                                                  lem-ui-comments-limit
-                                                  (number-to-string page)))
-         (no-duplicates (lem-ui-remove-displayed-comments all-comments)))
-    (setf (alist-get 'comments all-comments)
+         (all-items
+          ;; get-instance-posts have no need of id arg:
+          (if (eq get-fun 'lem-api-get-instance-posts)
+              (funcall get-fun
+                       (or (lem-ui-get-buffer-spec :listing-type) "All")
+                       sort
+                       lem-ui-comments-limit
+                       (number-to-string page))
+            (funcall get-fun
+                     id
+                     (or (lem-ui-get-buffer-spec :listing-type) "All")
+                     sort
+                     lem-ui-comments-limit
+                     (number-to-string page))))
+         (no-duplicates (lem-ui-remove-displayed-items all-items type)))
+    (setf (alist-get (lem-ui-plural-symbol type) all-items)
           no-duplicates)
     (lem-ui-set-buffer-spec (lem-ui-get-buffer-spec :listing-type)
                             (lem-ui-get-buffer-spec :sort)
@@ -1164,8 +1209,14 @@ SORT must be a member of `lem-sort-types'."
                             (lem-ui-get-buffer-spec :item)
                             page)
     (goto-char (point-max))
-    ;; NB: `lem-ui-current-comments' is updated during rendering:
-    (lem-ui--build-and-render-comments-hierarchy all-comments)))
+    (let ((old-max (point))
+          (inhibit-read-only t))
+      ;; NB: `lem-ui-current-items' is updated during rendering:
+      (if (eq render-fun 'lem-ui--build-and-render-comments-hierarchy)
+          (funcall render-fun all-items)
+        (funcall render-fun (alist-get (lem-ui-plural-symbol type)
+                                       all-items)))
+      (goto-char old-max))))
 
 (defun lem-ui-view-comment-post ()
   "View post of comment at point."
