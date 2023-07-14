@@ -744,7 +744,8 @@ Saved items can be viewed in your profile, like bookmarks."
            (message "You can only save posts and comments.")))))
 
 (defun lem-ui-view-saved-items (&optional id sort limit page)
-  "View saved posts of the current user, or of user with ID."
+  "View saved posts of the current user, or of user with ID.
+SORT. LIMIT. PAGE."
   (interactive)
   (let* ((saved-only (lem-api-get-person-saved-only
                       (number-to-string (or id lem-user-id))
@@ -762,7 +763,7 @@ Saved items can be viewed in your profile, like bookmarks."
 ;;; CREATE A POST
 
 (defun lem-ui-new-post-simple ()
-  "."
+  "Create and submit new post."
   (interactive)
   (let* ((name (read-string "Post title: "))
          (communities (lem-list-communities "Subscribed"))
@@ -1288,7 +1289,7 @@ If DISLIKE, dislike (downvote) it."
       'type (caar json)))))
 
 (defun lem-ui-render-user-subscriptions (json)
-  ""
+  "Render subscribed communities from JSON data."
   (cl-loop for community in json
            do (lem-ui-render-community community nil nil :subscription)))
 
