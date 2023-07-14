@@ -25,7 +25,9 @@
 
 ;;; Commentary:
 
-;; Some simple, unadorned, primitive, humble, basic, dashed-off functions for an interface to Lemmy, the federated link-aggregator and forum software. See <https://joinlemmy.org>.
+;; Some simple, unadorned, primitive, humble, basic, dashed-off functions for
+;; an interface to Lemmy, the federated link-aggregator and forum software.
+;; See <https://joinlemmy.org>.
 
 ;;; Code:
 
