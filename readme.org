@@ -108,8 +108,10 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 | s       | lem-ui-jump-to-subscribed              | Prompt for a subscribed community and view it.                     |
 |         | lem-ui-like-item                       | Like (upvote) item at point.                                       |
 |         | lem-ui-message-user-at-point           | Send private message to user at point.                             |
+|         | lem-ui-more                            | Append more items to the current view.                             |
 |         | lem-ui-more-comments                   | Add one more page of comments to the current view.                 |
-|         | lem-ui-new-post-simple                 | .                                                                  |
+|         | lem-ui-more-items                      | Add one more page of items of TYPE to the current view.            |
+|         | lem-ui-new-post-simple                 | Create and submit new post.                                        |
 |         | lem-ui-reply-simple                    | Reply to post or comment at point.                                 |
 |         | lem-ui-save-item                       | Save item at point.                                                |
 |         | lem-ui-search                          | Do a search for one of the types in `lem-search-types'.            |
@@ -123,6 +125,6 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 |         | lem-ui-view-own-profile                | View profile of the current user.                                  |
 |         | lem-ui-view-post-at-point              | .                                                                  |
 |         | lem-ui-view-replies                    | View reply comments to the current user.                           |
-|         | lem-ui-view-saved-posts                | View saved posts of the current user, or of user with ID.          |
+|         | lem-ui-view-saved-items                | View saved posts of the current user, or of user with ID.          |
 | RET     | lem-ui-view-thing-at-point             | View post, community or user at point.                             |
 |         | lem-ui-view-user-at-point              | View user at point.                                                |

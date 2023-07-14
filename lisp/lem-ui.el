@@ -744,7 +744,7 @@ Saved items can be viewed in your profile, like bookmarks."
            (message "You can only save posts and comments.")))))
 
 (defun lem-ui-view-saved-items (&optional id sort limit page)
-  "View saved posts of the current user, or of user with ID.
+  "View saved items of the current user, or of user with ID.
 SORT. LIMIT. PAGE."
   (interactive)
   (let* ((saved-only (lem-api-get-person-saved-only
@@ -1144,7 +1144,7 @@ SORT must be a member of `lem-sort-types'."
    (concat (symbol-to-string symbol) "s")))
 
 (defun lem-ui-remove-displayed-items (items type)
-  "Remove comment from ITEMS if it is in `lem-ui-current-items'.
+  "Remove item from ITEMS if it is in `lem-ui-current-items'.
 TYPE is the item type."
   (cl-remove-if
    (lambda (x)
@@ -1182,7 +1182,6 @@ TYPE is the item type."
   "Add one more page of items of TYPE to the current view.
 GET-FUN is the name of a function to fetch more items.
 RENDER-FUN is the name of a function to render them."
-  (interactive)
   (let* ((page (1+ (lem-ui-get-buffer-spec :page)))
          (id (number-to-string (save-excursion
                                  (goto-char (point-min))
