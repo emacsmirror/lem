@@ -1145,7 +1145,8 @@ SORT must be a member of `lem-sort-types'."
 
 (defun lem-ui-remove-displayed-items (items type)
   "Remove item from ITEMS if it is in `lem-ui-current-items'.
-TYPE is the item type."
+TYPE is the item type.
+ITEMS should be an alist of the form '\(plural-name ((items-list))\)'."
   (cl-remove-if
    (lambda (x)
      (let ((id (alist-get 'id
