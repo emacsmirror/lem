@@ -93,7 +93,7 @@
 ;; getReportCount
 ;; getSite DONE
 ;; getSiteMetadata DONE
-;; getUnreadCount
+;; getUnreadCount TODO
 ;; getUnreadRegistrationApplicationCount
 ;; leaveAdmin
 ;; likeComment DONE
@@ -105,11 +105,11 @@
 ;; listRegistrationApplications
 ;; lockPost
 ;; login DONE
-;; markAllAsRead
-;; markCommentReplyAsRead
-;; markPersonMentionAsRead
-;; markPostAsRead
-;; markPrivateMessageAsRead
+;; markAllAsRead TODO
+;; markCommentReplyAsRead TODO
+;; markPersonMentionAsRead TODO
+;; markPostAsRead TODO
+;; markPrivateMessageAsRead TODO
 ;; passwordChangeAfterReset
 ;; passwordReset
 ;; purgeComment
@@ -129,7 +129,7 @@
 ;; saveUserSettings
 ;; search DONE
 ;; transferCommunity
-;; uploadImage
+;; uploadImage TODO
 ;; verifyEmail
 
 ;;; Code:
@@ -158,9 +158,12 @@ Logging in will set this. You can also save it in your init.el.")
             unauthorized)
   "Create a http request function NAME, using http METHOD, for ENDPOINT.
 ARGS are for the function.
+
 PARAMS is a plain list of elements from which to build an alist
-of form parameters to send with the request. The value of the
-corresponding arg must match the key of the parameter.
+of form parameters to send with the request. The name of the
+corresponding arg must match the key of the parameter (i.e. if
+the API parameter is \"person_id\", the corresponding arg, and
+param in the request must both be \"person-id\").
 
 MAN-PARAMS is an alist, to append to the one created from PARAMS.
 They are manual, meaning that that the key and arg don't have to
@@ -257,12 +260,12 @@ Returns follows data, from under my_user, from the site endpoint."
 
 ;; (lem-get-site-metadata "https://lemmy.world")
 
-(defun lem-api-get-instance-posts (&optional type sort limit)
+(defun lem-api-get-instance-posts (&optional type sort limit page)
   "List posts for the current instance.
 TYPE must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return."
-  (lem-get-posts type sort limit))
+  (lem-get-posts type sort limit page))
 
 ;; (setq lem-test-inst-posts (lem-api-get-instance-posts "Subscribed"))
 
@@ -347,15 +350,32 @@ Returns a person_view, comments, posts, moderates objects."
   ""
   (lem-get-person username nil sort limit page))
 
+(defun lem-api-get-person-posts (person-id &optional sort limit page)
+  ""
+  (let ((person (lem-api-get-person-by-id person-id sort limit page)))
+    (list (assoc 'posts person))))
+
+(defun lem-api-get-person-comments (person-id &optional sort limit page)
+  ""
+  (let ((person (lem-api-get-person-by-id person-id sort limit page)))
+    (list (assoc 'comments person))))
+
 ;; (lem-api-get-person-by-id "8511")
 ;; (lem-api-get-person-by-id "899775")
 
 ;; (setq lem-user-me (lem-api-get-person-by-name "blawsybogsy"))
 
-;; TODO: block user
+(lem-define-request "post" "block-user" "user/block"
+  (person-id)
+  "Block user with PERSON-ID.
+Returns a person_view plus a blocked boolean."
+  (person-id)
+  '(("block" . t)))
+
+;; (lem-block-person ??)
 
 ;;; NOTIFS
-;; TODO: allow this to be called with kw arg and handle boolean str:
+
 (lem-define-request "get" "get-mentions" "user/mention"
   (&optional unread-only)
   "Get mentions for the current user.
@@ -368,7 +388,6 @@ UNREAD-ONLY means to only return unread items."
 ;; (lem-get-mentions :unread)
 ;; (lem-get-mentions)
 
-;; TODO: allow this to be called with kw arg and handle boolean str:
 (lem-define-request "get" "get-replies" "user/replies"
   (&optional unread-only)
   "Get replies for the current user.
@@ -438,10 +457,10 @@ Returns a community_view and discussion_languages."
 
 ;; (lem-delete-community 98302)
 
-;; TODO: block community
 (lem-define-request "post" "block-community" "community/block"
   (community-id)
-  "Block community with COMMUNITY-ID"
+  "Block community with COMMUNITY-ID.
+Returns a community_view plus a blocked boolean."
   (community-id)
   '(("block" . t)))
 
@@ -477,8 +496,8 @@ Without either arg, get instance posts."
 ;; (lem-get-posts nil nil nil "86881" nil "2")
 ;; (lem-get-posts "All" nil nil nil nil nil :saved)
 
-(defun lem-api-list-posts-community-by-id (community-id
-                                           &optional type sort limit page)
+(defun lem-api-get-community-posts-by-id (community-id
+                                          &optional type sort limit page)
   "List posts for COMMUNITY-ID.
 TYPE must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
@@ -487,8 +506,8 @@ LIMIT is the amount of results to return."
 
 ;; (lem-api-list-posts-community-by-id "14856")
 
-(defun lem-api-list-posts-community-by-name (community-name
-                                             &optional type sort limit page)
+(defun lem-api-get-community-posts-by-name (community-name
+                                            &optional type sort limit page)
   "List posts for COMMUNITY-NAME.
 TYPE must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
@@ -586,6 +605,10 @@ Without any id or name, get instance comments."
     '(("saved_only" . "true"))))
 
 ;; (lem-get-comments "1694468")
+
+(defun lem-api-get-community-comments (community-id
+                                       &optional type sort limit page)
+  (lem-get-comments nil nil type sort limit page community-id))
 
 (defun lem-api-get-post-comments (post-id &optional type sort limit page saved-only)
   "Get comments for POST-ID.
