@@ -871,7 +871,8 @@ PAGE is the page number of items to display, a string."
             (lem-ui-render-comments items nil sort)) ; no type
         (lem-ui-insert-heading "posts")
         (lem-ui-render-posts items buf sort)) ; no children
-      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-community item page)
+      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-community
+                              (or item 'posts) page)
       (goto-char (point-min)))))
 
 (defun lem-ui-get-community-id (community &optional string)
