@@ -260,12 +260,12 @@ Returns follows data, from under my_user, from the site endpoint."
 
 ;; (lem-get-site-metadata "https://lemmy.world")
 
-(defun lem-api-get-instance-posts (&optional type sort limit)
+(defun lem-api-get-instance-posts (&optional type sort limit page)
   "List posts for the current instance.
 TYPE must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return."
-  (lem-get-posts type sort limit))
+  (lem-get-posts type sort limit page))
 
 ;; (setq lem-test-inst-posts (lem-api-get-instance-posts "Subscribed"))
 
@@ -486,8 +486,8 @@ Without either arg, get instance posts."
 ;; (lem-get-posts nil nil nil "86881" nil "2")
 ;; (lem-get-posts "All" nil nil nil nil nil :saved)
 
-(defun lem-api-list-posts-community-by-id (community-id
-                                           &optional type sort limit page)
+(defun lem-api-get-community-posts-by-id (community-id
+                                          &optional type sort limit page)
   "List posts for COMMUNITY-ID.
 TYPE must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
@@ -496,8 +496,8 @@ LIMIT is the amount of results to return."
 
 ;; (lem-api-list-posts-community-by-id "14856")
 
-(defun lem-api-list-posts-community-by-name (community-name
-                                             &optional type sort limit page)
+(defun lem-api-get-community-posts-by-name (community-name
+                                            &optional type sort limit page)
   "List posts for COMMUNITY-NAME.
 TYPE must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
@@ -595,6 +595,10 @@ Without any id or name, get instance comments."
     '(("saved_only" . "true"))))
 
 ;; (lem-get-comments "1694468")
+
+(defun lem-api-get-community-comments (community-id
+                                       &optional type sort limit page)
+  (lem-get-comments nil nil type sort limit page community-id))
 
 (defun lem-api-get-post-comments (post-id &optional type sort limit page saved-only)
   "Get comments for POST-ID.
