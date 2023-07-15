@@ -861,7 +861,7 @@ PAGE is the page number of items to display, a string."
                                (lem-api-get-community-comments
                                 id nil sort limit page))
                   (alist-get 'posts
-                             (lem-api-list-posts-community-by-id
+                             (lem-api-get-community-posts-by-id
                               id nil sort limit page))))) ; no sorting
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-community community :stats :view)
@@ -1141,7 +1141,7 @@ SORT must be a member of `lem-sort-types'."
 (defun lem-ui-plural-symbol (symbol)
   "Return a plural of SYMBOL."
   (intern
-   (concat (symbol-to-string symbol) "s")))
+   (concat (symbol-name symbol) "s")))
 
 (defun lem-ui-remove-displayed-items (items type)
   "Remove item from ITEMS if it is in `lem-ui-current-items'.
