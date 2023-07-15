@@ -196,7 +196,7 @@ Optionally start from POS."
 (defun lem-next-item ()
   "Move to next item."
   (interactive)
-  (lem--goto-pos #'next-single-property-change))
+  (lem--goto-pos #'next-single-property-change #'lem-ui-more))
 
 (defun lem-prev-item ()
   "Move to prev item."
