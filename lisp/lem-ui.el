@@ -25,12 +25,30 @@
 
 ;;; Commentary:
 
-;; Some simple, unadorned, primitive, humble, basic, dashed-off functions for an interface to Lemmy, the federated link-aggregator and forum software. See <https://joinlemmy.org>.
+;; Some simple, unadorned, primitive, humble, basic, dashed-off functions for
+;; an interface to Lemmy, the federated link-aggregator and forum software.
+;; See <https://joinlemmy.org>.
 
 ;;; Code:
 
 (require 'hierarchy)
 (require 'lem-api)
+
+;;; PATCH hierarchy-print:
+;; reported to emacs-devel but no answer as yet
+;; https://lists.gnu.org/archive/html/emacs-devel/2023-07/msg00468.html
+(defun hierarchy-print (hierarchy &optional to-string indent-string)
+  "Insert HIERARCHY in current buffer as plain text.
+
+Use TO-STRING to convert each element to a string.  TO-STRING is
+a function taking an item of HIERARCHY as input and returning a
+string.  If nil, TO-STRING defaults to a call to `format' with \"%s\"."
+  (let ((to-string (or to-string (lambda (item) (format "%s" item)))))
+    (hierarchy-map
+     (hierarchy-labelfn-indent (lambda (item indent)
+                                 (insert (funcall to-string item indent) "\n"))
+                               indent-string)
+     hierarchy)))
 
 ;;; UTILITIES
 (defvar lem-ui-comments-limit "50"
