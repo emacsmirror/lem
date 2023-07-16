@@ -579,6 +579,7 @@ LIMIT."
 
 (defvar lem-ui--link-map
   (let ((map (make-sparse-keymap)))
+    ;; (set-keymap-parent map shr-map)
     (define-key map [return] #'lem-ui--follow-link-at-point)
     (define-key map [mouse-2] #'lem-ui--follow-link-at-point)
     (define-key map [follow-link] 'mouse-face)
@@ -594,7 +595,7 @@ etc.")
   (let ((id (lem-ui--id-from-prop :string 'id))
         (creator-id (lem-ui--id-from-prop :string 'creator-id))
         (community-id (lem-ui--id-from-prop :string 'community-id))
-        (item-type (get-text-property (point) 'lem-tab-stop)))
+        (item-type (lem-ui--property 'lem-tab-stop)))
     (cond ((eq item-type 'community)
            (lem-ui-view-community community-id))
           ((and (eq item-type 'user)
