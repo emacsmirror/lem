@@ -244,6 +244,15 @@ Optionally start from POS."
         (lem-ui-view-user id 'overview)
       (message "No item at point?"))))
 
+(defun lem-ui-scroll-up-command ()
+  "Call `scroll-up-command', loading more toots if necessary.
+If we hit `point-max', call `lem-ui-more' then `scroll-up-command'."
+  (interactive)
+  (if (not (equal (point) (point-max)))
+      (scroll-up-command)
+    (lem-ui-more)
+    (scroll-up-command)))
+
 ;;; INSTANCE
 
 ;; TODO: toggle posts or comments
