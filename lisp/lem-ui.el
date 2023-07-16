@@ -50,7 +50,8 @@ string.  If nil, TO-STRING defaults to a call to `format' with \"%s\"."
                                indent-string)
      hierarchy)))
 
-;;; UTILITIES
+;;; VARS
+
 (defvar lem-ui-comments-limit "50"
   "The number of comments to request for a post.
 Server maximum appears to be 50.")
@@ -58,6 +59,8 @@ Server maximum appears to be 50.")
 (defvar-local lem-ui-current-items nil
   "A list holding the ids of all items in the current view.
 Used for pagination.")
+
+;;; UTILITIES
 
 (defvar lem-ui-horiz-bar
   (if (char-displayable-p ?―)
