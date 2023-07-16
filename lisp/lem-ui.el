@@ -1214,6 +1214,7 @@ ITEMS should be an alist of the form '\(plural-name ((items-list))\)'."
   "Add one more page of items of TYPE to the current view.
 GET-FUN is the name of a function to fetch more items.
 RENDER-FUN is the name of a function to render them."
+  (message "Loading more items...")
   (let* ((page (1+ (lem-ui-get-buffer-spec :page)))
          (id (number-to-string (save-excursion
                                  (goto-char (point-min))
@@ -1254,7 +1255,8 @@ RENDER-FUN is the name of a function to render them."
           (funcall render-fun all-items)
         (funcall render-fun (alist-get (lem-ui-plural-symbol type)
                                        all-items)))
-      (goto-char old-max))))
+      (goto-char old-max)
+      (message "Loading more items... [done]"))))
 
 (defun lem-ui-view-comment-post ()
   "View post of comment at point."
