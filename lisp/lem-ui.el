@@ -268,7 +268,7 @@ LIMIT is the amount of results to return."
          (buf (get-buffer-create "*lem-instance*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-instance instance :stats)
-      (lem-ui-render-posts posts sort :community :trim)
+      (lem-ui-render-posts-instance posts sort)
       (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance 'instance page)
       (goto-char (point-min)))))
 
@@ -749,6 +749,10 @@ SORT must be a member of `lem-sort-types'."
         'creator-id .creator.id
         'type (caar post))))))
 
+(defun lem-ui-render-posts-instance (posts &optional sort)
+  "Render a list of posts POSTS in BUFFER, trimmed and showing community."
+  (lem-ui-render-posts posts sort :community :trim))
+
 (defun lem-ui-render-posts (posts &optional sort community trim)
   "Render a list of posts POSTS in BUFFER.
 Used for instance, communities, posts, and users.
@@ -1200,7 +1204,7 @@ ITEMS should be an alist of the form '\(plural-name ((items-list))\)'."
                               'lem-ui-render-comments)))
         ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-instance)
          (lem-ui-more-items 'post 'lem-api-get-instance-posts
-                            'lem-ui-render-posts))
+                            'lem-ui-render-posts-instance))
         ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-user)
          ;; TODO: user overview view type:
          (if (equal (lem-ui-get-buffer-spec :item) "posts")
