@@ -590,6 +590,8 @@ LIMIT."
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)
       (goto-char (point-min))))) ; limit
 
+;;; LINKS
+
 (defvar lem-ui--link-map
   (let ((map (make-sparse-keymap)))
     ;; (set-keymap-parent map shr-map)
@@ -621,8 +623,6 @@ etc.")
           ;; (type user, but id not creator-id)
           ((eq item-type 'user)
            (lem-ui-view-user id)))))
-;; (t
-;; (lem-ui-view-user id)))))
 
 (defun lem-ui--propertize-link-item (item id type)
   "Propertize a link ITEM with ID and TYPE."
