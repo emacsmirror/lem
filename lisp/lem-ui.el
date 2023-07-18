@@ -757,6 +757,17 @@ ID is the item's id."
         (kill-buffer-and-window))
       rendered)))
 
+(defun lem-ui-render-shr-url (json)
+  ""
+  (when json
+    (save-excursion
+      (let (region)
+        (while (setq region (lem-ui--find-property-range
+                             'shr-url (or (cdr region) (point-min))))
+          (lem-ui--process-link json
+                                (car region) (cdr region)
+                                (get-text-property (car region) 'shr-url)))))))
+
 (defun lem-ui-render-body (body &optional json)
   "Render post BODY as markdowned html."
   (let ((buf "*lem-md*")
@@ -771,19 +782,14 @@ ID is the item's id."
         (markdown-standalone buf))
       (with-current-buffer buf
         ;; shr render:
-        (shr-render-buffer (current-buffer))
+        (shr-render-buffer (current-buffer)))
+      (with-current-buffer "*html*" ; created by shr
         ;; our render:
-        (when json
-          (let (region)
-            (while (setq region (lem-ui--find-property-range
-                                 'shr-url (or (cdr region) (point-min))))
-              (lem-ui--process-link json
-                                    (car region) (cdr region)
-                                    (get-text-property (car region) 'shr-url)))))        
+        (lem-ui-render-shr-url json)
         (re-search-forward "\n\n" nil :no-error)
         (setq str (buffer-substring (point) (point-max)))
-        (kill-buffer-and-window) ; shr's *html*
-        (kill-buffer buf))) ; our md
+        (kill-buffer-and-window)        ; shr's *html*
+        (kill-buffer buf)))             ; our md
     str))
 
 (defun lem-ui-render-post (post &optional sort community trim)
