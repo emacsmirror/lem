@@ -1008,9 +1008,10 @@ profile page."
                       ""
                     (if view
                         (when .community.description
-                          (lem-ui-render-body .community.description))
+                          (lem-ui-render-body .community.description
+                                              community))
                       (when .description
-                        (lem-ui-render-body .description))))))
+                        (lem-ui-render-body .description community))))))
         (insert
          (propertize
           (concat
