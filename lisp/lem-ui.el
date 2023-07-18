@@ -1010,8 +1010,11 @@ profile page."
                         (when .community.description
                           (lem-ui-render-body .community.description
                                               community))
-                      (when .description
-                        (lem-ui-render-body .description community))))))
+                      ;; more communities list means we have 'community
+                      ;; objects, requiring .community.description:
+                      (when-let ((desc (or .community.description
+                                           .description)))
+                        (lem-ui-render-body desc community))))))
         (insert
          (propertize
           (concat
@@ -1238,8 +1241,10 @@ SORT must be a member of `lem-sort-types'."
 
 (defun lem-ui-plural-symbol (symbol)
   "Return a plural of SYMBOL."
-  (intern
-   (concat (symbol-name symbol) "s")))
+  (if (eq symbol 'community)
+      'communities
+    (intern
+     (concat (symbol-name symbol) "s"))))
 
 (defun lem-ui-remove-displayed-items (items type)
   "Remove item from ITEMS if it is in `lem-ui-current-items'.
@@ -1275,6 +1280,9 @@ ITEMS should be an alist of the form '\(plural-name ((items-list))\)'."
                                 'lem-ui-render-posts)
            (lem-ui-more-items 'comment 'lem-api-get-person-comments
                               'lem-ui-render-comments)))
+        ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-communities)
+         (lem-ui-more-items 'community 'lem-list-communities
+                            'lem-ui-render-communities))
         (t (message "More type not implemented yet"))))
 
 (defun lem-ui-more-items (type get-fun render-fun)
@@ -1289,7 +1297,8 @@ RENDER-FUN is the name of a function to render them."
          (sort (lem-ui-get-buffer-spec :sort))
          (all-items
           ;; get-instance-posts have no need of id arg:
-          (cond ((eq get-fun 'lem-api-get-instance-posts)
+          (cond ((or (eq get-fun 'lem-api-get-instance-posts)
+                     (eq get-fun 'lem-list-communities))
                  (funcall get-fun
                           (or (lem-ui-get-buffer-spec :listing-type) "All")
                           sort
