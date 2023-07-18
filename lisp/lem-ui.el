@@ -536,7 +536,7 @@ STRING means ID should be a string."
           (string-match "^/p/[[:alpha:]]+/[[:digit:]]+$" query)
           (string-match "^/[[:alpha:]]+$" query)
           (string-match "^/u/[_[:alpha:]]+$" query)
-          (string-match "^/c/[_[:alnum:]]+$" query)
+          (string-match "^/c/[@._[:alnum:]]+$" query)
           (string-match "^/post/[[:digit:]]+$" query)
           (string-match "^/comment/[[:digit:]]+$" query)))))
 
