@@ -745,7 +745,7 @@ ID is the item's id."
         (kill-buffer-and-window))
       rendered)))
 
-(defun lem-ui-render-body (body)
+(defun lem-ui-render-body (body &optional json)
   "Render post BODY as markdowned html."
   (let ((buf "*lem-md*")
         str)
@@ -775,7 +775,7 @@ SORT must be a member of `lem-sort-types'."
   (let-alist post
     (let ((url (lem-ui-render-url .post.url))
           (body (when .post.body
-                  (lem-ui-render-body .post.body))))
+                  (lem-ui-render-body .post.body (alist-get 'post post)))))
       (insert
        (propertize
         (concat
@@ -1192,7 +1192,8 @@ Parent-fun for `hierarchy-add-tree'."
   "Format COMMENT, optionally with INDENT amount of indent bars."
   (let-alist comment
     (let ((content (when .comment.content
-                     (lem-ui-render-body .comment.content)))
+                     (lem-ui-render-body .comment.content
+                                         (alist-get 'comment comment))))
           (indent-str (when indent
                         (make-string indent (string-to-char
                                              (lem-ui-symbol 'reply-bar))))))
