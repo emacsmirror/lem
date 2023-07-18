@@ -50,7 +50,8 @@ string.  If nil, TO-STRING defaults to a call to `format' with \"%s\"."
                                indent-string)
      hierarchy)))
 
-;;; UTILITIES
+;;; VARS
+
 (defvar lem-ui-comments-limit "50"
   "The number of comments to request for a post.
 Server maximum appears to be 50.")
@@ -58,6 +59,8 @@ Server maximum appears to be 50.")
 (defvar-local lem-ui-current-items nil
   "A list holding the ids of all items in the current view.
 Used for pagination.")
+
+;;; UTILITIES
 
 (defvar lem-ui-horiz-bar
   (if (char-displayable-p ?―)
@@ -241,6 +244,15 @@ Optionally start from POS."
         (lem-ui-view-user id 'overview)
       (message "No item at point?"))))
 
+(defun lem-ui-scroll-up-command ()
+  "Call `scroll-up-command', loading more toots if necessary.
+If we hit `point-max', call `lem-ui-more' then `scroll-up-command'."
+  (interactive)
+  (if (not (equal (point) (point-max)))
+      (scroll-up-command)
+    (lem-ui-more)
+    (scroll-up-command)))
+
 ;;; INSTANCE
 
 ;; TODO: toggle posts or comments
@@ -256,7 +268,7 @@ LIMIT is the amount of results to return."
          (buf (get-buffer-create "*lem-instance*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-instance instance :stats)
-      (lem-ui-render-posts posts sort :community :trim)
+      (lem-ui-render-posts-instance posts sort)
       (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance 'instance page)
       (goto-char (point-min)))))
 
@@ -524,7 +536,7 @@ STRING means ID should be a string."
           (string-match "^/p/[[:alpha:]]+/[[:digit:]]+$" query)
           (string-match "^/[[:alpha:]]+$" query)
           (string-match "^/u/[_[:alpha:]]+$" query)
-          (string-match "^/c/[[:alnum:]]+$" query)
+          (string-match "^/c/[_[:alnum:]]+$" query)
           (string-match "^/post/[[:digit:]]+$" query)
           (string-match "^/comment/[[:digit:]]+$" query)))))
 
@@ -576,6 +588,7 @@ LIMIT."
 
 (defvar lem-ui--link-map
   (let ((map (make-sparse-keymap)))
+    ;; (set-keymap-parent map shr-map)
     (define-key map [return] #'lem-ui--follow-link-at-point)
     (define-key map [mouse-2] #'lem-ui--follow-link-at-point)
     (define-key map [follow-link] 'mouse-face)
@@ -591,7 +604,7 @@ etc.")
   (let ((id (lem-ui--id-from-prop :string 'id))
         (creator-id (lem-ui--id-from-prop :string 'creator-id))
         (community-id (lem-ui--id-from-prop :string 'community-id))
-        (item-type (get-text-property (point) 'lem-tab-stop)))
+        (item-type (lem-ui--property 'lem-tab-stop)))
     (cond ((eq item-type 'community)
            (lem-ui-view-community community-id))
           ((and (eq item-type 'user)
@@ -735,6 +748,10 @@ SORT must be a member of `lem-sort-types'."
         'community-id .post.community_id
         'creator-id .creator.id
         'type (caar post))))))
+
+(defun lem-ui-render-posts-instance (posts &optional sort)
+  "Render a list of posts POSTS in BUFFER, trimmed and showing community."
+  (lem-ui-render-posts posts sort :community :trim))
 
 (defun lem-ui-render-posts (posts &optional sort community trim)
   "Render a list of posts POSTS in BUFFER.
@@ -926,9 +943,13 @@ profile page."
                       ""
                     (if view
                         (when .community.description
-                          (lem-ui-render-body .community.description))
-                      (when .description
-                        (lem-ui-render-body .description))))))
+                          (lem-ui-render-body .community.description
+                                              community))
+                      ;; more communities list means we have 'community
+                      ;; objects, requiring .community.description:
+                      (when-let ((desc (or .community.description
+                                           .description)))
+                        (lem-ui-render-body desc community))))))
         (insert
          (propertize
           (concat
@@ -938,12 +959,8 @@ profile page."
            (lem-ui-font-lock-comment .community.name)
            "\n"
            (lem-ui-font-lock-comment .community.actor_id)
-           (unless brief
-             "\n"
-             desc
-             "\n"
-             lem-ui-horiz-bar
-             "\n"))
+           (unless brief (concat "\n" desc "\n"
+                                 lem-ui-horiz-bar "\n")))
           'json community
           'byline-top t ; next/prev hack
           'id .community.id
@@ -1158,8 +1175,10 @@ SORT must be a member of `lem-sort-types'."
 
 (defun lem-ui-plural-symbol (symbol)
   "Return a plural of SYMBOL."
-  (intern
-   (concat (symbol-name symbol) "s")))
+  (if (eq symbol 'community)
+      'communities
+    (intern
+     (concat (symbol-name symbol) "s"))))
 
 (defun lem-ui-remove-displayed-items (items type)
   "Remove item from ITEMS if it is in `lem-ui-current-items'.
@@ -1187,7 +1206,7 @@ ITEMS should be an alist of the form '\(plural-name ((items-list))\)'."
                               'lem-ui-render-comments)))
         ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-instance)
          (lem-ui-more-items 'post 'lem-api-get-instance-posts
-                            'lem-ui-render-posts))
+                            'lem-ui-render-posts-instance))
         ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-user)
          ;; TODO: user overview view type:
          (if (equal (lem-ui-get-buffer-spec :item) "posts")
@@ -1195,12 +1214,16 @@ ITEMS should be an alist of the form '\(plural-name ((items-list))\)'."
                                 'lem-ui-render-posts)
            (lem-ui-more-items 'comment 'lem-api-get-person-comments
                               'lem-ui-render-comments)))
+        ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-communities)
+         (lem-ui-more-items 'community 'lem-list-communities
+                            'lem-ui-render-communities))
         (t (message "More type not implemented yet"))))
 
 (defun lem-ui-more-items (type get-fun render-fun)
   "Add one more page of items of TYPE to the current view.
 GET-FUN is the name of a function to fetch more items.
 RENDER-FUN is the name of a function to render them."
+  (message "Loading more items...")
   (let* ((page (1+ (lem-ui-get-buffer-spec :page)))
          (id (number-to-string (save-excursion
                                  (goto-char (point-min))
@@ -1208,7 +1231,8 @@ RENDER-FUN is the name of a function to render them."
          (sort (lem-ui-get-buffer-spec :sort))
          (all-items
           ;; get-instance-posts have no need of id arg:
-          (cond ((eq get-fun 'lem-api-get-instance-posts)
+          (cond ((or (eq get-fun 'lem-api-get-instance-posts)
+                     (eq get-fun 'lem-list-communities))
                  (funcall get-fun
                           (or (lem-ui-get-buffer-spec :listing-type) "All")
                           sort
@@ -1241,7 +1265,8 @@ RENDER-FUN is the name of a function to render them."
           (funcall render-fun all-items)
         (funcall render-fun (alist-get (lem-ui-plural-symbol type)
                                        all-items)))
-      (goto-char old-max))))
+      (goto-char old-max)
+      (message "Loading more items... [done]"))))
 
 (defun lem-ui-view-comment-post ()
   "View post of comment at point."
