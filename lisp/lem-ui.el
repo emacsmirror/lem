@@ -734,13 +734,17 @@ ID is the item's id."
                        'face font-lock-comment-face))
    'byline-bottom t))
 
-(defun lem-ui-render-url (url)
+(defun lem-ui-render-url (url &optional no-shorten)
   "Render URL, a plain non-html string."
   (when url
     (let ((parsed (url-generic-parse-url url))
           rendered)
       (with-temp-buffer
-        (insert "<a href=" url ">" (url-host parsed) "</a>")
+        (insert "<a href=" url ">"
+                (if no-shorten
+                    url
+                  (url-host parsed))
+                "</a>")
         (shr-render-buffer (current-buffer))
         (setq rendered (buffer-string))
         (kill-buffer-and-window))
