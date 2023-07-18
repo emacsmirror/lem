@@ -553,7 +553,11 @@ Lemmy supports lookups for users, posts, comments and communities."
         (browse-url query)
       (message "Performing lookup...")
       (let ((response (lem-resolve-object query)))
-        (cond ((equal 'person (caar response))
+        (cond ((stringp response)
+               ;; error string: just return nil? then we can do sth else if
+               ;; this fails
+               (message "%s" response))
+              ((equal 'person (caar response))
                (lem-ui-lookup-call 'person response 'lem-ui-view-user :str))
               ((equal 'comment (caar response))
                (lem-ui-lookup-call 'comment response 'lem-ui-view-comment-post :str))
