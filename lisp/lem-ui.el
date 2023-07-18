@@ -630,6 +630,54 @@ etc.")
               'lem-tab-stop type
               'face 'underline))
 
+(defun lem-ui--find-property-range (property start-point
+                                             &optional search-backwards)
+  "Return nil if no such range is found.
+If PROPERTY is set at START-POINT returns a range around
+START-POINT otherwise before/after START-POINT.
+SEARCH-BACKWARDS determines whether we pick point
+before (non-nil) or after (nil)"
+  (if (get-text-property start-point property)
+      ;; We are within a range, so look backwards for the start:
+      (cons (previous-single-property-change
+             (if (equal start-point (point-max)) start-point (1+ start-point))
+             property nil (point-min))
+            (next-single-property-change start-point property nil (point-max)))
+    (if search-backwards
+        (let* ((end (or (previous-single-property-change
+                         (if (equal start-point (point-max))
+                             start-point (1+ start-point))
+                         property)
+                        ;; we may either be just before the range or there
+                        ;; is nothing at all
+                        (and (not (equal start-point (point-min)))
+                             (get-text-property (1- start-point) property)
+                             start-point)))
+               (start (and end (previous-single-property-change
+                                end property nil (point-min)))))
+          (when end
+            (cons start end)))
+      (let* ((start (next-single-property-change start-point property))
+             (end (and start (next-single-property-change
+                              start property nil (point-max)))))
+        (when start
+          (cons start end))))))
+
+(defun lem-ui--process-link (json start end url)
+  "Process link URL in JSON as userhandle, community, or normal link.
+START and END are the boundaries of the link in the post body."
+  (let* ((help-echo (get-text-property start 'help-echo))
+         extra-properties
+         (keymap lem-ui--link-map)
+         (lem-tab-stop-type 'shr-url))
+    (add-text-properties start end
+                         (append
+                          (list 'lem-tab-stop lem-tab-stop-type
+                                'keymap keymap
+                                'help-echo help-echo)
+                          extra-properties))))
+
+;;; BYLINES
 (defun lem-ui-top-byline (title url username score timestamp
                                 &optional community community-url featured-p)
   "Format a top byline for post with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
