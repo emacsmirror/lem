@@ -757,6 +757,13 @@ ID is the item's id."
         (kill-buffer-and-window))
       rendered)))
 
+(defun lem-ui-mdize-plain-urls ()
+  "Markdown-ize any plain string URLs found in current buffer."
+  (while (re-search-forward lem-ui-url-regex nil :no-error)
+    (replace-match (concat "<"
+                           (match-string 0)
+                           ">"))))
+
 (defun lem-ui-render-shr-url (json)
   ""
   (when json
@@ -775,6 +782,7 @@ ID is the item's id."
     (with-temp-buffer
       (insert body)
       (goto-char (point-min))
+      (lem-ui-mdize-plain-urls)
       (let ((replaced (string-replace "@" "\\@" (buffer-string))))
         (erase-buffer)
         (insert replaced)
