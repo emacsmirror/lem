@@ -765,15 +765,14 @@ ID is the item's id."
                            ">"))))
 
 (defun lem-ui-render-shr-url (json)
-  ""
-  (when json
-    (save-excursion
-      (let (region)
-        (while (setq region (lem-ui--find-property-range
-                             'shr-url (or (cdr region) (point-min))))
-          (lem-ui--process-link json
-                                (car region) (cdr region)
-                                (get-text-property (car region) 'shr-url)))))))
+  "Call `lem-ui--process-link' on any shr-url found in buffer."
+  (save-excursion
+    (let (region)
+      (while (setq region (lem-ui--find-property-range
+                           'shr-url (or (cdr region) (point-min))))
+        (lem-ui--process-link json
+                              (car region) (cdr region)
+                              (get-text-property (car region) 'shr-url))))))
 
 (defun lem-ui-render-body (body &optional json)
   "Render post BODY as markdowned html."
@@ -793,7 +792,8 @@ ID is the item's id."
         (shr-render-buffer (current-buffer)))
       (with-current-buffer "*html*" ; created by shr
         ;; our render:
-        (lem-ui-render-shr-url json)
+        (when json
+          (lem-ui-render-shr-url json))
         (re-search-forward "\n\n" nil :no-error)
         (setq str (buffer-substring (point) (point-max)))
         (kill-buffer-and-window)        ; shr's *html*
