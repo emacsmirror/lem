@@ -60,6 +60,13 @@ Server maximum appears to be 50.")
   "A list holding the ids of all items in the current view.
 Used for pagination.")
 
+(defvar lem-ui-url-regex
+  ;; adapted from ffap-url-regexp
+  (concat
+   "\\(?2:\\(news\\(post\\)?:\\|mailto:\\|file:\\|\\(ftp\\|https?\\|telnet\\|gopher\\|www\\|wais\\)://\\)" ; uri prefix
+   "[^ \n\t]*\\)" ; any old thing, that is, i.e. we allow invalid/unwise chars
+   "\\b"))
+
 ;;; UTILITIES
 
 (defvar lem-ui-horiz-bar
