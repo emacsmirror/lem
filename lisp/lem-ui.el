@@ -1019,12 +1019,8 @@ profile page."
            (lem-ui-font-lock-comment .community.name)
            "\n"
            (lem-ui-font-lock-comment .community.actor_id)
-           (unless brief
-             "\n"
-             desc
-             "\n"
-             lem-ui-horiz-bar
-             "\n"))
+           (unless brief (concat "\n" desc "\n"
+                                 lem-ui-horiz-bar "\n")))
           'json community
           'byline-top t ; next/prev hack
           'id .community.id
