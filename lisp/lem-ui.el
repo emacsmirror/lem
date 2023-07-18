@@ -261,6 +261,7 @@ If we hit `point-max', call `lem-ui-more' then `scroll-up-command'."
 SORT must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return."
+  (interactive)
   (let* ((instance (lem-get-instance))
          (posts (lem-get-posts type sort limit page))
          (posts (alist-get 'posts posts))
