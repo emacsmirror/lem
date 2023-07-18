@@ -758,7 +758,16 @@ ID is the item's id."
         ;; FIXME: doesn't render usernames as links:
         (markdown-standalone buf))
       (with-current-buffer buf
+        ;; shr render:
         (shr-render-buffer (current-buffer))
+        ;; our render:
+        (when json
+          (let (region)
+            (while (setq region (lem-ui--find-property-range
+                                 'shr-url (or (cdr region) (point-min))))
+              (lem-ui--process-link json
+                                    (car region) (cdr region)
+                                    (get-text-property (car region) 'shr-url)))))        
         (re-search-forward "\n\n" nil :no-error)
         (setq str (buffer-substring (point) (point-max)))
         (kill-buffer-and-window) ; shr's *html*
