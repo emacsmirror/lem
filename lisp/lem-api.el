@@ -315,6 +315,8 @@ TYPE must be a member of `lem-search-types'. Defaults to All."
   (q))
 
 ;; (lem-resolve-object "https://lemmy.ml/u/blawsybogsy")
+;; (lem-resolve-object "https://lemmy.ml/c/canada@lemmy.ca") ; foreign instance fails
+;; (lem-resolve-object "https://lemmy.ml/c/canada")
 
 ;;; AUTH
 (lem-define-request "post" "login" "user/login"
