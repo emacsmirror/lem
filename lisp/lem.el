@@ -167,9 +167,9 @@ Load current user's instance posts."
         (progn (setq lem-auth-token token
                      lem-current-user name)
                (lem-set-user-id name))
-      ;; FIXME: improve this. / verify instance is an instance:
-      (when (lem-get-site)
-        ;; else login manually, store token, and set var:
+      ;; else check site is a site:
+      (when (lem-check-site)
+        ;; then login manually, store token, and set var:
         (let* ((password (read-string "Password: "))
                (login-response (lem-login name password))
                (token (alist-get 'jwt login-response)))
@@ -177,6 +177,16 @@ Load current user's instance posts."
           (setq lem-auth-token token
                 lem-current-user name)
           (lem-set-user-id name))))))
+
+(defun lem-check-site ()
+  "Check that the site is a lemmy instance.
+Actually check that the 'actor-id' returned by `lem-get-site' is
+equal to `lem-instance-url'."
+  (let* ((site (lem-get-site))
+         (ap-id (alist-get 'actor_id
+                           (alist-get 'site
+                                      (alist-get 'site_view site)))))
+    (equal (concat lem-instance-url "/") ap-id)))
 
 (defun lem-set-user-id (username)
   "Set `lem-user-id' to that of USERNAME."
