@@ -64,7 +64,8 @@ Used for pagination.")
   ;; adapted from ffap-url-regexp
   (concat
    "\\(?2:\\(news\\(post\\)?:\\|mailto:\\|file:\\|\\(ftp\\|https?\\|telnet\\|gopher\\|www\\|wais\\)://\\)" ; uri prefix
-   "[^ \n\t]*\\)" ; any old thing, that is, i.e. we allow invalid/unwise chars
+   "[^ )\n\t]*\\)" ; any old thing, i.e. we allow invalid/unwise chars. but no )
+   "\\(/\\)?" ; optional ending slash? ; TODO: some are caught, some are not
    "\\b"))
 
 ;;; UTILITIES
