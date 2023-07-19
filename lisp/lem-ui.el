@@ -1160,6 +1160,14 @@ Optionally only view UNREAD items."
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-mentions list))))
 
+(defun lem-ui-render-mentions (mentions)
+  ""
+  (cl-loop for men in mentions
+           for comment = (alist-get 'comment men)
+           do (insert
+               (lem-ui-format-comment comment)
+               "\n")))
+
 (defun lem-ui-view-private-messages (&optional unread)
   "View reply comments to the current user.
 Optionally only view UNREAD items."
