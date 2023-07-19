@@ -237,6 +237,8 @@ taglines.")
 
 ;; (lem-get-instance)
 
+(declare-function lem-get-instance nil)
+
 (defun lem-api-get-current-user ()
   "Get data for the current user, from the site endpoint.
 Returns a local_user_view, containing local_user object, person
@@ -269,7 +271,8 @@ Returns follows data, from under my_user, from the site endpoint."
   "List posts for the current instance.
 TYPE must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
-LIMIT is the amount of results to return."
+LIMIT is the amount of results to return.
+PAGE is a number, indexed at 1."
   (lem-get-posts type sort limit page))
 
 ;; (setq lem-test-inst-posts (lem-api-get-instance-posts "Subscribed"))
@@ -288,6 +291,8 @@ LISTING-TYPE must be a member of `lem-listing-types'.
 LIMIT and PAGE are numbers."
   (q type- listing-type sort limit page community-name community-id)) ;  creator-id
 
+(declare-function lem-search nil)
+
 ;; (lem-search "emacs" "Posts")
 (defun lem-api-search (q type)
   "Search for Q.
@@ -295,23 +300,31 @@ TYPE must be a member of `lem-search-types'. Defaults to All."
   (lem-search q type))
 
 (defun lem-api-search-users
-    (q &optional type- listing-type sort limit page community-name community-id) ;  creator-id
-  ""
+    (q &optional listing-type sort limit page community-name community-id) ;  creator-id
+  "Search for Q, returning users.
+LISTING-TYPE, SORT, LIMIT, PAGE, COMMUNITY-NAME, and COMMUNITY-ID
+are for `lem-search'."
   (lem-search q "Users" listing-type sort limit page community-name community-id))
 
 (defun lem-api-search-posts
-    (q &optional type- listing-type sort limit page community-name community-id) ;  creator-id
-  ""
+    (q &optional listing-type sort limit page community-name community-id) ;  creator-id
+  "Search for Q, returning posts.
+LISTING-TYPE, SORT, LIMIT, PAGE, COMMUNITY-NAME, and COMMUNITY-ID
+are for `lem-search'."
   (lem-search q "Posts" listing-type sort limit page community-name community-id))
 
 (defun lem-api-search-communities
-    (q &optional type- listing-type sort limit page community-name community-id) ;  creator-id
-  ""
+    (q &optional listing-type sort limit page community-name community-id) ;  creator-id
+  "Search for Q, returning communities.
+LISTING-TYPE, SORT, LIMIT, PAGE, COMMUNITY-NAME, and COMMUNITY-ID
+are for `lem-search'."
   (lem-search q "Communities" listing-type sort limit page community-name community-id))
 
 (defun lem-api-search-comments
-    (q &optional type- listing-type sort limit page community-name community-id) ;  creator-id
-  ""
+    (q &optional listing-type sort limit page community-name community-id) ;  creator-id
+  "Search for Q, returning comments.
+LISTING-TYPE, SORT, LIMIT, PAGE, COMMUNITY-NAME, and COMMUNITY-ID
+are for `lem-search'."
   (lem-search q "Comments" listing-type sort limit page community-name community-id))
 
 (lem-define-request "get" "resolve-object" "resolve_object"
@@ -340,30 +353,37 @@ Returns a person_view, comments, posts, moderates objects."
   (when saved-only
     '(("saved_only" . "true"))))
 
+(declare-function lem-get-person nil)
+
 ;; (lem-get-person nil "8511" nil nil nil nil)
 ;; (lem-get-person nil "8511" nil nil nil nil :saved-only)
 
 (defun lem-api-get-person-saved-only (person-id &optional sort limit page)
-  ""
+  "Get person with PERSON-ID, saved only.
+SORT, LIMIT, PAGE are all for `lem-get-person'."
   (lem-get-person nil person-id sort limit page nil :saved-only))
 
 ;; (setq lem-saved-only-test (lem-api-get-person-saved-only "8511"))
 
 (defun lem-api-get-person-by-id (person-id &optional sort limit page)
-  ""
+  "Get person with PERSON-ID.
+SORT, LIMIT, PAGE are all for `lem-get-person'."
   (lem-get-person nil person-id sort limit page))
 
 (defun lem-api-get-person-by-name (username &optional sort limit page)
-  ""
+  "Get person with USERNAME.
+SORT, LIMIT, PAGE are all for `lem-get-person'."
   (lem-get-person username nil sort limit page))
 
 (defun lem-api-get-person-posts (person-id &optional sort limit page)
-  ""
+  "Get the posts of person with PERSON-ID.
+SORT, LIMIT, PAGE are all for `lem-get-person'."
   (let ((person (lem-api-get-person-by-id person-id sort limit page)))
     (list (assoc 'posts person))))
 
 (defun lem-api-get-person-comments (person-id &optional sort limit page)
-  ""
+  "Get the comments of person with PERSON-ID.
+SORT, LIMIT, PAGE are all for `lem-get-person'."
   (let ((person (lem-api-get-person-by-id person-id sort limit page)))
     (list (assoc 'comments person))))
 
@@ -504,12 +524,15 @@ Without either arg, get instance posts."
 ;; (lem-get-posts nil nil nil "86881" nil "2")
 ;; (lem-get-posts "All" nil nil nil nil nil :saved)
 
+(declare-function lem-get-posts nil)
+
 (defun lem-api-get-community-posts-by-id (community-id
                                           &optional type sort limit page)
   "List posts for COMMUNITY-ID.
 TYPE must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
-LIMIT is the amount of results to return."
+LIMIT is the amount of results to return.
+PAGE is a number, indexed to 1."
   (lem-get-posts type sort limit page community-id))
 
 ;; (lem-api-list-posts-community-by-id "14856")
@@ -519,7 +542,8 @@ LIMIT is the amount of results to return."
   "List posts for COMMUNITY-NAME.
 TYPE must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
-LIMIT is the amount of results to return."
+LIMIT is the amount of results to return.
+PAGE is a number, indexed at 1."
   (lem-get-posts type sort limit page nil community-name))
 
 ;; https://join-lemmy.org/api/interfaces/CreatePost.html
@@ -612,17 +636,23 @@ Without any id or name, get instance comments."
   (when saved-only
     '(("saved_only" . "true"))))
 
+(declare-function lem-get-comments nil)
+
 ;; (lem-get-comments "1694468")
 
 (defun lem-api-get-community-comments (community-id
                                        &optional type sort limit page)
+  "Get comments of community with COMMUNITY-ID.
+TYPE, SORT, LIMIT and PAGE are all for `lem-get-comments'."
   (lem-get-comments nil nil type sort limit page community-id))
 
 (defun lem-api-get-post-comments (post-id &optional type sort limit page saved-only)
   "Get comments for POST-ID.
 TYPE must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
-LIMIT is the amount of results to return."
+LIMIT is the amount of results to return.
+PAGE is a number, indexed at 1.
+SAVED-ONLY means to only return saved items."
   (lem-get-comments post-id nil type sort limit page nil nil saved-only))
 
 ;; (lem-get-post-comments "1485706" "All")
@@ -630,18 +660,24 @@ LIMIT is the amount of results to return."
 ;; (lem-get-post-comments "1235982" "All")
 ;; (lem-api-get-post-comments "1865094" "All" nil "50" 2)
 
-(defun lem-api-get-comment-children (parent-id &optional type sort limit page saved-only)
+(defun lem-api-get-comment-children (parent-id
+                                     &optional type sort limit page saved-only)
   "Get comments for PARENT-ID.
 TYPE must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
-LIMIT is the amount of results to return."
+LIMIT is the amount of results to return.
+PAGE is a number, indexed at 1.
+SAVED-ONLY means to only return saved items."
   (lem-get-comments nil parent-id type sort limit page nil nil saved-only))
 
-(defun lem-api-get-community-comments-by-id (community-id &optional type sort limit page saved-only)
+(defun lem-api-get-community-comments-by-id (community-id
+                                             &optional type sort limit page saved-only)
   "Get comments for COMMUNITY-ID.
 TYPE must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
-LIMIT is the amount of results to return."
+LIMIT is the amount of results to return.
+PAGE is a number, indexed at 1.
+SAVED-ONLY means to only return saved items."
   (lem-get-comments nil nil type sort limit page community-id nil saved-only))
 
 (defun lem-api-get-community-comments-by-name
@@ -649,7 +685,9 @@ LIMIT is the amount of results to return."
   "Get comments for COMMUNITY-NAME.
 TYPE must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
-LIMIT is the amount of results to return."
+LIMIT is the amount of results to return.
+PAGE is a number, indexed at 1.
+SAVED-ONLY means to only return saved items."
   (lem-get-comments nil nil type sort limit page nil community-name saved-only))
 
 ;; (lem-get-community-comments-by-id "96200")
