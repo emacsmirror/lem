@@ -513,7 +513,7 @@ LIMIT is the max results to return."
          (buf (get-buffer-create buf-name))
          ;; TODO: handle all search args: community, page, limit
          (response (lem-search query (capitalize type) listing-type sort
-                               lem-ui-comments-limit))
+                               (or limit lem-ui-comments-limit)))
          (data (alist-get (intern type) response)))
     ;; TODO: render other responses:
     ;; ("All" TODO
@@ -601,7 +601,7 @@ LIMIT."
          (sort (or sort lem-default-comment-sort-type)))
     (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
       (lem-ui-render-post post sort :community)
-      (lem-ui-render-post-comments id)
+      (lem-ui-render-post-comments id sort limit)
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)
       (goto-char (point-min))))) ; limit
 
@@ -687,23 +687,23 @@ before (non-nil) or after (nil)"
         (when start
           (cons start end))))))
 
-(defun lem-ui--process-link (json start end url)
+(defun lem-ui--process-link (start end)
   "Process link URL in JSON as userhandle, community, or normal link.
 START and END are the boundaries of the link in the post body."
   (let* ((help-echo (get-text-property start 'help-echo))
-         extra-properties
+         ;; extra-properties
          (keymap lem-ui--link-map)
          (lem-tab-stop-type 'shr-url))
     (add-text-properties start end
                          (append
                           (list 'lem-tab-stop lem-tab-stop-type
                                 'keymap keymap
-                                'help-echo help-echo)
-                          extra-properties))))
+                                'help-echo help-echo)))))
+                          ;; extra-properties))))
 
 ;;; BYLINES
-(defun lem-ui-top-byline (title url username score timestamp
-                                &optional community community-url featured-p)
+(defun lem-ui-top-byline (title url username _score timestamp
+                                &optional community _community-url featured-p)
   "Format a top byline for post with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
 COMMUNITY and COMMUNITY-URL are those of the community the item belongs to.
 FEATURED-P means the item is pinned."
@@ -777,17 +777,16 @@ NO-SHORTEN means display full URL, else only the domain is shown."
       (replace-match
        (concat "<" (match-string 0) ">")))))
 
-(defun lem-ui-render-shr-url (json)
-  "Call `lem-ui--process-link' on any shr-url found in buffer.
-JSON is the item's data to process the link with."
+(defun lem-ui-render-shr-url ()
+  "Call `lem-ui--process-link' on any shr-url found in buffer."
+  ;; JSON is the item's data to process the link with."
   (save-excursion
     (let (region)
       (while (setq region (lem-ui--find-property-range
                            'shr-url (or (cdr region) (point-min))))
         ;; TODO: handle "/c/group@instance.org" shr-urls
-        (lem-ui--process-link json
-                              (car region) (cdr region)
-                              (get-text-property (car region) 'shr-url))))))
+        (lem-ui--process-link (car region) (cdr region))))))
+;; (get-text-property (car region) 'shr-url))))))
 
 (defun lem-ui-render-body (body &optional json)
   "Render post BODY as markdowned html.
@@ -808,7 +807,7 @@ JSON is the item's data to process the link with."
       (with-current-buffer "*html*" ; created by shr
         ;; our render:
         (when json
-          (lem-ui-render-shr-url json))
+          (lem-ui-render-shr-url))
         (re-search-forward "\n\n" nil :no-error)
         (setq str (buffer-substring (point) (point-max)))
         (kill-buffer-and-window)        ; shr's *html*
@@ -823,7 +822,7 @@ Optionally render post's COMMUNITY.
 Optionally TRIM post length.
 SORT must be a member of `lem-sort-types'."
   (let-alist post
-    (let ((url (lem-ui-render-url .post.url))
+    (let (;(url (lem-ui-render-url .post.url))
           (body (when .post.body
                   (lem-ui-render-body .post.body (alist-get 'post post)))))
       (insert
@@ -963,8 +962,8 @@ LIMIT is the max results to return."
   "View community at point."
   (interactive)
   (lem-ui-with-id
-      (let ((community (lem-get-community id)))
-        (lem-ui-view-community id))))
+      ;; (let ((community (lem-get-community id)))
+      (lem-ui-view-community id)))
 
 (defun lem-ui--communities-alist (communities)
   "Return an alist of name/description and ID from COMMUNITIES."
@@ -991,7 +990,7 @@ SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return.
 PAGE is the page number of items to display, a string."
   (let* ((community (lem-get-community id))
-         (view (alist-get 'community_view community))
+         ;; (view (alist-get 'community_view community))
          (buf (get-buffer-create "*lem-community*"))
          ;; in case we set community posts, then switch to comments:
          (sort (if (eq item 'comments)
@@ -1119,7 +1118,7 @@ And optionally for instance COMMUNITIES."
     (if id
         (let* ((str (number-to-string id)))
           (lem-ui-view-community str))
-      ("Not item at point?"))))
+      (message "No item at point?"))))
 
 ;;; REPLIES
 
@@ -1339,13 +1338,14 @@ Parent-fun for `hierarchy-add-tree'."
        'type 'private-message
        'line-prefix indent-str))))
 
-(defun lem-ui-render-post-comments (post-id &optional sort)
+(defun lem-ui-render-post-comments (post-id &optional sort limit)
   "Render a hierarchy of post's comments.
 POST-ID is the post's id.
-SORT must be a member of `lem-sort-types'."
+SORT must be a member of `lem-sort-types'.
+LIMIT is the amount of items to return."
   ;; TODO: TYPE_ default:
   (let* ((comments (lem-api-get-post-comments
-                    post-id "All" sort lem-ui-comments-limit))
+                    post-id "All" sort (or limit lem-ui-comments-limit)))
          (unique-comments (cl-remove-duplicates comments)))
     (lem-ui--build-and-render-comments-hierarchy unique-comments)))
 
@@ -1484,9 +1484,9 @@ If DISLIKE, dislike (downvote) it."
 
 (defun lem-ui-render-users (json)
   "JSON."
-  (let ((users (alist-get 'users json)))
-    (cl-loop for user in json
-             do (lem-ui-render-user user))))
+  ;; (let ((users (alist-get 'users json)))
+  (cl-loop for user in json
+           do (lem-ui-render-user user)))
 
 (defun lem-ui-render-user (json)
   "Render user with data JSON."
