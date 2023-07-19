@@ -802,8 +802,9 @@ SORT. LIMIT. PAGE."
   (interactive)
   (let* ((name (read-string "Post title: "))
          (communities (lem-list-communities "Subscribed"))
-         (list (lem-ui--communities-alist communities))
-         (choice (completing-read "Community: "
+         (list (lem-ui--communities-alist
+                (alist-get 'communities communities)))
+         (choice (completing-read "Community: " ; TODO: default to current view
                                   list))
          (community-id (string-to-number
                         (alist-get choice list nil nil #'equal)))
