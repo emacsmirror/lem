@@ -37,12 +37,13 @@
 ;;; PATCH hierarchy-print:
 ;; reported to emacs-devel but no answer as yet
 ;; https://lists.gnu.org/archive/html/emacs-devel/2023-07/msg00468.html
-(defun hierarchy-print (hierarchy &optional to-string indent-string)
+(defun lem--hierarchy-print (hierarchy &optional to-string indent-string)
   "Insert HIERARCHY in current buffer as plain text.
 
 Use TO-STRING to convert each element to a string.  TO-STRING is
 a function taking an item of HIERARCHY as input and returning a
-string.  If nil, TO-STRING defaults to a call to `format' with \"%s\"."
+string.  If nil, TO-STRING defaults to a call to `format' with \"%s\".
+INDENT-STRING is handed to `hierarchy-labelfn-indent'."
   (let ((to-string (or to-string (lambda (item) (format "%s" item)))))
     (hierarchy-map
      (hierarchy-labelfn-indent (lambda (item indent)
@@ -745,7 +746,8 @@ ID is the item's id."
    'byline-bottom t))
 
 (defun lem-ui-render-url (url &optional no-shorten)
-  "Render URL, a plain non-html string."
+  "Render URL, a plain non-html string.
+NO-SHORTEN means display full URL, else only the domain is shown."
   (when url
     (let ((parsed (url-generic-parse-url url))
           rendered)
@@ -771,7 +773,8 @@ ID is the item's id."
        (concat "<" (match-string 0) ">")))))
 
 (defun lem-ui-render-shr-url (json)
-  "Call `lem-ui--process-link' on any shr-url found in buffer."
+  "Call `lem-ui--process-link' on any shr-url found in buffer.
+JSON is the item's data to process the link with."
   (save-excursion
     (let (region)
       (while (setq region (lem-ui--find-property-range
@@ -782,7 +785,8 @@ ID is the item's id."
                               (get-text-property (car region) 'shr-url))))))
 
 (defun lem-ui-render-body (body &optional json)
-  "Render post BODY as markdowned html."
+  "Render post BODY as markdowned html.
+JSON is the item's data to process the link with."
   (let ((buf "*lem-md*")
         str)
     (with-temp-buffer
@@ -846,7 +850,8 @@ SORT must be a member of `lem-sort-types'."
         'type (caar post))))))
 
 (defun lem-ui-render-posts-instance (posts &optional sort)
-  "Render a list of posts POSTS in BUFFER, trimmed and showing community."
+  "Render a list of posts POSTS in BUFFER, trimmed and showing community.
+SORT should be a member of `lem-sort-types'."
   (lem-ui-render-posts posts sort :community :trim))
 
 (defun lem-ui-render-posts (posts &optional sort community trim)
@@ -1161,7 +1166,7 @@ Optionally only view UNREAD items."
       (lem-ui-render-mentions list))))
 
 (defun lem-ui-render-mentions (mentions)
-  ""
+  "Render mentions MENTIONS."
   (cl-loop for men in mentions
            for comment = (alist-get 'comment men)
            do (insert
@@ -1180,7 +1185,7 @@ Optionally only view UNREAD items."
       (lem-ui-render-private-messages list))))
 
 (defun lem-ui-render-private-messages (private-messages)
-  ""
+  "Render private messages PRIVATE-MESSAGES."
   (cl-loop for pm in private-messages
            do (insert
                (lem-ui-format-private-message pm)
@@ -1217,7 +1222,7 @@ For viewing a plain list of comments, not a hierarchy."
     (lem-ui--build-hierarchy list)) ; sets `lem-comments-hierarchy'
   (with-current-buffer (get-buffer-create "*lem-post*")
     (let ((inhibit-read-only t))
-      (hierarchy-print
+      (lem--hierarchy-print
        lem-comments-hierarchy
        (lambda (item indent)
          (lem-ui-format-comment item indent))
