@@ -694,6 +694,10 @@ Returns private_messages."
 ;; (lem-get-private-messages "true")
 ;; (lem-get-private-messages)
 
+(lem-define-request "get" "get-unread-count" "user/unread_count")
+
+;; (lem-get-unread-count)
+
 (lem-define-request "post" "send-private-message" "private_message"
   (content recipient-id)
   "Sent a private message CONTENT to user with RECIPIENT-ID.
