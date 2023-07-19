@@ -1150,6 +1150,24 @@ Optionally only view UNREAD items."
   (cl-loop for reply in replies
            do (lem-ui-render-comment reply)))
 
+(defun lem-ui-view-private-messages (&optional unread)
+  "View reply comments to the current user.
+Optionally only view UNREAD items."
+  (interactive)
+  (let* ((private-messages (lem-get-private-messages (if unread "true" nil)))
+         (list (alist-get 'private_messages private-messages))
+         (buf (get-buffer-create "*lem-private-messages*")))
+    (lem-ui-with-buffer buf 'lem-mode nil
+      ;; (lem-ui-render-private-messages list))))
+      (lem-ui-render-private-messages list))))
+
+(defun lem-ui-render-private-messages (private-messages)
+  ""
+  (cl-loop for pm in private-messages
+           do (insert
+               (lem-ui-format-private-message pm)
+               "\n")))
+
 ;;; COMMENTS
 
 (defun lem-ui-render-comment (comment &optional sort)
@@ -1259,6 +1277,38 @@ Parent-fun for `hierarchy-add-tree'."
        'community-id .post.community_id
        'creator-id .creator.id
        'type 'comment
+       'line-prefix indent-str))))
+
+;; TODO: refactor format funs? will let-alist dot notation work?
+(defun lem-ui-format-private-message (private-message &optional indent)
+  "Format PRIVATE-MESSAGE, optionally with INDENT amount of indent bars."
+  (let-alist private-message
+    (let ((content (when .private_message.content
+                     (lem-ui-render-body .private_message.content
+                                         (alist-get 'private_message private-message))))
+          (indent-str (when indent
+                        (make-string indent (string-to-char
+                                             (lem-ui-symbol 'reply-bar))))))
+      (push .private_message.id lem-ui-current-items) ; pagination
+      (propertize
+       (concat
+        (lem-ui-top-byline nil nil
+                           .creator.name
+                           nil ;.counts.score
+                           .private_message.published)
+        "\n"
+        (or content "")
+        "\n"
+        ;; (lem-ui-bt-byline .counts.score .counts.child_count .private_message.id)
+        "\n"
+        lem-ui-horiz-bar
+        "\n")
+       'json private-message
+       'id .private_message.id
+       ;; 'post-id .private_message.post_id
+       ;; 'community-id .post.community_id
+       'creator-id .creator.id
+       'type 'private-message
        'line-prefix indent-str))))
 
 (defun lem-ui-render-post-comments (post-id &optional sort)

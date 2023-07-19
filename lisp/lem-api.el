@@ -692,6 +692,7 @@ Returns private_messages."
   (unread-only))
 
 ;; (lem-get-private-messages "true")
+;; (lem-get-private-messages)
 
 (lem-define-request "post" "send-private-message" "private_message"
   (content recipient-id)
