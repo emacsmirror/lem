@@ -139,10 +139,10 @@
 (defvar fedi-http--api-version)
 (setq fedi-http--api-version "v3")
 
-(defvar fedi-instance-url)
-(setq fedi-instance-url "https://lemmy.ml")
-
 (setq fedi-package-prefix "lem")
+
+(defvar lem-instance-url "https://lemmy.ml"
+  "The URL of the instance to log in to and use.")
 
 ;;;###autoload
 (defvar lem-auth-token nil
