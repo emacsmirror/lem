@@ -759,10 +759,13 @@ ID is the item's id."
 
 (defun lem-ui-mdize-plain-urls ()
   "Markdown-ize any plain string URLs found in current buffer."
+  ;; FIXME: this doesn't rly work with ```verbatim``` in md
   (while (re-search-forward lem-ui-url-regex nil :no-error)
-    (replace-match (concat "<"
-                           (match-string 0)
-                           ">"))))
+    (unless (save-excursion
+              (goto-char (1- (point)))
+              (markdown-inside-link-p))
+      (replace-match
+       (concat "<" (match-string 0) ">")))))
 
 (defun lem-ui-render-shr-url (json)
   "Call `lem-ui--process-link' on any shr-url found in buffer."
@@ -770,6 +773,7 @@ ID is the item's id."
     (let (region)
       (while (setq region (lem-ui--find-property-range
                            'shr-url (or (cdr region) (point-min))))
+        ;; TODO: handle "/c/group@instance.org" shr-urls
         (lem-ui--process-link json
                               (car region) (cdr region)
                               (get-text-property (car region) 'shr-url))))))
@@ -785,7 +789,6 @@ ID is the item's id."
       (let ((replaced (string-replace "@" "\\@" (buffer-string))))
         (erase-buffer)
         (insert replaced)
-        ;; FIXME: doesn't render usernames as links:
         (markdown-standalone buf))
       (with-current-buffer buf
         ;; shr render:
