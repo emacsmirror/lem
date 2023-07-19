@@ -315,6 +315,8 @@ TYPE must be a member of `lem-search-types'. Defaults to All."
   (q))
 
 ;; (lem-resolve-object "https://lemmy.ml/u/blawsybogsy")
+;; (lem-resolve-object "https://lemmy.ml/c/canada@lemmy.ca") ; foreign instance fails
+;; (lem-resolve-object "https://lemmy.ml/c/canada")
 
 ;;; AUTH
 (lem-define-request "post" "login" "user/login"
@@ -408,7 +410,8 @@ Returns a community_view, site, moderators, online count,
 discussion_languages, default_post_language."
   (id name))
 
-;; (lem-get-community nil "96200")
+;; (lem-get-community "96200" nil)
+;; (lem-get-community nil "revanced@lemmy.world")
 
 (lem-define-request "get" "list-communities" "community/list"
   (&optional type- sort limit page)
