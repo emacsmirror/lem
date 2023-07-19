@@ -88,6 +88,11 @@ Used for pagination.")
   "Insert heading for NAME, a string."
   (insert (lem-ui-format-heading name)))
 
+(defgroup lem nil
+  "Lemmy client."
+  :prefix "lem-ui-"
+  :group 'lem)
+
 (defcustom lem-ui-symbols
   '((reply     . ("💬" . "R"))
     (boost     . ("🔁" . "B"))

@@ -82,6 +82,11 @@
 
 ;;; CUSTOMIZE
 
+(defgroup lem nil
+  "Lemmy client."
+  :prefix "lem-"
+  :group 'external)
+
 (defun lem-map-customize-options (list)
   "Return a choice/const list from LIST, for customize options."
   (append '(choice)
