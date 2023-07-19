@@ -253,6 +253,11 @@ Returns follows data, from under my_user, from the site endpoint."
          (fols (alist-get 'follows current-user)))
     fols))
 
+;; no auth: because we call this before sending the instance our creds:
+(lem-define-request "get" "get-site" "site")
+
+;; (lem-get-site)
+
 (lem-define-request "get" "get-site-metadata" "post/site_metadata"
   (url)
   "Get site metadata for URL, any Lemmy instance."

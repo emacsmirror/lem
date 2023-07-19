@@ -167,14 +167,16 @@ Load current user's instance posts."
         (progn (setq lem-auth-token token
                      lem-current-user name)
                (lem-set-user-id name))
-      ;; else login manually, store token, and set var:
-      (let* ((password (read-string "Password: "))
-            (login-response (lem-login name password))
-            (token (alist-get 'jwt login-response)))
-        (lem-auth-store-token name token)
-        (setq lem-auth-token token
-              lem-current-user name)
-        (lem-set-user-id name)))))
+      ;; FIXME: improve this. / verify instance is an instance:
+      (when (lem-get-site)
+        ;; else login manually, store token, and set var:
+        (let* ((password (read-string "Password: "))
+               (login-response (lem-login name password))
+               (token (alist-get 'jwt login-response)))
+          (lem-auth-store-token name token)
+          (setq lem-auth-token token
+                lem-current-user name)
+          (lem-set-user-id name))))))
 
 (defun lem-set-user-id (username)
   "Set `lem-user-id' to that of USERNAME."
