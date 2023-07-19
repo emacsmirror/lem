@@ -622,7 +622,9 @@ etc.")
         (item-type (lem-ui--property 'lem-tab-stop))
         url)
     (cond ((setq url (lem-ui--property 'shr-url))
-           (lem-ui-url-lookup url)) ; TODO: handle `lem-resolve-object' error
+           (if (string-prefix-p "/c/" url)
+               (lem-get-community (substring-no-properties url 3))
+             (lem-ui-url-lookup url))) ; TODO: handle `lem-resolve-object' error
           ((eq item-type 'community)
            (lem-ui-view-community community-id))
           ((and (eq item-type 'user)
