@@ -1131,7 +1131,7 @@ Simple means we just read a string."
         (message "Comment created: %s" .comment_view.comment.content)
         (lem-ui-view-post (number-to-string post-id))))))
 
-(defun lem-ui-view-replies ()
+(defun lem-ui-view-replies-unread ()
   "View unread replies."
   (lem-ui-view-replies :unread))
 
