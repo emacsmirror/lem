@@ -26,7 +26,6 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 
 * TODOS / doing (UI layer)
 
-- [ ] webfinger lookup bindings for all links
 - [ ] improve rich text rendering of content and bylines
 - [ ] update current buffer with new items
 - [-] tabstop navigation logic (from mastodon.el)
@@ -36,6 +35,7 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
   
 * todos DONE (UI layer)
 
+- [X] webfinger lookup bindings for all links
 - [X] finish pagination/add older items to buffer
 - [-] =lem.plstore= for auth token
 - [X] webfinger lookups
@@ -112,16 +112,20 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 |         | lem-ui-new-post-simple                 | Create and submit new post.                                        |
 |         | lem-ui-reply-simple                    | Reply to post or comment at point.                                 |
 |         | lem-ui-save-item                       | Save item at point.                                                |
+| SPC     | lem-ui-scroll-up-command               | Call `scroll-up-command', loading more toots if necessary.         |
 |         | lem-ui-search                          | Do a search for one of the types in `lem-search-types'.            |
 | S       | lem-ui-subscribe-to-community-at-point | Subscribe to community at point.                                   |
 |         | lem-ui-url-lookup                      | Perform a webfinger lookup on URL and load the result in `lem.el'. |
 |         | lem-ui-view-comment-post               | View post of comment at point.                                     |
 |         | lem-ui-view-communities                | View Lemmy communities.                                            |
 | C       | lem-ui-view-community-at-point         | View community at point.                                           |
+|         | lem-ui-view-instance                   | View posts of current user's home instance.                        |
 |         | lem-ui-view-item-community             | View community of item at point.                                   |
 |         | lem-ui-view-item-user                  | View user of item at point.                                        |
+|         | lem-ui-view-mentions                   | View reply comments to the current user.                           |
 |         | lem-ui-view-own-profile                | View profile of the current user.                                  |
 |         | lem-ui-view-post-at-point              | .                                                                  |
+|         | lem-ui-view-private-messages           | View reply comments to the current user.                           |
 |         | lem-ui-view-replies                    | View reply comments to the current user.                           |
 |         | lem-ui-view-saved-items                | View saved items of the current user, or of user with ID.          |
 | RET     | lem-ui-view-thing-at-point             | View post, community or user at point.                             |

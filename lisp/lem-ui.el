@@ -60,6 +60,14 @@ Server maximum appears to be 50.")
   "A list holding the ids of all items in the current view.
 Used for pagination.")
 
+(defvar lem-ui-url-regex
+  ;; adapted from ffap-url-regexp
+  (concat
+   "\\(?2:\\(news\\(post\\)?:\\|mailto:\\|file:\\|\\(ftp\\|https?\\|telnet\\|gopher\\|www\\|wais\\)://\\)" ; uri prefix
+   "[^ )\n\t]*\\)" ; any old thing, i.e. we allow invalid/unwise chars. but no )
+   "\\(/\\)?" ; optional ending slash? ; TODO: some are caught, some are not
+   "\\b"))
+
 ;;; UTILITIES
 
 (defvar lem-ui-horiz-bar
@@ -261,6 +269,7 @@ If we hit `point-max', call `lem-ui-more' then `scroll-up-command'."
 SORT must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return."
+  (interactive)
   (let* ((instance (lem-get-instance))
          (posts (lem-get-posts type sort limit page))
          (posts (alist-get 'posts posts))
@@ -536,7 +545,7 @@ STRING means ID should be a string."
           (string-match "^/p/[[:alpha:]]+/[[:digit:]]+$" query)
           (string-match "^/[[:alpha:]]+$" query)
           (string-match "^/u/[_[:alpha:]]+$" query)
-          (string-match "^/c/[_[:alnum:]]+$" query)
+          (string-match "^/c/[@._[:alnum:]]+$" query)
           (string-match "^/post/[[:digit:]]+$" query)
           (string-match "^/comment/[[:digit:]]+$" query)))))
 
@@ -553,7 +562,11 @@ Lemmy supports lookups for users, posts, comments and communities."
         (browse-url query)
       (message "Performing lookup...")
       (let ((response (lem-resolve-object query)))
-        (cond ((equal 'person (caar response))
+        (cond ((stringp response)
+               ;; error string: just return nil? then we can do sth else if
+               ;; this fails
+               (message "%s" response))
+              ((equal 'person (caar response))
                (lem-ui-lookup-call 'person response 'lem-ui-view-user :str))
               ((equal 'comment (caar response))
                (lem-ui-lookup-call 'comment response 'lem-ui-view-comment-post :str))
@@ -586,6 +599,8 @@ LIMIT."
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)
       (goto-char (point-min))))) ; limit
 
+;;; LINKS
+
 (defvar lem-ui--link-map
   (let ((map (make-sparse-keymap)))
     ;; (set-keymap-parent map shr-map)
@@ -604,8 +619,13 @@ etc.")
   (let ((id (lem-ui--id-from-prop :string 'id))
         (creator-id (lem-ui--id-from-prop :string 'creator-id))
         (community-id (lem-ui--id-from-prop :string 'community-id))
-        (item-type (lem-ui--property 'lem-tab-stop)))
-    (cond ((eq item-type 'community)
+        (item-type (lem-ui--property 'lem-tab-stop))
+        url)
+    (cond ((setq url (lem-ui--property 'shr-url))
+           (if (string-prefix-p "/c/" url)
+               (lem-get-community (substring-no-properties url 3))
+             (lem-ui-url-lookup url))) ; TODO: handle `lem-resolve-object' error
+          ((eq item-type 'community)
            (lem-ui-view-community community-id))
           ((and (eq item-type 'user)
                 creator-id)
@@ -614,8 +634,6 @@ etc.")
           ;; (type user, but id not creator-id)
           ((eq item-type 'user)
            (lem-ui-view-user id)))))
-;; (t
-;; (lem-ui-view-user id)))))
 
 (defun lem-ui--propertize-link-item (item id type)
   "Propertize a link ITEM with ID and TYPE."
@@ -630,6 +648,54 @@ etc.")
               'lem-tab-stop type
               'face 'underline))
 
+(defun lem-ui--find-property-range (property start-point
+                                             &optional search-backwards)
+  "Return nil if no such range is found.
+If PROPERTY is set at START-POINT returns a range around
+START-POINT otherwise before/after START-POINT.
+SEARCH-BACKWARDS determines whether we pick point
+before (non-nil) or after (nil)"
+  (if (get-text-property start-point property)
+      ;; We are within a range, so look backwards for the start:
+      (cons (previous-single-property-change
+             (if (equal start-point (point-max)) start-point (1+ start-point))
+             property nil (point-min))
+            (next-single-property-change start-point property nil (point-max)))
+    (if search-backwards
+        (let* ((end (or (previous-single-property-change
+                         (if (equal start-point (point-max))
+                             start-point (1+ start-point))
+                         property)
+                        ;; we may either be just before the range or there
+                        ;; is nothing at all
+                        (and (not (equal start-point (point-min)))
+                             (get-text-property (1- start-point) property)
+                             start-point)))
+               (start (and end (previous-single-property-change
+                                end property nil (point-min)))))
+          (when end
+            (cons start end)))
+      (let* ((start (next-single-property-change start-point property))
+             (end (and start (next-single-property-change
+                              start property nil (point-max)))))
+        (when start
+          (cons start end))))))
+
+(defun lem-ui--process-link (json start end url)
+  "Process link URL in JSON as userhandle, community, or normal link.
+START and END are the boundaries of the link in the post body."
+  (let* ((help-echo (get-text-property start 'help-echo))
+         extra-properties
+         (keymap lem-ui--link-map)
+         (lem-tab-stop-type 'shr-url))
+    (add-text-properties start end
+                         (append
+                          (list 'lem-tab-stop lem-tab-stop-type
+                                'keymap keymap
+                                'help-echo help-echo)
+                          extra-properties))))
+
+;;; BYLINES
 (defun lem-ui-top-byline (title url username score timestamp
                                 &optional community community-url featured-p)
   "Format a top byline for post with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
@@ -678,36 +744,66 @@ ID is the item's id."
                        'face font-lock-comment-face))
    'byline-bottom t))
 
-(defun lem-ui-render-url (url)
+(defun lem-ui-render-url (url &optional no-shorten)
   "Render URL, a plain non-html string."
   (when url
     (let ((parsed (url-generic-parse-url url))
           rendered)
       (with-temp-buffer
-        (insert "<a href=" url ">" (url-host parsed) "</a>")
+        (insert "<a href=" url ">"
+                (if no-shorten
+                    url
+                  (url-host parsed))
+                "</a>")
         (shr-render-buffer (current-buffer))
         (setq rendered (buffer-string))
         (kill-buffer-and-window))
       rendered)))
 
-(defun lem-ui-render-body (body)
+(defun lem-ui-mdize-plain-urls ()
+  "Markdown-ize any plain string URLs found in current buffer."
+  ;; FIXME: this doesn't rly work with ```verbatim``` in md
+  (while (re-search-forward lem-ui-url-regex nil :no-error)
+    (unless (save-excursion
+              (goto-char (1- (point)))
+              (markdown-inside-link-p))
+      (replace-match
+       (concat "<" (match-string 0) ">")))))
+
+(defun lem-ui-render-shr-url (json)
+  "Call `lem-ui--process-link' on any shr-url found in buffer."
+  (save-excursion
+    (let (region)
+      (while (setq region (lem-ui--find-property-range
+                           'shr-url (or (cdr region) (point-min))))
+        ;; TODO: handle "/c/group@instance.org" shr-urls
+        (lem-ui--process-link json
+                              (car region) (cdr region)
+                              (get-text-property (car region) 'shr-url))))))
+
+(defun lem-ui-render-body (body &optional json)
   "Render post BODY as markdowned html."
   (let ((buf "*lem-md*")
         str)
     (with-temp-buffer
       (insert body)
       (goto-char (point-min))
+      (lem-ui-mdize-plain-urls)
       (let ((replaced (string-replace "@" "\\@" (buffer-string))))
         (erase-buffer)
         (insert replaced)
-        ;; FIXME: doesn't render usernames as links:
         (markdown-standalone buf))
       (with-current-buffer buf
-        (shr-render-buffer (current-buffer))
+        ;; shr render:
+        (shr-render-buffer (current-buffer)))
+      (with-current-buffer "*html*" ; created by shr
+        ;; our render:
+        (when json
+          (lem-ui-render-shr-url json))
         (re-search-forward "\n\n" nil :no-error)
         (setq str (buffer-substring (point) (point-max)))
-        (kill-buffer-and-window) ; shr's *html*
-        (kill-buffer buf))) ; our md
+        (kill-buffer-and-window)        ; shr's *html*
+        (kill-buffer buf)))             ; our md
     str))
 
 (defun lem-ui-render-post (post &optional sort community trim)
@@ -720,7 +816,7 @@ SORT must be a member of `lem-sort-types'."
   (let-alist post
     (let ((url (lem-ui-render-url .post.url))
           (body (when .post.body
-                  (lem-ui-render-body .post.body))))
+                  (lem-ui-render-body .post.body (alist-get 'post post)))))
       (insert
        (propertize
         (concat
@@ -802,8 +898,9 @@ SORT. LIMIT. PAGE."
   (interactive)
   (let* ((name (read-string "Post title: "))
          (communities (lem-list-communities "Subscribed"))
-         (list (lem-ui--communities-alist communities))
-         (choice (completing-read "Community: "
+         (list (lem-ui--communities-alist
+                (alist-get 'communities communities)))
+         (choice (completing-read "Community: " ; TODO: default to current view
                                   list))
          (community-id (string-to-number
                         (alist-get choice list nil nil #'equal)))
@@ -1034,7 +1131,7 @@ Simple means we just read a string."
         (message "Comment created: %s" .comment_view.comment.content)
         (lem-ui-view-post (number-to-string post-id))))))
 
-(defun lem-ui-view-replies ()
+(defun lem-ui-view-replies-unread ()
   "View unread replies."
   (lem-ui-view-replies :unread))
 
@@ -1052,6 +1149,34 @@ Optionally only view UNREAD items."
   "Render REPLIES, reply comments to the current user."
   (cl-loop for reply in replies
            do (lem-ui-render-comment reply)))
+
+(defun lem-ui-view-mentions (&optional unread)
+  "View reply comments to the current user.
+Optionally only view UNREAD items."
+  (interactive)
+  (let* ((mentions (lem-get-mentions (if unread "true" nil)))
+         (list (alist-get 'mentions mentions))
+         (buf (get-buffer-create "*lem-mentions*")))
+    (lem-ui-with-buffer buf 'lem-mode nil
+      (lem-ui-render-mentions list))))
+
+(defun lem-ui-view-private-messages (&optional unread)
+  "View reply comments to the current user.
+Optionally only view UNREAD items."
+  (interactive)
+  (let* ((private-messages (lem-get-private-messages (if unread "true" nil)))
+         (list (alist-get 'private_messages private-messages))
+         (buf (get-buffer-create "*lem-private-messages*")))
+    (lem-ui-with-buffer buf 'lem-mode nil
+      ;; (lem-ui-render-private-messages list))))
+      (lem-ui-render-private-messages list))))
+
+(defun lem-ui-render-private-messages (private-messages)
+  ""
+  (cl-loop for pm in private-messages
+           do (insert
+               (lem-ui-format-private-message pm)
+               "\n")))
 
 ;;; COMMENTS
 
@@ -1137,7 +1262,8 @@ Parent-fun for `hierarchy-add-tree'."
   "Format COMMENT, optionally with INDENT amount of indent bars."
   (let-alist comment
     (let ((content (when .comment.content
-                     (lem-ui-render-body .comment.content)))
+                     (lem-ui-render-body .comment.content
+                                         (alist-get 'comment comment))))
           (indent-str (when indent
                         (make-string indent (string-to-char
                                              (lem-ui-symbol 'reply-bar))))))
@@ -1161,6 +1287,38 @@ Parent-fun for `hierarchy-add-tree'."
        'community-id .post.community_id
        'creator-id .creator.id
        'type 'comment
+       'line-prefix indent-str))))
+
+;; TODO: refactor format funs? will let-alist dot notation work?
+(defun lem-ui-format-private-message (private-message &optional indent)
+  "Format PRIVATE-MESSAGE, optionally with INDENT amount of indent bars."
+  (let-alist private-message
+    (let ((content (when .private_message.content
+                     (lem-ui-render-body .private_message.content
+                                         (alist-get 'private_message private-message))))
+          (indent-str (when indent
+                        (make-string indent (string-to-char
+                                             (lem-ui-symbol 'reply-bar))))))
+      (push .private_message.id lem-ui-current-items) ; pagination
+      (propertize
+       (concat
+        (lem-ui-top-byline nil nil
+                           .creator.name
+                           nil ;.counts.score
+                           .private_message.published)
+        "\n"
+        (or content "")
+        "\n"
+        ;; (lem-ui-bt-byline .counts.score .counts.child_count .private_message.id)
+        "\n"
+        lem-ui-horiz-bar
+        "\n")
+       'json private-message
+       'id .private_message.id
+       ;; 'post-id .private_message.post_id
+       ;; 'community-id .post.community_id
+       'creator-id .creator.id
+       'type 'private-message
        'line-prefix indent-str))))
 
 (defun lem-ui-render-post-comments (post-id &optional sort)

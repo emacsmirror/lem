@@ -139,10 +139,10 @@
 (defvar fedi-http--api-version)
 (setq fedi-http--api-version "v3")
 
-(defvar fedi-instance-url)
-(setq fedi-instance-url "https://lemmy.ml")
-
 (setq fedi-package-prefix "lem")
+
+(defvar lem-instance-url "https://lemmy.ml"
+  "The URL of the instance to log in to and use.")
 
 ;;;###autoload
 (defvar lem-auth-token nil
@@ -253,6 +253,11 @@ Returns follows data, from under my_user, from the site endpoint."
          (fols (alist-get 'follows current-user)))
     fols))
 
+;; no auth: because we call this before sending the instance our creds:
+(lem-define-request "get" "get-site" "site")
+
+;; (lem-get-site)
+
 (lem-define-request "get" "get-site-metadata" "post/site_metadata"
   (url)
   "Get site metadata for URL, any Lemmy instance."
@@ -315,6 +320,8 @@ TYPE must be a member of `lem-search-types'. Defaults to All."
   (q))
 
 ;; (lem-resolve-object "https://lemmy.ml/u/blawsybogsy")
+;; (lem-resolve-object "https://lemmy.ml/c/canada@lemmy.ca") ; foreign instance fails
+;; (lem-resolve-object "https://lemmy.ml/c/canada")
 
 ;;; AUTH
 (lem-define-request "post" "login" "user/login"
@@ -408,7 +415,8 @@ Returns a community_view, site, moderators, online count,
 discussion_languages, default_post_language."
   (id name))
 
-;; (lem-get-community nil "96200")
+;; (lem-get-community "96200" nil)
+;; (lem-get-community nil "revanced@lemmy.world")
 
 (lem-define-request "get" "list-communities" "community/list"
   (&optional type- sort limit page)
@@ -689,6 +697,11 @@ Returns private_messages."
   (unread-only))
 
 ;; (lem-get-private-messages "true")
+;; (lem-get-private-messages)
+
+(lem-define-request "get" "get-unread-count" "user/unread_count")
+
+;; (lem-get-unread-count)
 
 (lem-define-request "post" "send-private-message" "private_message"
   (content recipient-id)
