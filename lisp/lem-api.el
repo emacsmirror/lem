@@ -93,7 +93,7 @@
 ;; getReportCount
 ;; getSite DONE
 ;; getSiteMetadata DONE
-;; getUnreadCount TODO
+;; getUnreadCount DONE
 ;; getUnreadRegistrationApplicationCount
 ;; leaveAdmin
 ;; likeComment DONE
