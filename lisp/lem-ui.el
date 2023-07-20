@@ -189,7 +189,7 @@ Within this macro call, args JSON and ID are available.
 NUMBER means return ID as a number."
   (declare (debug 'body)
            (indent 1))
-  `(let* ((json (lem-ui-thing-json))
+  `(let* (;(json (lem-ui-thing-json))
           (id (lem-ui--id-from-prop (if ,number nil :string))))
      ,body))
 
@@ -283,7 +283,7 @@ LIMIT is the amount of results to return."
          (buf (get-buffer-create "*lem-instance*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-instance instance :stats)
-      (lem-ui-render-posts-instance posts sort)
+      (lem-ui-render-posts-instance posts)
       (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance 'instance page)
       (goto-char (point-min)))))
 
@@ -600,7 +600,7 @@ LIMIT."
          (post (alist-get 'post_view post-view))
          (sort (or sort lem-default-comment-sort-type)))
     (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
-      (lem-ui-render-post post sort :community)
+      (lem-ui-render-post post :community)
       (lem-ui-render-post-comments id sort limit)
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)
       (goto-char (point-min))))) ; limit
@@ -814,7 +814,7 @@ JSON is the item's data to process the link with."
         (kill-buffer buf)))             ; our md
     str))
 
-(defun lem-ui-render-post (post &optional sort community trim)
+(defun lem-ui-render-post (post &optional community trim)
   ;; NB trim in instance, community, and user views
   ;; NB show community info in instance and in post views
   "Render single POST.
@@ -853,20 +853,18 @@ SORT must be a member of `lem-sort-types'."
         'creator-id .creator.id
         'type (caar post))))))
 
-(defun lem-ui-render-posts-instance (posts &optional sort)
-  "Render a list of posts POSTS in BUFFER, trimmed and showing community.
-SORT should be a member of `lem-sort-types'."
-  (lem-ui-render-posts posts sort :community :trim))
+(defun lem-ui-render-posts-instance (posts)
+  "Render a list of posts POSTS in BUFFER, trimmed and showing community."
+  ;; SORT should be a member of `lem-sort-types'."
+  (lem-ui-render-posts posts :community :trim))
 
-(defun lem-ui-render-posts (posts &optional sort community trim)
+(defun lem-ui-render-posts (posts &optional community trim)
   "Render a list of posts POSTS in BUFFER.
 Used for instance, communities, posts, and users.
-COMMENTS means also show post comments.
-SORT is the kind of sorting to use.
 COMMUNITY means display what community it was posted to.
 TRIM means trim each post for length."
   (cl-loop for x in posts
-           do (lem-ui-render-post x sort community trim)))
+           do (lem-ui-render-post x community trim)))
 
 (defun lem-ui-save-item ()
   "Save item at point.
@@ -878,7 +876,7 @@ Saved items can be viewed in your profile, like bookmarks."
            (lem-save-post id)
            (message "%s %s saved!" type id))
           ((eq type 'comment)
-           (lem-api-save-comment id)
+           (lem-save-comment id)
            (message "%s %s saved!" type id))
           (t
            (message "You can only save posts and comments.")))))
@@ -1009,9 +1007,9 @@ PAGE is the page number of items to display, a string."
       (if (eq item 'comments)
           (progn
             (lem-ui-insert-heading "comments")
-            (lem-ui-render-comments items nil sort)) ; no type
+            (lem-ui-render-comments items)) ; no type
         (lem-ui-insert-heading "posts")
-        (lem-ui-render-posts items buf sort)) ; no children
+        (lem-ui-render-posts items)) ; no children
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-community
                               (or item 'posts) page)
       (goto-char (point-min)))))
@@ -1027,7 +1025,7 @@ If STRING, return one, else number."
         (number-to-string id)
       id)))
 
-(defun lem-ui-render-communities (communities &optional type sort)
+(defun lem-ui-render-communities (communities)
   "Render COMMUNITIES.
 TYPE
 SORT."
@@ -1197,20 +1195,20 @@ Optionally only view UNREAD items."
 
 ;;; COMMENTS
 
-(defun lem-ui-render-comment (comment &optional sort)
-  "Render single COMMENT.
-SORT must be a member of `lem-comment-sort-types'."
+(defun lem-ui-render-comment (comment)
+  "Render single COMMENT."
+;; SORT must be a member of `lem-comment-sort-types'."
   (insert
    (lem-ui-format-comment comment)
    "\n"))
 
-(defun lem-ui-render-comments (comments &optional type sort)
+(defun lem-ui-render-comments (comments)
   "Render COMMENTS, a list of comment objects.
-TYPE
-SORT.
+;; TYPE
+;; SORT.
 For viewing a plain list of comments, not a hierarchy."
   (cl-loop for x in comments
-           do (lem-ui-render-comment x sort)))
+           do (lem-ui-render-comment x)))
 
 ;;; THREADED COMMENTS:
 ;; Path: "The path / tree location of a comment, separated by dots, ending
@@ -1538,15 +1536,15 @@ CURRENT-USER means we are displaying the current user's profile."
           (lem-ui-render-user .person_view))
         (cond ((equal view-type "posts")
                (lem-ui-insert-heading "posts")
-               (lem-ui-render-posts .posts sort :community :trim))
+               (lem-ui-render-posts .posts :community :trim))
               ((equal view-type "comments")
                (lem-ui-insert-heading "comments")
-               (lem-ui-render-comments .comments view-type sort))
+               (lem-ui-render-comments .comments))
               (t ; no arg: overview
                (lem-ui-insert-heading "overview")
                ;; TODO: insert mixed comments/posts
-               (lem-ui-render-posts .posts sort :community :trim)
-               (lem-ui-render-comments .comments view-type sort)))
+               (lem-ui-render-posts .posts :community :trim)
+               (lem-ui-render-comments .comments)))
         ;; FIXME: don't confuse view-type and listing-type (fix cycling too):
         (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user view-type)
         (goto-char (point-min))))))
