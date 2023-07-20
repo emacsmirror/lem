@@ -37,12 +37,13 @@
 ;;; PATCH hierarchy-print:
 ;; reported to emacs-devel but no answer as yet
 ;; https://lists.gnu.org/archive/html/emacs-devel/2023-07/msg00468.html
-(defun hierarchy-print (hierarchy &optional to-string indent-string)
+(defun lem--hierarchy-print (hierarchy &optional to-string indent-string)
   "Insert HIERARCHY in current buffer as plain text.
 
 Use TO-STRING to convert each element to a string.  TO-STRING is
 a function taking an item of HIERARCHY as input and returning a
-string.  If nil, TO-STRING defaults to a call to `format' with \"%s\"."
+string.  If nil, TO-STRING defaults to a call to `format' with \"%s\".
+INDENT-STRING is handed to `hierarchy-labelfn-indent'."
   (let ((to-string (or to-string (lambda (item) (format "%s" item)))))
     (hierarchy-map
      (hierarchy-labelfn-indent (lambda (item indent)
@@ -86,6 +87,11 @@ Used for pagination.")
 (defun lem-ui-insert-heading (name)
   "Insert heading for NAME, a string."
   (insert (lem-ui-format-heading name)))
+
+(defgroup lem nil
+  "Lemmy client."
+  :prefix "lem-ui-"
+  :group 'lem)
 
 (defcustom lem-ui-symbols
   '((reply     . ("💬" . "R"))
@@ -183,7 +189,7 @@ Within this macro call, args JSON and ID are available.
 NUMBER means return ID as a number."
   (declare (debug 'body)
            (indent 1))
-  `(let* ((json (lem-ui-thing-json))
+  `(let* (;(json (lem-ui-thing-json))
           (id (lem-ui--id-from-prop (if ,number nil :string))))
      ,body))
 
@@ -277,7 +283,7 @@ LIMIT is the amount of results to return."
          (buf (get-buffer-create "*lem-instance*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-instance instance :stats)
-      (lem-ui-render-posts-instance posts sort)
+      (lem-ui-render-posts-instance posts)
       (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance 'instance page)
       (goto-char (point-min)))))
 
@@ -507,7 +513,7 @@ LIMIT is the max results to return."
          (buf (get-buffer-create buf-name))
          ;; TODO: handle all search args: community, page, limit
          (response (lem-search query (capitalize type) listing-type sort
-                               lem-ui-comments-limit))
+                               (or limit lem-ui-comments-limit)))
          (data (alist-get (intern type) response)))
     ;; TODO: render other responses:
     ;; ("All" TODO
@@ -594,8 +600,8 @@ LIMIT."
          (post (alist-get 'post_view post-view))
          (sort (or sort lem-default-comment-sort-type)))
     (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
-      (lem-ui-render-post post sort :community)
-      (lem-ui-render-post-comments id)
+      (lem-ui-render-post post :community)
+      (lem-ui-render-post-comments id sort limit)
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)
       (goto-char (point-min))))) ; limit
 
@@ -681,23 +687,23 @@ before (non-nil) or after (nil)"
         (when start
           (cons start end))))))
 
-(defun lem-ui--process-link (json start end url)
+(defun lem-ui--process-link (start end)
   "Process link URL in JSON as userhandle, community, or normal link.
 START and END are the boundaries of the link in the post body."
   (let* ((help-echo (get-text-property start 'help-echo))
-         extra-properties
+         ;; extra-properties
          (keymap lem-ui--link-map)
          (lem-tab-stop-type 'shr-url))
     (add-text-properties start end
                          (append
                           (list 'lem-tab-stop lem-tab-stop-type
                                 'keymap keymap
-                                'help-echo help-echo)
-                          extra-properties))))
+                                'help-echo help-echo)))))
+                          ;; extra-properties))))
 
 ;;; BYLINES
-(defun lem-ui-top-byline (title url username score timestamp
-                                &optional community community-url featured-p)
+(defun lem-ui-top-byline (title url username _score timestamp
+                                &optional community _community-url featured-p)
   "Format a top byline for post with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
 COMMUNITY and COMMUNITY-URL are those of the community the item belongs to.
 FEATURED-P means the item is pinned."
@@ -745,7 +751,8 @@ ID is the item's id."
    'byline-bottom t))
 
 (defun lem-ui-render-url (url &optional no-shorten)
-  "Render URL, a plain non-html string."
+  "Render URL, a plain non-html string.
+NO-SHORTEN means display full URL, else only the domain is shown."
   (when url
     (let ((parsed (url-generic-parse-url url))
           rendered)
@@ -770,19 +777,20 @@ ID is the item's id."
       (replace-match
        (concat "<" (match-string 0) ">")))))
 
-(defun lem-ui-render-shr-url (json)
+(defun lem-ui-render-shr-url ()
   "Call `lem-ui--process-link' on any shr-url found in buffer."
+  ;; JSON is the item's data to process the link with."
   (save-excursion
     (let (region)
       (while (setq region (lem-ui--find-property-range
                            'shr-url (or (cdr region) (point-min))))
         ;; TODO: handle "/c/group@instance.org" shr-urls
-        (lem-ui--process-link json
-                              (car region) (cdr region)
-                              (get-text-property (car region) 'shr-url))))))
+        (lem-ui--process-link (car region) (cdr region))))))
+;; (get-text-property (car region) 'shr-url))))))
 
 (defun lem-ui-render-body (body &optional json)
-  "Render post BODY as markdowned html."
+  "Render post BODY as markdowned html.
+JSON is the item's data to process the link with."
   (let ((buf "*lem-md*")
         str)
     (with-temp-buffer
@@ -799,14 +807,14 @@ ID is the item's id."
       (with-current-buffer "*html*" ; created by shr
         ;; our render:
         (when json
-          (lem-ui-render-shr-url json))
+          (lem-ui-render-shr-url))
         (re-search-forward "\n\n" nil :no-error)
         (setq str (buffer-substring (point) (point-max)))
         (kill-buffer-and-window)        ; shr's *html*
         (kill-buffer buf)))             ; our md
     str))
 
-(defun lem-ui-render-post (post &optional sort community trim)
+(defun lem-ui-render-post (post &optional community trim)
   ;; NB trim in instance, community, and user views
   ;; NB show community info in instance and in post views
   "Render single POST.
@@ -814,7 +822,7 @@ Optionally render post's COMMUNITY.
 Optionally TRIM post length.
 SORT must be a member of `lem-sort-types'."
   (let-alist post
-    (let ((url (lem-ui-render-url .post.url))
+    (let (;(url (lem-ui-render-url .post.url))
           (body (when .post.body
                   (lem-ui-render-body .post.body (alist-get 'post post)))))
       (insert
@@ -845,19 +853,18 @@ SORT must be a member of `lem-sort-types'."
         'creator-id .creator.id
         'type (caar post))))))
 
-(defun lem-ui-render-posts-instance (posts &optional sort)
+(defun lem-ui-render-posts-instance (posts)
   "Render a list of posts POSTS in BUFFER, trimmed and showing community."
-  (lem-ui-render-posts posts sort :community :trim))
+  ;; SORT should be a member of `lem-sort-types'."
+  (lem-ui-render-posts posts :community :trim))
 
-(defun lem-ui-render-posts (posts &optional sort community trim)
+(defun lem-ui-render-posts (posts &optional community trim)
   "Render a list of posts POSTS in BUFFER.
 Used for instance, communities, posts, and users.
-COMMENTS means also show post comments.
-SORT is the kind of sorting to use.
 COMMUNITY means display what community it was posted to.
 TRIM means trim each post for length."
   (cl-loop for x in posts
-           do (lem-ui-render-post x sort community trim)))
+           do (lem-ui-render-post x community trim)))
 
 (defun lem-ui-save-item ()
   "Save item at point.
@@ -869,7 +876,7 @@ Saved items can be viewed in your profile, like bookmarks."
            (lem-save-post id)
            (message "%s %s saved!" type id))
           ((eq type 'comment)
-           (lem-api-save-comment id)
+           (lem-save-comment id)
            (message "%s %s saved!" type id))
           (t
            (message "You can only save posts and comments.")))))
@@ -953,8 +960,8 @@ LIMIT is the max results to return."
   "View community at point."
   (interactive)
   (lem-ui-with-id
-      (let ((community (lem-get-community id)))
-        (lem-ui-view-community id))))
+      ;; (let ((community (lem-get-community id)))
+      (lem-ui-view-community id)))
 
 (defun lem-ui--communities-alist (communities)
   "Return an alist of name/description and ID from COMMUNITIES."
@@ -981,7 +988,7 @@ SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return.
 PAGE is the page number of items to display, a string."
   (let* ((community (lem-get-community id))
-         (view (alist-get 'community_view community))
+         ;; (view (alist-get 'community_view community))
          (buf (get-buffer-create "*lem-community*"))
          ;; in case we set community posts, then switch to comments:
          (sort (if (eq item 'comments)
@@ -1000,9 +1007,9 @@ PAGE is the page number of items to display, a string."
       (if (eq item 'comments)
           (progn
             (lem-ui-insert-heading "comments")
-            (lem-ui-render-comments items nil sort)) ; no type
+            (lem-ui-render-comments items)) ; no type
         (lem-ui-insert-heading "posts")
-        (lem-ui-render-posts items buf sort)) ; no children
+        (lem-ui-render-posts items)) ; no children
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-community
                               (or item 'posts) page)
       (goto-char (point-min)))))
@@ -1018,7 +1025,7 @@ If STRING, return one, else number."
         (number-to-string id)
       id)))
 
-(defun lem-ui-render-communities (communities &optional type sort)
+(defun lem-ui-render-communities (communities)
   "Render COMMUNITIES.
 TYPE
 SORT."
@@ -1109,7 +1116,7 @@ And optionally for instance COMMUNITIES."
     (if id
         (let* ((str (number-to-string id)))
           (lem-ui-view-community str))
-      ("Not item at point?"))))
+      (message "No item at point?"))))
 
 ;;; REPLIES
 
@@ -1160,6 +1167,14 @@ Optionally only view UNREAD items."
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-mentions list))))
 
+(defun lem-ui-render-mentions (mentions)
+  "Render mentions MENTIONS."
+  (cl-loop for men in mentions
+           for comment = (alist-get 'comment men)
+           do (insert
+               (lem-ui-format-comment comment)
+               "\n")))
+
 (defun lem-ui-view-private-messages (&optional unread)
   "View reply comments to the current user.
 Optionally only view UNREAD items."
@@ -1172,7 +1187,7 @@ Optionally only view UNREAD items."
       (lem-ui-render-private-messages list))))
 
 (defun lem-ui-render-private-messages (private-messages)
-  ""
+  "Render private messages PRIVATE-MESSAGES."
   (cl-loop for pm in private-messages
            do (insert
                (lem-ui-format-private-message pm)
@@ -1180,20 +1195,20 @@ Optionally only view UNREAD items."
 
 ;;; COMMENTS
 
-(defun lem-ui-render-comment (comment &optional sort)
-  "Render single COMMENT.
-SORT must be a member of `lem-comment-sort-types'."
+(defun lem-ui-render-comment (comment)
+  "Render single COMMENT."
+;; SORT must be a member of `lem-comment-sort-types'."
   (insert
    (lem-ui-format-comment comment)
    "\n"))
 
-(defun lem-ui-render-comments (comments &optional type sort)
+(defun lem-ui-render-comments (comments)
   "Render COMMENTS, a list of comment objects.
-TYPE
-SORT.
+;; TYPE
+;; SORT.
 For viewing a plain list of comments, not a hierarchy."
   (cl-loop for x in comments
-           do (lem-ui-render-comment x sort)))
+           do (lem-ui-render-comment x)))
 
 ;;; THREADED COMMENTS:
 ;; Path: "The path / tree location of a comment, separated by dots, ending
@@ -1209,7 +1224,7 @@ For viewing a plain list of comments, not a hierarchy."
     (lem-ui--build-hierarchy list)) ; sets `lem-comments-hierarchy'
   (with-current-buffer (get-buffer-create "*lem-post*")
     (let ((inhibit-read-only t))
-      (hierarchy-print
+      (lem--hierarchy-print
        lem-comments-hierarchy
        (lambda (item indent)
          (lem-ui-format-comment item indent))
@@ -1321,13 +1336,14 @@ Parent-fun for `hierarchy-add-tree'."
        'type 'private-message
        'line-prefix indent-str))))
 
-(defun lem-ui-render-post-comments (post-id &optional sort)
+(defun lem-ui-render-post-comments (post-id &optional sort limit)
   "Render a hierarchy of post's comments.
 POST-ID is the post's id.
-SORT must be a member of `lem-sort-types'."
+SORT must be a member of `lem-sort-types'.
+LIMIT is the amount of items to return."
   ;; TODO: TYPE_ default:
   (let* ((comments (lem-api-get-post-comments
-                    post-id "All" sort lem-ui-comments-limit))
+                    post-id "All" sort (or limit lem-ui-comments-limit)))
          (unique-comments (cl-remove-duplicates comments)))
     (lem-ui--build-and-render-comments-hierarchy unique-comments)))
 
@@ -1466,9 +1482,9 @@ If DISLIKE, dislike (downvote) it."
 
 (defun lem-ui-render-users (json)
   "JSON."
-  (let ((users (alist-get 'users json)))
-    (cl-loop for user in json
-             do (lem-ui-render-user user))))
+  ;; (let ((users (alist-get 'users json)))
+  (cl-loop for user in json
+           do (lem-ui-render-user user)))
 
 (defun lem-ui-render-user (json)
   "Render user with data JSON."
@@ -1520,15 +1536,15 @@ CURRENT-USER means we are displaying the current user's profile."
           (lem-ui-render-user .person_view))
         (cond ((equal view-type "posts")
                (lem-ui-insert-heading "posts")
-               (lem-ui-render-posts .posts sort :community :trim))
+               (lem-ui-render-posts .posts :community :trim))
               ((equal view-type "comments")
                (lem-ui-insert-heading "comments")
-               (lem-ui-render-comments .comments view-type sort))
+               (lem-ui-render-comments .comments))
               (t ; no arg: overview
                (lem-ui-insert-heading "overview")
                ;; TODO: insert mixed comments/posts
-               (lem-ui-render-posts .posts sort :community :trim)
-               (lem-ui-render-comments .comments view-type sort)))
+               (lem-ui-render-posts .posts :community :trim)
+               (lem-ui-render-comments .comments)))
         ;; FIXME: don't confuse view-type and listing-type (fix cycling too):
         (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user view-type)
         (goto-char (point-min))))))

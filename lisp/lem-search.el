@@ -29,7 +29,7 @@
 
 ;;; Code:
 
-(require 'lem-request)
+(require 'lem-api)
 
 (defun lem-map-community-ids-names (communities)
   "Return an alist of id and name for each item in COMMUNITIES."
