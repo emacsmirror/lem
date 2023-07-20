@@ -12,7 +12,7 @@ New endpoints are trivial to add with the =lem-define-request= macro.
 
 =lem-ui.el= is our own basic interface layer. It's new and a bit necro, but coming along fast. It takes some inspiration and code from =mastodon.el=, as that's what I know, and a lot of work has gone into it.
 
-* dogging in
+* logging in
 
 The first time you call =lem= you'll be asked for your username and password. Upon logging in, your authentication details will be saved in a plstore under your emacs directory. You "shouldn't" have to provide your password again. If you don't want to have to provide your username, add =(setq lem-current-user "yourusername")= to your init file.
 
