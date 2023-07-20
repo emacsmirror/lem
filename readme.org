@@ -61,6 +61,10 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 - [X] generic like/dislike cmds
 - [X] "save" items [bookmarking]
 
+* screenshot
+
+[[file:lem.png][file:./lem.png]]
+
 * lem commands index
 #+BEGIN_SRC emacs-lisp :results table :colnames '("Binding" "Command" "Description") :exports results
   (let ((rows))
