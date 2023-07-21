@@ -628,7 +628,7 @@ etc.")
         (item-type (lem-ui--property 'lem-tab-stop))
         url)
     (cond ((setq url (lem-ui--property 'shr-url))
-           (if (string-prefix-p "/c/" url)
+           (if (string-prefix-p "/c/" url) ; community relative link
                (lem-get-community (substring-no-properties url 3))
              (lem-ui-url-lookup url))) ; TODO: handle `lem-resolve-object' error
           ((eq item-type 'community)
@@ -1542,10 +1542,10 @@ CURRENT-USER means we are displaying the current user's profile."
                (lem-ui-render-comments .comments))
               (t ; no arg: overview
                (lem-ui-insert-heading "overview")
-               ;; TODO: insert mixed comments/posts
-               (lem-ui-render-posts .posts :community :trim)
-               (lem-ui-render-comments .comments)))
-        ;; FIXME: don't confuse view-type and listing-type (fix cycling too):
+               ;; web app just does comments then posts for "overview"?:
+               (lem-ui-render-comments .comments)
+               (lem-ui-render-posts .posts :community :trim)))
+        ;; FIXME: don't confuse view-type and listing-type (& fix cycling):
         (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user view-type)
         (goto-char (point-min))))))
 
