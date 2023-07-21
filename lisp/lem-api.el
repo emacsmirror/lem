@@ -141,8 +141,7 @@
 
 (setq fedi-package-prefix "lem")
 
-(defvar fedi-instance-url "https://lemmy.ml"
-  "The URL of the instance to log in to and use.")
+(setq fedi-instance-url "https://lemmy.ml")
 
 ;;;###autoload
 (defvar lem-auth-token nil
