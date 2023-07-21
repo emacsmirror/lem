@@ -1,6 +1,6 @@
-* lem
+* lem.el
 
-=lem= is an Emacs client library and interface for Lemmy, the federated link-aggregator. For information about Lemmy, see [[http://joinlemmy.org][joinlemmy.org]].
+=lem.el= is an Emacs client library and interface for Lemmy, the federated link-aggregator. For information about Lemmy, see [[http://joinlemmy.org][joinlemmy.org]].
 
 =lem-api.el= is the API requests layer. All functions make requests and return JSON data pased into Elisp.
 
@@ -22,7 +22,7 @@ The Lemmy developers have clearly stated that the current API version, v3, is un
 
 * dependency
 
-=lem= depends on [[https://codeberg.org/martianh/fedi.el][fedi.el]], a library to make writing a library of API requests easier.
+=lem.el= depends on [[https://codeberg.org/martianh/fedi.el][fedi.el]], a library to make writing a library of API requests easier.
 
 * UI TODOS doing
 
