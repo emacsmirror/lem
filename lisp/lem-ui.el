@@ -336,8 +336,8 @@ STATS."
                 (let-alist (alist-get 'person x)
                   (insert
                    (concat
-                    (lem-ui--propertize-link-item (or .display_name .name)
-                                                  .id 'user)
+                    (lem-ui--propertize-link (or .display_name .name)
+                                             .id 'user)
                     " | "))))
               admins-list)
         (insert "\n" lem-ui-horiz-bar "\n")))
@@ -641,10 +641,11 @@ etc.")
           ((eq item-type 'user)
            (lem-ui-view-user id)))))
 
-(defun lem-ui--propertize-link-item (item id type)
-  "Propertize a link ITEM with ID and TYPE."
+(defun lem-ui--propertize-link (item id type &optional url)
+  "Propertize a link ITEM with ID and TYPE.
+Optionally provide URL for shr-url."
   (propertize item
-              ;; 'shr-url user-url
+              'shr-url url
               'keymap lem-ui--link-map
               'button t
               'category 'shr
@@ -718,12 +719,12 @@ FEATURED-P means the item is pinned."
       (if url
           (concat url "\n")
         "")
-      (lem-ui--propertize-link-item username nil 'user)
+      (lem-ui--propertize-link username nil 'user)
       (when community
         (concat
          (propertize " to "
                      'face font-lock-comment-face)
-         (lem-ui--propertize-link-item community nil 'community)))
+         (lem-ui--propertize-link community nil 'community)))
       (propertize
        (concat
         " | "
@@ -1032,6 +1033,14 @@ SORT."
   (cl-loop for x in communities
            do (lem-ui-render-community x :stats)))
 
+(defun lem-ui--mods-names-list (mods-list)
+  "Return list of name, id, and url for each moderator in MODS-LIST."
+  (cl-loop for x in mods-list
+           collect (let-alist (alist-get 'moderator x)
+                     (list (or .display_name .name)
+                           (number-to-string .id)
+                           .actor_id))))
+
 (defun lem-ui-render-community (community &optional stats view brief)
   "Render header details for COMMUNITY.
 BUFFER is the one to render in, a string.
@@ -1039,9 +1048,11 @@ STATS are the community's stats to print.
 VIEW means COMMUNITY is a community_view.
 BRIEF means show fewer details, it is used on the current user's
 profile page."
-  (let ((community (if view
-                       (alist-get 'community_view community)
-                     community)))
+  (let* ((mods-list (unless brief (alist-get 'moderators community)))
+         (mods (unless brief (lem-ui--mods-names-list mods-list)))
+         (community (if view
+                        (alist-get 'community_view community)
+                      community)))
     (let-alist community
       (let ((desc (if brief
                       ""
@@ -1077,21 +1088,19 @@ profile page."
       (unless brief
         (insert .subscribed "\n")))
     ;; mods:
-    (unless brief
-      (let* ((mods-list (alist-get 'moderators community))
-             (mods (mapcar (lambda (x)
-                             (let-alist (alist-get 'moderator x)
-                               (list (number-to-string .id)
-                                     (or .display_name .name) .actor_id)))
-                           mods-list)))
-        (when mods
-          (insert "mods: "
-                  (mapconcat (lambda (x)
-                               (mapconcat #'identity x " "))
-                             mods " | ")
-                  "\n"
-                  lem-ui-horiz-bar
-                  "\n"))))
+    (when mods
+      (insert "mods: "
+              (mapconcat
+               (lambda (x)
+                 (lem-ui--propertize-link (first x)
+                                          (string-to-number
+                                           (second x))
+                                          'user
+                                          (third x)))
+               mods " | ")
+              "\n"
+              lem-ui-horiz-bar
+              "\n"))
     (insert "\n")))
 
 (defun lem-ui-render-stats (subscribers posts comments
