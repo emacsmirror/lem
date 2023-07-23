@@ -798,6 +798,8 @@ JSON is the item's data to process the link with."
       (insert body)
       (goto-char (point-min))
       (lem-ui-mdize-plain-urls)
+      ;; FIXME: this breaks a normal URL containing a handle (e.g a link to a
+      ;; mastodon user page):
       (let ((replaced (string-replace "@" "\\@" (buffer-string))))
         (erase-buffer)
         (insert replaced)
