@@ -1010,7 +1010,7 @@ PAGE is the page number of items to display, a string."
             (lem-ui-insert-heading "comments")
             (lem-ui-render-comments items)) ; no type
         (lem-ui-insert-heading "posts")
-        (lem-ui-render-posts items)) ; no children
+        (lem-ui-render-posts items nil :trim)) ; no children
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-community
                               (or item 'posts) page)
       (goto-char (point-min)))))
