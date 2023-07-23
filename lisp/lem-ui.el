@@ -298,10 +298,27 @@ LIMIT is the amount of results to return."
   ;; TODO
   )
 
+(defun lem-ui-insert-people (list str)
+  "Insert propertized link for each person in LIST.
+Each person is a three item list of username, id, and URL, the
+value returned by `lem-ui--names-list'.
+STR is the preceding string to insert."
+  (insert
+   str
+   (mapconcat
+    (lambda (x)
+      (lem-ui--propertize-link (first x)
+                               (second x)
+                               'user
+                               (third x)))
+    list " | ")))
+
 (defun lem-ui-render-instance (instance &optional stats)
   "INSTANCE.
 STATS."
-  (let ((inst (alist-get 'site_view instance)))
+  (let* ((admins-list (alist-get 'admins instance))
+         (admins (lem-ui--names-list admins-list 'person))
+         (inst (alist-get 'site_view instance)))
     (let-alist inst
       (insert
        (propertize
@@ -328,19 +345,9 @@ STATS."
                              .comments
                              .communities)))
     ;; admins:
-    ;; TODO: refactor mods/admins display:
-    (let* ((admins-list (alist-get 'admins instance)))
-      (when admins-list
-        (insert "admins: ")
-        (mapc (lambda (x)
-                (let-alist (alist-get 'person x)
-                  (insert
-                   (concat
-                    (lem-ui--propertize-link (or .display_name .name)
-                                             .id 'user)
-                    " | "))))
-              admins-list)
-        (insert "\n" lem-ui-horiz-bar "\n")))
+    (when admins
+      (lem-ui-insert-people admins "admins: ")
+      (insert "\n" lem-ui-horiz-bar "\n"))
     (insert "\n")))
 
 ;;; VIEWS SORTING AND TYPES
@@ -1035,12 +1042,13 @@ SORT."
   (cl-loop for x in communities
            do (lem-ui-render-community x :stats)))
 
-(defun lem-ui--mods-names-list (mods-list)
-  "Return list of name, id, and url for each moderator in MODS-LIST."
-  (cl-loop for x in mods-list
-           collect (let-alist (alist-get 'moderator x)
+(defun lem-ui--names-list (names-list type)
+  "Return list of name, id, and url for each moderator in NAMES-LIST.
+TYPE is a symbol, either person or moderator."
+  (cl-loop for x in names-list
+           collect (let-alist (alist-get type x)
                      (list (or .display_name .name)
-                           (number-to-string .id)
+                           .id
                            .actor_id))))
 
 (defun lem-ui-render-community (community &optional stats view brief)
@@ -1051,7 +1059,7 @@ VIEW means COMMUNITY is a community_view.
 BRIEF means show fewer details, it is used on the current user's
 profile page."
   (let* ((mods-list (unless brief (alist-get 'moderators community)))
-         (mods (unless brief (lem-ui--mods-names-list mods-list)))
+         (mods (unless brief (lem-ui--names-list mods-list 'moderator)))
          (community (if view
                         (alist-get 'community_view community)
                       community)))
@@ -1091,18 +1099,9 @@ profile page."
         (insert .subscribed "\n")))
     ;; mods:
     (when mods
-      (insert "mods: "
-              (mapconcat
-               (lambda (x)
-                 (lem-ui--propertize-link (first x)
-                                          (string-to-number
-                                           (second x))
-                                          'user
-                                          (third x)))
-               mods " | ")
-              "\n"
-              lem-ui-horiz-bar
-              "\n"))
+      (lem-ui-insert-people mods "mods: ")
+      (insert
+       "\n" lem-ui-horiz-bar "\n"))
     (insert "\n")))
 
 (defun lem-ui-render-stats (subscribers posts comments
