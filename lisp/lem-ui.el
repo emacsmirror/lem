@@ -576,9 +576,9 @@ Lemmy supports lookups for users, posts, comments and communities."
       (message "Performing lookup...")
       (let ((response (lem-resolve-object query)))
         (cond ((stringp response)
-               ;; error string: just return nil? then we can do sth else if
-               ;; this fails
-               (message "%s" response))
+               (progn
+                 (message "%s" response)
+                 (browse-url query)))
               ((equal 'person (caar response))
                (lem-ui-lookup-call 'person response 'lem-ui-view-user :str))
               ((equal 'comment (caar response))
@@ -637,7 +637,7 @@ etc.")
     (cond ((setq url (lem-ui--property 'shr-url))
            (if (string-prefix-p "/c/" url) ; community relative link
                (lem-get-community (substring-no-properties url 3))
-             (lem-ui-url-lookup url))) ; TODO: handle `lem-resolve-object' error
+             (lem-ui-url-lookup url)))
           ((eq item-type 'community)
            (lem-ui-view-community community-id))
           ((and (eq item-type 'user)
