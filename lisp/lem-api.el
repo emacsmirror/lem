@@ -141,7 +141,7 @@
 
 (setq fedi-package-prefix "lem")
 
-(setq fedi-instance-url "https://lemmy.ml")
+(setq lem-instance-url "https://lemmy.ml")
 
 ;;;###autoload
 (defvar lem-auth-token nil
@@ -179,7 +179,7 @@ This macro is designed to generate functions for fetching data
 from JSON APIs.
 
 To use it, you first need to set `fedi-package-prefix' to the
-name of your package, and set `fedi-instance-url' to the URL of
+name of your package, and set `lem-instance-url' to the URL of
 an instance of your fedi service.
 
 The name of functions generated with this will be the result of:
@@ -200,7 +200,7 @@ Q is the search query.\"
   (let ((req-fun (intern (concat "fedi-http--" method))))
     `(defun ,(intern (concat fedi-package-prefix "-" name)) ,args
        ,docstring
-       (let* ((req-url (fedi-http--api ,endpoint))
+       (let* ((req-url (fedi-http--api ,endpoint lem-instance-url))
               (url-request-method ,(upcase method))
               (url-request-extra-headers ,headers)
               (auth `(("auth" . ,(or lem-auth-token
@@ -338,7 +338,7 @@ are for `lem-search'."
 ;;; AUTH
 (lem-define-request "post" "login" "user/login"
   (username-or-email password)
-  "Log in to `fedi-instance-url' with NAME and PASSWORD."
+  "Log in to `lem-instance-url' with NAME and PASSWORD."
   (username-or-email password)
   nil nil :unauthed)
 
