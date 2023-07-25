@@ -766,6 +766,18 @@ Returns a private_message_view."
   (comment-id)
   '(("save" . t)))
 
+;;; ASYNC
+
+(defalias 'lem-api-get-async #'fedi-http--get-async)
+(defalias 'lem-api-get-json-async #'fedi-http--get-json-async)
+
+(defalias 'lem-api-post-async #'fedi-http--post-async)
+
+;; (lem-api-get-json-async (fedi-http--api "site")
+;;                         nil (lambda (status)
+;;                               (message status)))
+
+
 ;; eg ids:
 ;; emacs community: 14856
 ;; a post: 1235982 (emacs lemmy client?)
