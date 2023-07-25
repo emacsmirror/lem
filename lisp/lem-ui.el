@@ -3,7 +3,7 @@
 ;; Copyright (C) 2023  martian hiatus
 ;; Author: martian hiatus <martianhiatus [a t] riseup [d o t] net>
 ;; Version: 0.1
-;; URL: https://codeberg.org/martianh/lem
+;; URL: https://codeberg.org/martianh/lem.el
 ;; Keywords: multimedia, comm, web, fediverse
 
 ;; This file is not part of GNU Emacs.
@@ -32,6 +32,7 @@
 ;;; Code:
 
 (require 'hierarchy)
+(require 'markdown-mode)
 (require 'lem-api)
 
 ;;; PATCH hierarchy-print:

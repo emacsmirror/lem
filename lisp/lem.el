@@ -3,8 +3,8 @@
 ;; Copyright (C) 2023  martian hiatus and mastodon.el authors
 ;; Author: martian hiatus <martianhiatus [a t] riseup [d o t] net>
 ;; Version: 0.1
-;; Package-Requires: ((emacs "28.1") (fedi "0.1"))
-;; URL: https://codeberg.org/martianh/lem
+;; Package-Requires: ((emacs "28.1") (fedi "0.1") (markdown "2.5") (hierarchy "0.1"))
+;; URL: https://codeberg.org/martianh/lem.el
 ;; Keywords: multimedia, comm, web, fediverse
 
 ;; This program is free software; you can redistribute it and/or modify
