@@ -249,7 +249,7 @@ Optionally start from POS."
            (lem-ui-view-community-at-point))
           ((eq type 'comment)
            (lem-ui-view-comment-post))
-          ((eq type 'user)
+          ((eq type 'person)
            (lem-ui-view-user-at-point)))))
 
 (defun lem-ui-view-item-user-at-point ()
