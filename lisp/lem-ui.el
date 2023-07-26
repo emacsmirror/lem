@@ -1569,11 +1569,6 @@ CURRENT-USER means we are displaying the current user's profile."
   (let* ((current-user (lem-api-get-current-user)))
     (lem-ui-view-user (number-to-string lem-user-id) nil nil nil current-user)))
 
-;; (let ((id (or lem-user-id
-;;               (number-to-string
-;;                (lem-set-user-id lem-current-user)))))
-;;   (lem-ui-view-user id)))
-
 ;; TODO: view own profile: full sort types
 ;; overview/comments/posts/saved listings
 ;; list of communities moderated
