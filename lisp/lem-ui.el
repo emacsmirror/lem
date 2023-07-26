@@ -70,6 +70,10 @@ Used for pagination.")
    "\\(/\\)?" ; optional ending slash? ; TODO: some are caught, some are not
    "\\b"))
 
+(defvar lem-ui-image-formats
+  '("png" "jpg" "jpeg" "webp")
+  "Image formats that we may want to render for post URLs.")
+
 ;;; UTILITIES
 
 (defvar lem-ui-horiz-bar
@@ -285,6 +289,7 @@ LIMIT is the amount of results to return."
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-instance instance :stats)
       (lem-ui-render-posts-instance posts)
+      (lem-ui-insert-images)
       (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance 'instance page)
       (goto-char (point-min)))))
 
@@ -854,6 +859,7 @@ SORT must be a member of `lem-sort-types'."
                  (string-limit body 400)
                body)
            "")
+         (lem-ui-insert-post-image-maybe post)
          "\n"
          (lem-ui-bt-byline .counts.score .counts.comments .post.id)
          "\n"
@@ -864,6 +870,25 @@ SORT must be a member of `lem-sort-types'."
         'community-id .post.community_id
         'creator-id .creator.id
         'type (caar post))))))
+
+(defun lem-ui-insert-post-image-maybe (post) ; &optional alt)
+  "Render URL of POST as an image if it looks like one."
+  (let-alist post
+    ;; (setq image-url .post.url)
+    (when .post.url
+      (let* ((parsed (url-generic-parse-url .post.url))
+             (filename (url-filename parsed))
+             (ext (car (last (split-string filename "\\.")))))
+        (if (member ext lem-ui-image-formats)
+            (let ((html (concat "<img src=\"" .post.url "\" alt=\"*\" />"))
+                  rendered)
+              (with-temp-buffer
+                (insert html)
+                (shr-render-buffer (current-buffer))
+                (setq rendered (buffer-string))
+                (kill-buffer-and-window))
+              (concat "\n" rendered))
+          "")))))
 
 (defun lem-ui-render-posts-instance (posts)
   "Render a list of posts POSTS in BUFFER, trimmed and showing community."
@@ -1022,6 +1047,7 @@ PAGE is the page number of items to display, a string."
             (lem-ui-render-comments items)) ; no type
         (lem-ui-insert-heading "posts")
         (lem-ui-render-posts items nil :trim)) ; no children
+      (lem-ui-insert-images)
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-community
                               (or item 'posts) page)
       (goto-char (point-min)))))
@@ -1162,7 +1188,8 @@ Optionally only view UNREAD items."
          (list (alist-get 'replies replies))
          (buf (get-buffer-create "*lem-replies*")))
     (lem-ui-with-buffer buf 'lem-mode nil
-      (lem-ui-render-replies list))))
+      (lem-ui-render-replies list)
+      (lem-ui-insert-images))))
 
 (defun lem-ui-render-replies (replies)
   "Render REPLIES, reply comments to the current user."
@@ -1559,6 +1586,7 @@ CURRENT-USER means we are displaying the current user's profile."
                ;; web app just does comments then posts for "overview"?:
                (lem-ui-render-comments .comments)
                (lem-ui-render-posts .posts :community :trim)))
+        (lem-ui-insert-images)
         ;; FIXME: don't confuse view-type and listing-type (& fix cycling):
         (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user view-type)
         (goto-char (point-min))))))
@@ -1600,16 +1628,18 @@ CURRENT-USER means we are displaying the current user's profile."
 ;;; IMAGES
 
 (defun lem-ui-insert-images ()
-  ""
+  "Insert any image-url images in the buffer with `shr-insert-image'.
+It's a cheap hack, alas."
   (save-excursion
     (goto-char (point-min))
-    (while (re-search-forward "\*" nil :no-error)
-      (backward-char 1)
-      (if (and (equal "*" (lem-ui--property 'shr-alt))
-               (lem-ui--property 'image-url))
-          (progn (shr-insert-image)
-                 (delete-char 1))
-        (forward-char)))))
+    (let (match)
+      (while (setq match (text-property-search-forward 'image-url))
+        (goto-char (prop-match-beginning match))
+        ;; (re-search-forward "\*" nil :no-error) ; * is just for no alt-text
+        ;; (backward-char 1)
+        (progn (shr-insert-image)
+               (delete-char 1))
+        (goto-char (prop-match-end match))))))
 
 (provide 'lem-ui)
 ;;; lem-ui.el ends here
