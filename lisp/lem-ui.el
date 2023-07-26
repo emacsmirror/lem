@@ -1355,9 +1355,11 @@ SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of items to return."
   ;; TODO: TYPE_ default:
   (let* ((comments (lem-api-get-post-comments
-                    post-id "All" sort (or limit lem-ui-comments-limit)))
-         (unique-comments (cl-remove-duplicates comments)))
-    (lem-ui--build-and-render-comments-hierarchy unique-comments)))
+                    post-id "All" sort (or limit lem-ui-comments-limit))))
+    (if (eq 'string (type-of comments))
+        (message comments) ; server error
+      (let ((unique-comments (cl-remove-duplicates comments)))
+        (lem-ui--build-and-render-comments-hierarchy unique-comments)))))
 
 (defun lem-ui-plural-symbol (symbol)
   "Return a plural of SYMBOL."
