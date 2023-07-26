@@ -610,6 +610,7 @@ LIMIT."
     (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
       (lem-ui-render-post post :community)
       (lem-ui-render-post-comments id sort limit)
+      (lem-ui-insert-images)
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)
       (goto-char (point-min))))) ; limit
 
@@ -1597,6 +1598,21 @@ CURRENT-USER means we are displaying the current user's profile."
   (lem-ui-with-id
       (let ((message (read-string "Private message: ")))
         (lem-send-private-message message id))))
+
+
+;;; IMAGES
+
+(defun lem-ui-insert-images ()
+  ""
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward "\*" nil :no-error)
+      (backward-char 1)
+      (if (and (equal "*" (lem-ui--property 'shr-alt))
+               (lem-ui--property 'image-url))
+          (progn (shr-insert-image)
+                 (delete-char 1))
+        (forward-char)))))
 
 (provide 'lem-ui)
 ;;; lem-ui.el ends here
