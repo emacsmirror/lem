@@ -105,8 +105,8 @@
 ;; listRegistrationApplications
 ;; lockPost
 ;; login DONE
-;; markAllAsRead TODO
-;; markCommentReplyAsRead TODO
+;; markAllAsRead DONE
+;; markCommentReplyAsRead DONE
 ;; markPersonMentionAsRead TODO
 ;; markPostAsRead TODO
 ;; markPrivateMessageAsRead TODO
@@ -425,6 +425,20 @@ UNREAD-ONLY means to only return unread items."
 
 ;; (lem-get-replies :unread)
 ;; (lem-get-replies)
+
+(lem-define-request "post" "mark-comment-reply-read" "comment/mark_as_read"
+  (comment-reply-id)
+  "Mark a post comment as read."
+  (comment-reply-id)
+  '(("read" . t)))
+
+;; (lem-mark-comment-reply-read 433366)
+
+(lem-define-request "post" "mark-all-read" "user/mark_all_as_read"
+  ()
+  "Mark all replies, mentions and private messages as read.")
+
+;; (lem-mark-all-read) ; returns replies, maybe only marks them read?
 
 ;;; COMMUNITIES
 (lem-define-request "get" "get-community" "community"
