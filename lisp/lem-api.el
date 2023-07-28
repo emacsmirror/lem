@@ -428,7 +428,7 @@ UNREAD-ONLY means to only return unread items."
 
 (lem-define-request "post" "mark-comment-reply-read" "comment/mark_as_read"
   (comment-reply-id)
-  "Mark a post comment as read."
+  "Mark comment reply with COMMENT-REPLY-ID as read."
   (comment-reply-id)
   '(("read" . t)))
 
@@ -436,7 +436,7 @@ UNREAD-ONLY means to only return unread items."
 
 (lem-define-request "post" "mark-all-read" "user/mark_all_as_read"
   ()
-  "Mark all replies, mentions and private messages as read.")
+  "Mark all replies(, mentions and private messages?) as read.")
 
 ;; (lem-mark-all-read) ; returns replies, maybe only marks them read?
 
@@ -708,7 +708,7 @@ SAVED-ONLY means to only return saved items."
 
 (lem-define-request "put" "edit-comment" "comment"
   (comment-id content)
-  "Edit comment with ID, providing content NEW-STR.
+  "Edit comment with COMMENT-ID, providing content NEW-STR.
 To get the old text for editing, you first need to fetch the comment.
 Returns a comment_view, recipient_ids, and form_id."
   (comment-id content))
@@ -734,7 +734,7 @@ Returns a comment_view."
 
 (lem-define-request "post" "report-comment" "comment/report"
   (comment-id reason)
-  "Report comment with ID to instance moderator, giving REASON, a string.
+  "Report comment with COMMENT-ID to instance moderator, giving REASON, a string.
 Returns comment_report_view."
   (comment-id reason))
 
@@ -744,6 +744,7 @@ Returns comment_report_view."
 (lem-define-request "get" "get-private-messages" "private_message/list"
   (&optional unread-only)
   "Get private messages for the current user.
+UNREAD-ONLY means only return unread messages.
 Returns private_messages."
   (unread-only))
 
