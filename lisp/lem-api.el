@@ -151,7 +151,7 @@ Logging in will set this. You can also save it in your init.el.")
 (autoload 'lem-auth-fetch-token "lem")
 
 ;;; MACRO
-(defmacro lem-define-request
+(defmacro lem-def-request
     (method name endpoint
             &optional args docstring params man-params headers
             unauthorized)
@@ -227,7 +227,7 @@ Q is the search query.\"
                                 (fedi-http--process-json))))))))
 
 ;;; INSTANCES
-(lem-define-request "get" "get-instance" "site"
+(lem-def-request "get" "get-instance" "site"
   ()
   "Get instance details.
 Returns a site_view, admins list, online count, version, my_user,
@@ -255,11 +255,11 @@ Returns follows data, from under my_user, from the site endpoint."
     fols))
 
 ;; no auth: because we call this before sending the instance our creds:
-(lem-define-request "get" "get-site" "site")
+(lem-def-request "get" "get-site" "site")
 
 ;; (lem-get-site)
 
-(lem-define-request "get" "get-site-metadata" "post/site_metadata"
+(lem-def-request "get" "get-site-metadata" "post/site_metadata"
   (url)
   "Get site metadata for URL, any Lemmy instance."
   (url))
@@ -276,12 +276,12 @@ PAGE is a number, indexed at 1."
 
 ;; (setq lem-test-inst-posts (lem-api-get-instance-posts "Subscribed"))
 
-(lem-define-request "get" "get-federated-instances" "federated_instances")
+(lem-def-request "get" "get-federated-instances" "federated_instances")
 
 ;; (lem-get-federated-instances)
 
 ;;; SEARCH
-(lem-define-request "get" "search" "search"
+(lem-def-request "get" "search" "search"
   (q &optional type- listing-type sort limit page community-name community-id) ;  creator-id
   "Search for QUERY.
 TYPE- must be a member of `lem-search-types'. Defaults to All.
@@ -326,7 +326,7 @@ LISTING-TYPE, SORT, LIMIT, PAGE, COMMUNITY-NAME, and COMMUNITY-ID
 are for `lem-search'."
   (lem-search q "Comments" listing-type sort limit page community-name community-id))
 
-(lem-define-request "get" "resolve-object" "resolve_object"
+(lem-def-request "get" "resolve-object" "resolve_object"
   (q)
   "Do a webfinger lookup for query Q."
   (q))
@@ -336,14 +336,14 @@ are for `lem-search'."
 ;; (lem-resolve-object "https://lemmy.ml/c/canada")
 
 ;;; AUTH
-(lem-define-request "post" "login" "user/login"
+(lem-def-request "post" "login" "user/login"
   (username-or-email password)
   "Log in to `lem-instance-url' with NAME and PASSWORD."
   (username-or-email password)
   nil nil :unauthed)
 
 ;;; USERS / PERSON
-(lem-define-request "get" "get-person" "user"
+(lem-def-request "get" "get-person" "user"
   (&optional username person-id sort limit page community-id saved-only)
   "Get person with ID.
 Returns a person_view, comments, posts, moderates objects."
@@ -391,7 +391,7 @@ SORT, LIMIT, PAGE are all for `lem-get-person'."
 
 ;; (setq lem-user-me (lem-api-get-person-by-name "blawsybogsy"))
 
-(lem-define-request "post" "block-user" "user/block"
+(lem-def-request "post" "block-user" "user/block"
   (person-id)
   "Block user with PERSON-ID.
 Returns a person_view plus a blocked boolean."
@@ -402,7 +402,7 @@ Returns a person_view plus a blocked boolean."
 
 ;;; NOTIFS
 
-(lem-define-request "get" "get-mentions" "user/mention"
+(lem-def-request "get" "get-mentions" "user/mention"
   (&optional unread-only)
   "Get mentions for the current user.
 Returns a mentions list.
@@ -414,7 +414,7 @@ UNREAD-ONLY means to only return unread items."
 ;; (lem-get-mentions :unread)
 ;; (lem-get-mentions)
 
-(lem-define-request "get" "get-replies" "user/replies"
+(lem-def-request "get" "get-replies" "user/replies"
   (&optional unread-only)
   "Get replies for the current user.
 Returns a list of comment_reply objects.
@@ -426,7 +426,7 @@ UNREAD-ONLY means to only return unread items."
 ;; (lem-get-replies :unread)
 ;; (lem-get-replies)
 
-(lem-define-request "post" "mark-comment-reply-read" "comment/mark_as_read"
+(lem-def-request "post" "mark-comment-reply-read" "comment/mark_as_read"
   (comment-reply-id)
   "Mark comment reply with COMMENT-REPLY-ID as read."
   (comment-reply-id)
@@ -434,14 +434,14 @@ UNREAD-ONLY means to only return unread items."
 
 ;; (lem-mark-comment-reply-read 433366)
 
-(lem-define-request "post" "mark-all-read" "user/mark_all_as_read"
+(lem-def-request "post" "mark-all-read" "user/mark_all_as_read"
   ()
   "Mark all replies(, mentions and private messages?) as read.")
 
 ;; (lem-mark-all-read) ; returns replies, maybe only marks them read?
 
 ;;; COMMUNITIES
-(lem-define-request "get" "get-community" "community"
+(lem-def-request "get" "get-community" "community"
   (&optional id name)
   "Get community with ID or NAME.
 Returns a community_view, site, moderators, online count,
@@ -451,7 +451,7 @@ discussion_languages, default_post_language."
 ;; (lem-get-community "96200" nil)
 ;; (lem-get-community nil "revanced@lemmy.world")
 
-(lem-define-request "get" "list-communities" "community/list"
+(lem-def-request "get" "list-communities" "community/list"
   (&optional type- sort limit page)
   "Returns a list of community objects."
   (type- sort limit page))
@@ -460,7 +460,7 @@ discussion_languages, default_post_language."
 ;; (lem-list-communities "Subscribed")
 ;; (lem-list-communities "Local")
 
-(lem-define-request "post" "follow-community" "community/follow"
+(lem-def-request "post" "follow-community" "community/follow"
   (community-id)
   "Follow a community with COMMUNITY-ID.
 Returns a community_view and discussion_languages."
@@ -479,7 +479,7 @@ Returns a community_view and discussion_languages."
 ;;   (when (equal subed "Subscribed")
 ;;     (format "Subscribed to %s [%s]" name desc)))
 
-(lem-define-request "post" "create-community" "community"
+(lem-def-request "post" "create-community" "community"
   (name title &optional banner description discussion-languages
         icon nsfw posting-restricted-to-mods)
   "Create a community with NAME.
@@ -489,7 +489,7 @@ Returns a community_view and discussion_languages."
 
 ;; (lem-create-community "communeity" "com")
 
-(lem-define-request "post" "delete-community" "community/delete"
+(lem-def-request "post" "delete-community" "community/delete"
   (community-id)
   "Delete community with COMMUNITY-ID, a number.
 Returns a community_view and discussion_languages."
@@ -498,7 +498,7 @@ Returns a community_view and discussion_languages."
 
 ;; (lem-delete-community 98302)
 
-(lem-define-request "post" "block-community" "community/block"
+(lem-def-request "post" "block-community" "community/block"
   (community-id)
   "Block community with COMMUNITY-ID.
 Returns a community_view plus a blocked boolean."
@@ -510,7 +510,7 @@ Returns a community_view plus a blocked boolean."
 ;; TODO: hide community
 
 ;;; POSTS
-(lem-define-request "get" "get-post" "post"
+(lem-def-request "get" "get-post" "post"
   (id)
   "Get post with ID.
 Returns a post_view, a community_view, moderators, and online count."
@@ -518,7 +518,7 @@ Returns a post_view, a community_view, moderators, and online count."
 
 ;; (setq lem-test-post (lem-get-post "1341246"))
 
-(lem-define-request "get" "get-posts" "post/list"
+(lem-def-request "get" "get-posts" "post/list"
   (&optional type- sort limit page community-id community-name saved-only)
   "List posts for the args provided.
 TYPE- must be member of `lem-listing-types'.
@@ -560,7 +560,7 @@ PAGE is a number, indexed at 1."
   (lem-get-posts type sort limit page nil community-name))
 
 ;; https://join-lemmy.org/api/interfaces/CreatePost.html
-(lem-define-request "post" "create-post" "post"
+(lem-def-request "post" "create-post" "post"
   (name community-id &optional body url nsfw honeypot language-id)
   "Create a new post with NAME, on community with COMMUNITY-ID.
 BODY is the post's content. URL is its link.
@@ -577,7 +577,7 @@ Returns a post_view."
 ;;   (when name
 ;;     (format "Post created: %s" name)))
 
-(lem-define-request "post" "like-post" "post/like"
+(lem-def-request "post" "like-post" "post/like"
   (post-id score)
   "Like post with POST-ID.
 SCORE is a number, either 0, 1 to upvote, and -1 to downvote.
@@ -586,7 +586,7 @@ Returns a post_view."
 
 ;; (lem-like-post 1341246 1)
 
-(lem-define-request "put" "edit-post" "post"
+(lem-def-request "put" "edit-post" "post"
   (post-id name &optional body url) ; nsfw url lang-id
   "Edit post with ID, giving it a NEW-NAME, and NEW-BODY and NEW-URL.
 Returns a post_view."
@@ -594,7 +594,7 @@ Returns a post_view."
 
 ;; (lem-edit-post 1341246 "blaodh" "trep")
 
-(lem-define-request "post" "delete-post" "post/delete"
+(lem-def-request "post" "delete-post" "post/delete"
   (post-id)
   ""
   (post-id)
@@ -602,7 +602,7 @@ Returns a post_view."
 
 ;; (lem-delete-post 1341246)
 
-(lem-define-request "post" "report-post" "post/report"
+(lem-def-request "post" "report-post" "post/report"
   (post-id reason)
   "Report post with ID to instance moderator, giving REASON, a string.
 Returns a post_report_view."
@@ -612,7 +612,7 @@ Returns a post_report_view."
 ;; <https://join-lemmy.org/api/interfaces/GetComments.html>
 ;; To get posts for a federated community by name, use name@instance.tld .
 
-(lem-define-request "get" "get-comment" "comment"
+(lem-def-request "get" "get-comment" "comment"
   (id)
   "Get comment with ID.
 Returns a comment_view, recipient_ids, and form_id."
@@ -620,7 +620,7 @@ Returns a comment_view, recipient_ids, and form_id."
 
 ;; (lem-get-comment "765662")
 
-(lem-define-request "post" "create-comment" "comment"
+(lem-def-request "post" "create-comment" "comment"
   (post-id content &optional parent-id)
   "Create a comment on post POST-ID, with CONTENT.
 PARENT-ID is the parent comment to reply to.
@@ -636,7 +636,7 @@ Returns a comment_view, recipient_ids, and form_id."
 ;;   (when comment
 ;;     (format "Comment created: %s" comment)))
 
-(lem-define-request "get" "get-comments" "comment/list"
+(lem-def-request "get" "get-comments" "comment/list"
   (&optional post-id parent-id type- sort limit page
              community-id community-name saved-only)
   "SORT must be a member of `lem-sort-types'.
@@ -706,7 +706,7 @@ SAVED-ONLY means to only return saved items."
 ;; (lem-get-community-comments-by-id "96200")
 ;; (lem-get-community-comments-by-name "emacs")
 
-(lem-define-request "put" "edit-comment" "comment"
+(lem-def-request "put" "edit-comment" "comment"
   (comment-id content)
   "Edit comment with COMMENT-ID, providing content NEW-STR.
 To get the old text for editing, you first need to fetch the comment.
@@ -715,7 +715,7 @@ Returns a comment_view, recipient_ids, and form_id."
 
 ;; (lem-edit-comment 765662 "tasdfl;k")
 
-(lem-define-request "post" "like-comment" "comment/like"
+(lem-def-request "post" "like-comment" "comment/like"
   (comment-id score)
   "Like comment with COMMENT-ID.
 SCORE is a number, either 0, 1 to upvote, and -1 to downvote.
@@ -724,7 +724,7 @@ Returns a comment_view."
 
 ;; (lem-like-comment 765662 1)
 
-(lem-define-request "post" "delete-comment" "comment/delete"
+(lem-def-request "post" "delete-comment" "comment/delete"
   (comment-id)
   ""
   (comment-id)
@@ -732,7 +732,7 @@ Returns a comment_view."
 
 ;; (lem-delete-comment 765662)
 
-(lem-define-request "post" "report-comment" "comment/report"
+(lem-def-request "post" "report-comment" "comment/report"
   (comment-id reason)
   "Report comment with COMMENT-ID to instance moderator, giving REASON, a string.
 Returns comment_report_view."
@@ -741,7 +741,7 @@ Returns comment_report_view."
 ;; (lem-report-comment 765662 "test") ; broken
 
 ;;; PRIVATE MESSAGES
-(lem-define-request "get" "get-private-messages" "private_message/list"
+(lem-def-request "get" "get-private-messages" "private_message/list"
   (&optional unread-only)
   "Get private messages for the current user.
 UNREAD-ONLY means only return unread messages.
@@ -751,11 +751,11 @@ Returns private_messages."
 ;; (lem-get-private-messages "true")
 ;; (lem-get-private-messages)
 
-(lem-define-request "get" "get-unread-count" "user/unread_count")
+(lem-def-request "get" "get-unread-count" "user/unread_count")
 
 ;; (lem-get-unread-count)
 
-(lem-define-request "post" "send-private-message" "private_message"
+(lem-def-request "post" "send-private-message" "private_message"
   (content recipient-id)
   "Sent a private message CONTENT to user with RECIPIENT-ID.
 Returns a private_message_view."
@@ -763,7 +763,7 @@ Returns a private_message_view."
 
 ;; (lem-send-private-message "test" 899775)
 
-(lem-define-request "post" "mark-private-message-read"
+(lem-def-request "post" "mark-private-message-read"
                     "private_message/mark_as_read"
   (private-message-id)
   "Mark private message with id PRIVATE-MESSAGE-ID as read."
@@ -776,13 +776,13 @@ Returns a private_message_view."
 
 ;;; SAVING
 
-(lem-define-request "put" "save-post" "post/save"
+(lem-def-request "put" "save-post" "post/save"
   (post-id)
   "Save post with POST-ID, a number."
   (post-id)
   '(("save" . t)))
 
-(lem-define-request "put" "save-comment" "comment/save"
+(lem-def-request "put" "save-comment" "comment/save"
   (comment-id)
   "Save comment with COMMENT-ID, a number."
   (comment-id)
