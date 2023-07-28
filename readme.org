@@ -8,7 +8,7 @@ The idea is that it's then possible to write different frontends so users can re
 
 Currently, most of the basic endpoints are implemented, and most but not all parameters for each endpoint. There is an active todo list of endpoints in =lem-api.el=.
 
-New endpoints are trivial to add with the =lem-define-request= macro.
+New endpoints are trivial to add with the =lem-def-request= macro.
 
 =lem-ui.el= is our own basic interface layer. It's new and a bit necro, but coming along fast. It takes some inspiration and code from =mastodon.el=, as that's what I know, and a lot of work has gone into it.
 
@@ -119,6 +119,9 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 |         | lem-ui-dislike-item                    | Dislike (downvote) item at point.                                  |
 | s       | lem-ui-jump-to-subscribed              | Prompt for a subscribed community and view it.                     |
 |         | lem-ui-like-item                       | Like (upvote) item at point.                                       |
+|         | lem-ui-mark-all-read                   | Mark all replies as read.                                          |
+|         | lem-ui-mark-private-message-read       | Mark the private message at point as read.                         |
+|         | lem-ui-mark-reply-comment-read         | Mark the comment-reply at point as read.                           |
 |         | lem-ui-message-user-at-point           | Send private message to user at point.                             |
 |         | lem-ui-more                            | Append more items to the current view.                             |
 |         | lem-ui-new-post-simple                 | Create and submit new post.                                        |
@@ -139,6 +142,7 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 |         | lem-ui-view-post-at-point              | .                                                                  |
 |         | lem-ui-view-private-messages           | View reply comments to the current user.                           |
 |         | lem-ui-view-replies                    | View reply comments to the current user.                           |
+|         | lem-ui-view-replies-unread             | View unread replies.                                               |
 |         | lem-ui-view-saved-items                | View saved items of the current user, or of user with ID.          |
 | RET     | lem-ui-view-thing-at-point             | View post, community or user at point.                             |
 |         | lem-ui-view-user-at-point              | View user at point.                                                |
