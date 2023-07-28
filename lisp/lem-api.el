@@ -762,6 +762,13 @@ Returns a private_message_view."
 
 ;; (lem-send-private-message "test" 899775)
 
+(lem-define-request "post" "mark-private-message-read"
+                    "private_message/mark_as_read"
+  (private-message-id)
+  "Mark private message with id PRIVATE-MESSAGE-ID as read."
+  (priavate-message-id)
+  '(("read" . t)))
+
 ;; (lem-create-comment 1235982 "test")
 ;; (setq lem-post-comments (lem-get-post-comments "1235982"))
 ;; (setq lem-comm (lem-community-posts "14856"))
