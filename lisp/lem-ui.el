@@ -203,7 +203,8 @@ NUMBER means return ID as a number."
 (defvar-local lem-ui-buffer-spec nil
   "A plist containing details about the current lem buffer.")
 
-(defun lem-ui-set-buffer-spec (&optional listing-type sort view-fun item page)
+(defun lem-ui-set-buffer-spec (&optional listing-type sort
+                                         view-fun item page unread)
   "Set `lem-ui-buffer-spec' for the current buffer.
 SORT must be a member of `lem-sort-types'.
 LISTING-TYPE must be member of `lem-listing-types'.
@@ -211,7 +212,7 @@ ITEM is a symbol, either posts or comments."
   ;; TODO: allow us to set a single element:
   (setq lem-ui-buffer-spec
         `(:listing-type ,listing-type :sort ,sort :view-fun ,view-fun
-                        :item ,item :page ,(or page 1))))
+                        :item ,item :page ,(or page 1) :unread ,unread)))
 
 (defun lem-ui-get-buffer-spec (key)
   "Return value of KEY in `lem-ui-buffer-spec'."
@@ -1190,7 +1191,9 @@ Optionally only view UNREAD items."
          (buf (get-buffer-create "*lem-replies*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-replies list)
-      (lem-ui-insert-images))))
+      (lem-ui-insert-images)
+      (lem-ui-set-buffer-spec nil nil #'lem-ui-view-replies
+                              'comment-reply nil unread))))
 
 (defun lem-ui-render-replies (replies)
   "Render REPLIES, reply comments to the current user."
@@ -1216,7 +1219,9 @@ Optionally only view UNREAD items."
          (list (alist-get 'mentions mentions))
          (buf (get-buffer-create "*lem-mentions*")))
     (lem-ui-with-buffer buf 'lem-mode nil
-      (lem-ui-render-mentions list))))
+      (lem-ui-render-mentions list)
+      (lem-ui-set-buffer-spec nil nil #'lem-ui-view-mentions
+                              'mention nil unread))))
 
 (defun lem-ui-render-mentions (mentions)
   "Render mentions MENTIONS."
@@ -1235,7 +1240,9 @@ Optionally only view UNREAD items."
          (buf (get-buffer-create "*lem-private-messages*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       ;; (lem-ui-render-private-messages list))))
-      (lem-ui-render-private-messages list))))
+      (lem-ui-render-private-messages list)
+      (lem-ui-set-buffer-spec nil nil #'lem-ui-view-private-messages
+                              'private-message nil unread))))
 
 (defun lem-ui-render-private-messages (private-messages)
   "Render private messages PRIVATE-MESSAGES."
