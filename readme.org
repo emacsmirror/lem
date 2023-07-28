@@ -117,6 +117,7 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 | C-c C-c | lem-ui-cycle-listing-type              | Cycle view between `lem-listing-types'.                            |
 | C-c C-s | lem-ui-cycle-sort                      | Cycle view between some `lem-sort-types'.                          |
 |         | lem-ui-dislike-item                    | Dislike (downvote) item at point.                                  |
+|         | lem-ui-edit-comment                    | Edit comment at point if possible.                                 |
 | s       | lem-ui-jump-to-subscribed              | Prompt for a subscribed community and view it.                     |
 |         | lem-ui-like-item                       | Like (upvote) item at point.                                       |
 |         | lem-ui-mark-all-read                   | Mark all replies as read.                                          |
