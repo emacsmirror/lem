@@ -1178,6 +1178,7 @@ Simple means we just read a string."
 
 (defun lem-ui-view-replies-unread ()
   "View unread replies."
+  (interactive)
   (lem-ui-view-replies :unread))
 
 (defun lem-ui-view-replies (&optional unread)
@@ -1194,7 +1195,13 @@ Optionally only view UNREAD items."
 (defun lem-ui-render-replies (replies)
   "Render REPLIES, reply comments to the current user."
   (cl-loop for reply in replies
-           do (lem-ui-render-comment reply)))
+           do (lem-ui-render-comment reply :reply)))
+
+(defun lem-ui-mark-reply-comment-read ()
+  "Mark the comment-reply at point as read."
+  (interactive)
+  (let ((id (lem-ui--property 'id)))
+    (lem-mark-comment-reply-read id)))
 
 (defun lem-ui-view-mentions (&optional unread)
   "View reply comments to the current user.
