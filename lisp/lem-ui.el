@@ -1234,11 +1234,11 @@ Optionally only view UNREAD items."
 
 ;;; COMMENTS
 
-(defun lem-ui-render-comment (comment)
+(defun lem-ui-render-comment (comment &optional reply)
   "Render single COMMENT."
-;; SORT must be a member of `lem-comment-sort-types'."
+  ;; SORT must be a member of `lem-comment-sort-types'."
   (insert
-   (lem-ui-format-comment comment)
+   (lem-ui-format-comment comment nil reply)
    "\n"))
 
 (defun lem-ui-render-comments (comments)
@@ -1312,7 +1312,7 @@ Parent-fun for `hierarchy-add-tree'."
                                   comment
                                   #'lem-ui--parentfun)))
 
-(defun lem-ui-format-comment (comment &optional indent)
+(defun lem-ui-format-comment (comment &optional indent reply)
   "Format COMMENT, optionally with INDENT amount of indent bars."
   (let-alist comment
     (let ((content (when .comment.content
@@ -1336,11 +1336,11 @@ Parent-fun for `hierarchy-add-tree'."
         lem-ui-horiz-bar
         "\n")
        'json comment
-       'id .comment.id
+       'id (if reply .comment_reply.id .comment.id)
        'post-id .comment.post_id
        'community-id .post.community_id
        'creator-id .creator.id
-       'type 'comment
+       'type (if reply 'comment-reply 'comment)
        'line-prefix indent-str))))
 
 ;; TODO: refactor format funs? will let-alist dot notation work?
