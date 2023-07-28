@@ -1178,6 +1178,20 @@ Simple means we just read a string."
         (message "Comment created: %s" .comment_view.comment.content)
         (lem-ui-view-post (number-to-string post-id))))))
 
+(defun lem-ui-edit-comment ()
+  "Edit comment at point if possible."
+  (interactive)
+  (cond ((not (eq 'comment (lem-ui--property 'type)))
+         (message "No comment at point?"))
+        ((not (equal lem-user-id (lem-ui--property 'creator-id)))
+         (message "You can only edit your own comments"))
+        (t
+         (let* ((id (lem-ui--property 'id))
+                (json (lem-ui--property 'json))
+                (old-str (alist-get 'content (alist-get 'comment json)))
+                (new-str (read-string "Edit comment: " old-str)))
+           (lem-edit-comment id new-str)))))
+
 (defun lem-ui-view-replies-unread ()
   "View unread replies."
   (interactive)
