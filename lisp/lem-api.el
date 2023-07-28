@@ -764,10 +764,10 @@ Returns a private_message_view."
 ;; (lem-send-private-message "test" 899775)
 
 (lem-def-request "post" "mark-private-message-read"
-                    "private_message/mark_as_read"
+                 "private_message/mark_as_read"
   (private-message-id)
   "Mark private message with id PRIVATE-MESSAGE-ID as read."
-  (priavate-message-id)
+  (private-message-id)
   '(("read" . t)))
 
 ;; (lem-create-comment 1235982 "test")
