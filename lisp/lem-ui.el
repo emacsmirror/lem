@@ -252,7 +252,8 @@ Optionally start from POS."
            (lem-ui-view-post-at-point))
           ((eq type 'community)
            (lem-ui-view-community-at-point))
-          ((eq type 'comment)
+          ((or (eq type 'comment)
+               (eq type 'comment-reply))
            (lem-ui-view-comment-post))
           ((eq type 'person)
            (lem-ui-view-user-at-point)))))
@@ -1511,9 +1512,10 @@ RENDER-FUN is the name of a function to render them."
 (defun lem-ui-view-comment-post ()
   "View post of comment at point."
   (interactive)
-  (if (not (eq (lem-ui--item-type) 'comment))
+  (if (not (or (eq (lem-ui--item-type) 'comment)
+               (eq (lem-ui--item-type) 'comment-reply)))
       (message "Not at a comment?")
-    (let* ((post (get-text-property (point) 'post-id))
+    (let* ((post (lem-ui--property 'post-id))
            (str (number-to-string post)))
       (lem-ui-view-post str))))
 
