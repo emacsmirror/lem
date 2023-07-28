@@ -720,7 +720,7 @@ START and END are the boundaries of the link in the post body."
 
 ;;; BYLINES
 (defun lem-ui-top-byline (title url username _score timestamp
-                                &optional community _community-url featured-p)
+                                &optional community _community-url featured-p op)
   "Format a top byline for post with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
 COMMUNITY and COMMUNITY-URL are those of the community the item belongs to.
 FEATURED-P means the item is pinned."
@@ -736,6 +736,10 @@ FEATURED-P means the item is pinned."
           (concat url "\n")
         "")
       (lem-ui--propertize-link username nil 'user)
+      (when op
+        (concat " "
+                (propertize "OP"
+                            'face '(:box t))))
       (when community
         (concat
          (propertize " to "
@@ -1360,14 +1364,17 @@ Parent-fun for `hierarchy-add-tree'."
                                          (alist-get 'comment comment))))
           (indent-str (when indent
                         (make-string indent (string-to-char
-                                             (lem-ui-symbol 'reply-bar))))))
+                                             (lem-ui-symbol 'reply-bar)))))
+          (op (eq .comment.creator_id .post.creator_id)))
       (push .comment.id lem-ui-current-items) ; pagination
       (propertize
        (concat
         (lem-ui-top-byline nil nil
                            .creator.name
                            .counts.score
-                           .comment.published)
+                           .comment.published
+                           nil nil nil
+                           op)
         "\n"
         (or content "")
         "\n"
