@@ -1203,6 +1203,11 @@ Optionally only view UNREAD items."
   (let ((id (lem-ui--property 'id)))
     (lem-mark-comment-reply-read id)))
 
+(defun lem-ui-mark-all-read ()
+  "Mark all replies as read."
+  (interactive)
+  (lem-mark-all-read))
+
 (defun lem-ui-view-mentions (&optional unread)
   "View reply comments to the current user.
 Optionally only view UNREAD items."
