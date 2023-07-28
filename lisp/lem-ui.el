@@ -1244,6 +1244,12 @@ Optionally only view UNREAD items."
                (lem-ui-format-private-message pm)
                "\n")))
 
+(defun lem-ui-mark-private-message-read ()
+  "Mark the private message at point as read."
+  (interactive)
+  (let ((id (lem-ui--property 'id)))
+    (lem-mark-private-message-read id)))
+
 ;;; COMMENTS
 
 (defun lem-ui-render-comment (comment &optional reply)
