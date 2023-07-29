@@ -852,8 +852,10 @@ JSON is the item's data to process the link with."
         (insert replaced)
         (markdown-standalone buf))
       (with-current-buffer buf
-        ;; shr render:
-        (shr-render-buffer (current-buffer)))
+        (let ((shr-width (when indent
+                           (- (window-width) (+ 1 indent)))))
+          ;; shr render:
+          (shr-render-buffer (current-buffer))))
       (with-current-buffer "*html*" ; created by shr
         ;; our render:
         (when json
@@ -1392,7 +1394,8 @@ REPLY means it is a comment-reply object."
   (let-alist comment
     (let ((content (when .comment.content
                      (lem-ui-render-body .comment.content
-                                         (alist-get 'comment comment))))
+                                         (alist-get 'comment comment)
+                                         indent)))
           (indent-str (when indent
                         (make-string indent (string-to-char
                                              (lem-ui-symbol 'reply-bar)))))
