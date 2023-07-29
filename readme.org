@@ -36,13 +36,13 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 
 - [ ] improve rich text rendering of content and bylines
 - [ ] update current buffer with new items
-- [-] tabstop navigation logic (from mastodon.el)
 - [ ] image loading logic (from mastodon.el)
 - [ ] timestamp logic (from mastodon.el)
 - [ ] rich compose interface (from mastodon.el)
   
 * UI TODOS done
 
+- [X] tabstop navigation logic (from mastodon.el)
 - [X] webfinger lookup bindings for all links
 - [X] finish pagination/add older items to buffer
 - [X] =lem.plstore= for auth token
