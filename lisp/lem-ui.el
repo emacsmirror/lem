@@ -748,8 +748,10 @@ START and END are the boundaries of the link in the post body."
                                 &optional community _community-url featured-p op)
   "Format a top byline for post with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
 COMMUNITY and COMMUNITY-URL are those of the community the item belongs to.
-FEATURED-P means the item is pinned."
-  (let ((url (lem-ui-render-url url)))
+FEATURED-P means the item is pinned.
+OP is a flag, meaning we add a boxed OP string to the byline."
+  (let ((url (lem-ui-render-url url))
+        (parsed-time (date-to-time timestamp)))
     (propertize
      (concat
       (if title
@@ -773,7 +775,11 @@ FEATURED-P means the item is pinned."
       (propertize
        (concat
         " | "
-        timestamp
+        (propertize timestamp
+                    'timestamp parsed-time
+                    'display (if fedi-enable-relative-timestamps
+                                 (fedi--relative-time-description parsed-time)
+                               parsed-time))
         (if (eq featured-p t)
             (concat " | "
                     (lem-ui-symbol 'pinned))
