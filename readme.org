@@ -34,14 +34,13 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 
 * UI TODOS doing
 
-- [ ] improve rich text rendering of content and bylines
-- [ ] update current buffer with new items
-- [ ] image loading logic (from mastodon.el)
-- [ ] timestamp logic (from mastodon.el)
+- [ ] update current buffer with new items (less important than in masto)
 - [ ] rich compose interface (from mastodon.el)
   
 * UI TODOS done
 
+- [X] timestamp logic (from mastodon.el)
+- [X] image loading
 - [X] tabstop navigation logic (from mastodon.el)
 - [X] webfinger lookup bindings for all links
 - [X] finish pagination/add older items to buffer
