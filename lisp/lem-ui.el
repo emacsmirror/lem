@@ -1266,6 +1266,7 @@ Optionally only view UNREAD items."
          (buf (get-buffer-create "*lem-mentions*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-mentions list)
+      (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil nil #'lem-ui-view-mentions
                               'mention nil unread))))
 
@@ -1287,6 +1288,7 @@ Optionally only view UNREAD items."
     (lem-ui-with-buffer buf 'lem-mode nil
       ;; (lem-ui-render-private-messages list))))
       (lem-ui-render-private-messages list)
+      (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil nil #'lem-ui-view-private-messages
                               'private-message nil unread))))
 
