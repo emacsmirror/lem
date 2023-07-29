@@ -711,7 +711,6 @@ before (non-nil) or after (nil)"
   "Process link URL in JSON as userhandle, community, or normal link.
 START and END are the boundaries of the link in the post body."
   (let* ((help-echo (get-text-property start 'help-echo))
-         ;; extra-properties
          (keymap lem-ui--link-map)
          (lem-tab-stop-type 'shr-url))
     (add-text-properties start end
@@ -719,9 +718,9 @@ START and END are the boundaries of the link in the post body."
                           (list 'lem-tab-stop lem-tab-stop-type
                                 'keymap keymap
                                 'help-echo help-echo)))))
-                          ;; extra-properties))))
 
 ;;; BYLINES
+
 (defun lem-ui-top-byline (title url username _score timestamp
                                 &optional community _community-url featured-p op)
   "Format a top byline for post with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
@@ -878,7 +877,7 @@ SORT must be a member of `lem-sort-types'."
         'type (caar post))))))
 
 (defun lem-ui-insert-post-image-maybe (post) ; &optional alt)
-  "Render URL of POST as an image if it looks like one."
+  "Render URL of POST as an image if it resembles one."
   (let-alist post
     ;; (setq image-url .post.url)
     (when .post.url
@@ -1279,7 +1278,8 @@ Optionally only view UNREAD items."
 ;;; COMMENTS
 
 (defun lem-ui-render-comment (comment &optional reply)
-  "Render single COMMENT."
+  "Render single COMMENT.
+REPLY means it is a comment-reply object."
   ;; SORT must be a member of `lem-comment-sort-types'."
   (insert
    (lem-ui-format-comment comment nil reply)
@@ -1357,7 +1357,8 @@ Parent-fun for `hierarchy-add-tree'."
                                   #'lem-ui--parentfun)))
 
 (defun lem-ui-format-comment (comment &optional indent reply)
-  "Format COMMENT, optionally with INDENT amount of indent bars."
+  "Format COMMENT, optionally with INDENT amount of indent bars.
+REPLY means it is a comment-reply object."
   (let-alist comment
     (let ((content (when .comment.content
                      (lem-ui-render-body .comment.content
