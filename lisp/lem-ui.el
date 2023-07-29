@@ -167,6 +167,28 @@ If STRING, return the id as a string."
         (number-to-string id)
       id)))
 
+(defun lem-ui--init-view ()
+  "Initialize a view.
+Sets relative timestamp timers, buffer spec, etc."
+
+  ;; load images
+  (lem-ui-insert-images)
+  ;; relative timestamps:
+  (setq
+   ;; Initialize with a minimal interval; we re-scan at least once
+   ;; every 5 minutes to catch any timestamps we may have missed
+   fedi-timestamp-next-update (time-add (current-time)
+                                        (seconds-to-time 300)))
+  (setq fedi-timestamp-update-timer
+        (when fedi-enable-relative-timestamps
+          (run-at-time (time-to-seconds
+                        (time-subtract fedi-timestamp-next-update
+                                       (current-time)))
+                       nil ;; don't repeat
+                       #'fedi--update-timestamps-callback
+                       (current-buffer)
+                       nil))))
+
 ;;; MACROS
 
 (defmacro lem-ui-with-buffer (buffer mode-fun other-window &rest body)
@@ -293,6 +315,7 @@ LIMIT is the amount of results to return."
       (lem-ui-render-posts-instance posts)
       (lem-ui-insert-images)
       (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance 'instance page)
+      (lem-ui--init-view)
       (goto-char (point-min)))))
 
 (defun lem-ui-view-instance-full (_args)
@@ -620,7 +643,7 @@ LIMIT."
     (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
       (lem-ui-render-post post :community)
       (lem-ui-render-post-comments id sort limit)
-      (lem-ui-insert-images)
+      (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)
       (goto-char (point-min))))) ; limit
 
@@ -1052,7 +1075,7 @@ PAGE is the page number of items to display, a string."
             (lem-ui-render-comments items)) ; no type
         (lem-ui-insert-heading "posts")
         (lem-ui-render-posts items nil :trim)) ; no children
-      (lem-ui-insert-images)
+      (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-community
                               (or item 'posts) page)
       (goto-char (point-min)))))
