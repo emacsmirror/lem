@@ -313,9 +313,8 @@ LIMIT is the amount of results to return."
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-instance instance :stats)
       (lem-ui-render-posts-instance posts)
-      (lem-ui-insert-images)
-      (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance 'instance page)
       (lem-ui--init-view)
+      (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance 'instance page)
       (goto-char (point-min)))))
 
 (defun lem-ui-view-instance-full (_args)
@@ -1238,7 +1237,7 @@ Optionally only view UNREAD items."
          (buf (get-buffer-create "*lem-replies*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-replies list)
-      (lem-ui-insert-images)
+      (lem-ui-init-view)
       (lem-ui-set-buffer-spec nil nil #'lem-ui-view-replies
                               'comment-reply nil unread))))
 
@@ -1664,7 +1663,7 @@ CURRENT-USER means we are displaying the current user's profile."
                ;; web app just does comments then posts for "overview"?:
                (lem-ui-render-comments .comments)
                (lem-ui-render-posts .posts :community :trim)))
-        (lem-ui-insert-images)
+        (lem-ui-init-view)
         ;; FIXME: don't confuse view-type and listing-type (& fix cycling):
         (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user view-type)
         (goto-char (point-min))))))
