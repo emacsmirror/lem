@@ -768,10 +768,7 @@ ID is the item's id."
    (concat (lem-ui-symbol 'upvote) " "
            (number-to-string score) " | "
            (lem-ui-symbol 'reply) " "
-           (number-to-string comments) " | "
-           (propertize (concat "id: "
-                               (number-to-string id))
-                       'face font-lock-comment-face))
+           (number-to-string comments))
    'byline-bottom t))
 
 (defun lem-ui-render-url (url &optional no-shorten)
