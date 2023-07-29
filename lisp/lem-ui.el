@@ -475,9 +475,12 @@ ID is the main view item's id."
          (choice (completing-read (format "View by %s" sort-or-type)
                                   list nil :match)))
     (if id
-        (if (eq sort-or-type 'type)
-            (funcall view-fun id choice sort)
-          (funcall view-fun id type choice))
+        (cond ((eq sort-or-type 'type)
+               (funcall view-fun id choice sort))
+              (post-p
+               (funcall view-fun id choice))
+              (t
+               (funcall view-fun id type choice)))
       (if (eq sort-or-type 'type)
           (funcall view-fun choice sort)
         (funcall view-fun type choice)))))
