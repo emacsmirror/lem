@@ -296,6 +296,16 @@ If we hit `point-max', call `lem-ui-more' then `scroll-up-command'."
     (lem-ui-more)
     (scroll-up-command)))
 
+(defun lem-ui-next-tab-item ()
+  ""
+  (interactive)
+  (fedi-next-tab-item nil 'lem-tab-stop))
+
+(defun lem-ui-prev-tab-item ()
+  ""
+  (interactive)
+  (fedi-next-tab-item :prev 'lem-tab-stop))
+
 ;;; INSTANCE
 
 ;; TODO: toggle posts or comments

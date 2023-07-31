@@ -119,6 +119,8 @@
     (define-key map (kbd "p") #'lem-prev-item)
     (define-key map (kbd "RET") #'lem-ui-view-thing-at-point)
     (define-key map (kbd "SPC") #'lem-ui-scroll-up-command)
+    (define-key map (kbd "TAB") #'lem-ui-next-tab-item)
+    (define-key map (kbd "C-TAB") #'lem-ui-prev-tab-item)
     (define-key map (kbd "C") #'lem-ui-view-community-at-point)
     (define-key map (kbd "s") #'lem-ui-jump-to-subscribed)
     (define-key map (kbd "S") #'lem-ui-subscribe-to-community-at-point)
