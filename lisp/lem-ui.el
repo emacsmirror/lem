@@ -31,9 +31,23 @@
 
 ;;; Code:
 
-(require 'hierarchy)
+;; (require 'hierarchy)
 (require 'markdown-mode)
 (require 'lem-api)
+(require 'shr)
+(require 'cl-lib)
+
+(defvar lem-listing-types)
+(defvar lem-comment-sort-types)
+(defvar lem-default-comment-sort-type)
+(defvar lem-sort-types)
+(defvar lem-default-sort-type)
+(defvar lem-user-view-types)
+(defvar lem-search-types)
+(defvar lem-user-id)
+
+(autoload 'lem-mode "lem.el")
+(autoload 'lem-comment-sort-type-p "lem.el")
 
 ;;; PATCH hierarchy-print:
 ;; reported to emacs-devel but no answer as yet
@@ -297,12 +311,12 @@ If we hit `point-max', call `lem-ui-more' then `scroll-up-command'."
     (scroll-up-command)))
 
 (defun lem-ui-next-tab-item ()
-  ""
+  "Jump to next tab item."
   (interactive)
   (fedi-next-tab-item nil 'lem-tab-stop))
 
 (defun lem-ui-prev-tab-item ()
-  ""
+  "Jump to prev tab item."
   (interactive)
   (fedi-next-tab-item :prev 'lem-tab-stop))
 
@@ -347,10 +361,10 @@ STR is the preceding string to insert."
    str
    (mapconcat
     (lambda (x)
-      (lem-ui--propertize-link (first x)
-                               (second x)
+      (lem-ui--propertize-link (cl-first x)
+                               (cl-second x)
                                'user
-                               (third x)))
+                               (cl-third x)))
     list " | ")))
 
 (defun lem-ui-render-instance (instance &optional stats)
@@ -607,7 +621,7 @@ STRING means ID should be a string."
 
 (defun lem-ui-url-lookup (&optional url)
   "Perform a webfinger lookup on URL and load the result in `lem.el'.
-Or url at point, or text prop 'shr-url, or read a URL in the minibuffer.
+Or url at point, or text prop shr-url, or read a URL in the minibuffer.
 Lemmy supports lookups for users, posts, comments and communities."
   (interactive)
   (let ((query (or url
@@ -796,11 +810,10 @@ OP is a flag, meaning we add a boxed OP string to the byline."
        'face font-lock-comment-face))
      'byline-top t)))
 
-(defun lem-ui-bt-byline (score comments &optional id)
+(defun lem-ui-bt-byline (score comments)
   "Format a bottom byline for an item.
 SCORE is the item's score.
-COMMENTS is the comments count to render.
-ID is the item's id."
+COMMENTS is the comments count to render."
   (propertize
    (concat (lem-ui-symbol 'upvote) " "
            (number-to-string score) " | "
@@ -846,9 +859,10 @@ NO-SHORTEN means display full URL, else only the domain is shown."
         (lem-ui--process-link (car region) (cdr region))))))
 ;; (get-text-property (car region) 'shr-url))))))
 
-(defun lem-ui-render-body (body &optional json)
-  "Render post BODY as markdowned html.
-JSON is the item's data to process the link with."
+(defun lem-ui-render-body (body &optional json indent)
+  "Render item BODY as markdowned html.
+JSON is the item's data to process the link with.
+INDENT is a number, the level of indent for the item."
   (let ((buf "*lem-md*")
         str)
     (with-temp-buffer
@@ -906,7 +920,7 @@ SORT must be a member of `lem-sort-types'."
            "")
          (lem-ui-insert-post-image-maybe post)
          "\n"
-         (lem-ui-bt-byline .counts.score .counts.comments .post.id)
+         (lem-ui-bt-byline .counts.score .counts.comments)
          "\n"
          lem-ui-horiz-bar
          "\n\n")
@@ -1249,7 +1263,7 @@ Optionally only view UNREAD items."
          (buf (get-buffer-create "*lem-replies*")))
     (lem-ui-with-buffer buf 'lem-mode nil
       (lem-ui-render-replies list)
-      (lem-ui-init-view)
+      (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil nil #'lem-ui-view-replies
                               'comment-reply nil unread))))
 
@@ -1422,7 +1436,7 @@ REPLY means it is a comment-reply object."
         "\n"
         (or content "")
         "\n"
-        (lem-ui-bt-byline .counts.score .counts.child_count .comment.id)
+        (lem-ui-bt-byline .counts.score .counts.child_count)
         "\n"
         lem-ui-horiz-bar
         "\n")
@@ -1489,7 +1503,7 @@ LIMIT is the amount of items to return."
 (defun lem-ui-remove-displayed-items (items type)
   "Remove item from ITEMS if it is in `lem-ui-current-items'.
 TYPE is the item type.
-ITEMS should be an alist of the form '\(plural-name ((items-list))\)'."
+ITEMS should be an alist of the form '\=(plural-name ((items-list)))'."
   (cl-remove-if
    (lambda (x)
      (let ((id (alist-get 'id
@@ -1678,7 +1692,7 @@ CURRENT-USER means we are displaying the current user's profile."
                ;; web app just does comments then posts for "overview"?:
                (lem-ui-render-comments .comments)
                (lem-ui-render-posts .posts :community :trim)))
-        (lem-ui-init-view)
+        (lem-ui--init-view)
         ;; FIXME: don't confuse view-type and listing-type (& fix cycling):
         (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user view-type)
         (goto-char (point-min))))))
@@ -1718,7 +1732,6 @@ CURRENT-USER means we are displaying the current user's profile."
 
 
 ;;; IMAGES
-
 (defun lem-ui-insert-images ()
   "Insert any image-url images in the buffer with `shr-insert-image'.
 It's a cheap hack, alas."
