@@ -27,6 +27,8 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'plstore)
+(require 'emojify)
 (require 'lem-api)
 (require 'lem-ui)
 
@@ -187,7 +189,7 @@ Load current user's instance posts."
 
 (defun lem-check-site ()
   "Check that the site is a lemmy instance.
-Actually check that the 'actor-id' returned by `lem-get-site' is
+Actually check that the `actor-id' returned by `lem-get-site' is
 equal to `lem-instance-url'."
   (let* ((site (lem-get-site))
          (ap-id (alist-get 'actor_id
