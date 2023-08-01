@@ -32,10 +32,12 @@
 ;;; Code:
 
 ;; (require 'hierarchy)
-(require 'markdown-mode)
-(require 'lem-api)
-(require 'shr)
 (require 'cl-lib)
+(require 'shr)
+(require 'markdown-mode)
+(require 'hierarchy)
+
+(require 'lem-api)
 
 (defvar lem-listing-types)
 (defvar lem-comment-sort-types)
