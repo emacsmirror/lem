@@ -750,12 +750,19 @@ START and END are the boundaries of the link in the post body."
 
 ;;; BYLINES
 
+(defun lem-ui-propertize-box (str)
+  "Propertize STR with box and `font-lock-keyword-face'."
+  (propertize str
+              'face '(:inherit font-lock-keyword-face :box t)))
+
 (defun lem-ui-top-byline (title url username _score timestamp
-                                &optional community _community-url featured-p op)
+                                &optional community _community-url
+                                featured-p op-p admin-p mod-p)
   "Format a top byline for post with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
 COMMUNITY and COMMUNITY-URL are those of the community the item belongs to.
 FEATURED-P means the item is pinned.
-OP is a flag, meaning we add a boxed OP string to the byline."
+OP-P is a flag, meaning we add a boxed OP string to the byline.
+ADMIN-P means we add same for admins, MOD-P means add same for moderators."
   (let ((url (lem-ui-render-url url))
         (parsed-time (date-to-time timestamp)))
     (propertize
@@ -769,10 +776,15 @@ OP is a flag, meaning we add a boxed OP string to the byline."
           (concat url "\n")
         "")
       (lem-ui--propertize-link username nil 'user)
-      (when op
+      (when op-p
         (concat " "
-                (propertize "OP"
-                            'face '(:box t))))
+                (lem-ui-propertize-box "OP")))
+      (when admin-p
+        (concat " "
+                (lem-ui-propertize-box "ADM")))
+      (when mod-p
+        (concat " "
+                (lem-ui-propertize-box "MOD")))
       (when community
         (concat
          (propertize " to "
@@ -873,6 +885,15 @@ INDENT is a number, the level of indent for the item."
         (kill-buffer buf)))             ; our md
     str))
 
+(defun lem-ui--mod-p (id community-id)
+  "Non-nil if user with ID is a moderator for community with COMMUNITY-ID."
+  (let* ((community-json (lem-get-community (number-to-string community-id)))
+         (mods (alist-get 'moderators community-json))
+         (mods-ids (cl-loop for mod in mods
+                            collect (alist-get 'id
+                                               (alist-get 'moderator mod)))))
+    (cl-member id mods-ids)))
+
 (defun lem-ui-render-post (post &optional community trim)
   ;; NB trim in instance, community, and user views
   ;; NB show community info in instance and in post views
@@ -881,9 +902,11 @@ Optionally render post's COMMUNITY.
 Optionally TRIM post length.
 SORT must be a member of `lem-sort-types'."
   (let-alist post
-    (let (;(url (lem-ui-render-url .post.url))
-          (body (when .post.body
-                  (lem-ui-render-body .post.body (alist-get 'post post)))))
+    (let* (;(url (lem-ui-render-url .post.url))
+           (body (when .post.body
+                   (lem-ui-render-body .post.body (alist-get 'post post))))
+           (admin-p (eq t .creator.admin))
+           (mod-p (lem-ui--mod-p .creator.id .community.id)))
       (insert
        (propertize
         (concat
@@ -894,7 +917,8 @@ SORT must be a member of `lem-sort-types'."
                             .post.published
                             (when community .community.name)
                             (when community .community.actor_id)
-                            .post.featured_local)
+                            .post.featured_local
+                            nil admin-p mod-p)
          "\n"
          (if .post.body
              (if trim
@@ -1406,7 +1430,9 @@ REPLY means it is a comment-reply object."
           (indent-str (when indent
                         (make-string indent (string-to-char
                                              (lem-ui-symbol 'reply-bar)))))
-          (op (eq .comment.creator_id .post.creator_id)))
+          (admin-p (eq t .creator.admin))
+          (mod-p (lem-ui--mod-p .creator.id .community.id))
+          (op-p (eq .comment.creator_id .post.creator_id)))
       (push .comment.id lem-ui-current-items) ; pagination
       (propertize
        (concat
@@ -1415,7 +1441,7 @@ REPLY means it is a comment-reply object."
                            .counts.score
                            .comment.published
                            nil nil nil
-                           op)
+                           op-p admin-p mod-p)
         "\n"
         (or content "")
         "\n"
