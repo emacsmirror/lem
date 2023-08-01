@@ -141,6 +141,7 @@
 
 (setq fedi-package-prefix "lem")
 
+(defvar lem-instance-url)
 (setq lem-instance-url "https://lemmy.ml")
 
 ;;;###autoload
@@ -168,9 +169,9 @@ MAN-PARAMS is an alist, to append to the one created from PARAMS.
 They are manual, meaning that that the key and arg don't have to
 be the same. This can be used for boolean parameters. If the
 request sends encoded JSON data (ie POST or PUT), MAN-PARAMS
-should be formatted as plain Emacs Lisp: \'((\"boolean\" . t))',
+should be formatted as plain Emacs Lisp: \='((\"boolean\" . t))',
 if the request sends query string parameters (GET, etc.), then
-MAN-PARAMS should be formatted as strings only: \'((\"boolean\" .
+MAN-PARAMS should be formatted as strings only: \='((\"boolean\" .
 \"true\"))'.
 
 HEADERS is an alist that will be bound as `url-request-extra-headers'.
