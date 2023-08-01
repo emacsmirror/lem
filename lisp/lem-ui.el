@@ -50,20 +50,33 @@
 (autoload 'lem-comment-sort-type-p "lem.el")
 
 ;;; PATCH hierarchy-print:
-;; reported to emacs-devel but no answer as yet
+;; reported to emacs-devel
 ;; https://lists.gnu.org/archive/html/emacs-devel/2023-07/msg00468.html
-(defun lem--hierarchy-print (hierarchy &optional to-string indent-string)
+(defun lem--hierarchy-print (hierarchy &optional to-string)
   "Insert HIERARCHY in current buffer as plain text.
 
 Use TO-STRING to convert each element to a string.  TO-STRING is
 a function taking an item of HIERARCHY as input and returning a
+string.  If nil, TO-STRING defaults to a call to `format' with \"%s\"."
+  (lem--hierarchy-print-line
+   hierarchy
+   (hierarchy-labelfn-indent
+    (lambda (item _) (insert (funcall to-string item) "\n")))))
+
+
+(defun lem--hierarchy-print-line (hierarchy &optional labelfn)
+  "Insert HIERARCHY in current buffer as plain text.
+
+Use LABELFN to convert each element to a string.  LABELFN is
+a function taking an item of HIERARCHY as input and returning a
 string.  If nil, TO-STRING defaults to a call to `format' with \"%s\".
-INDENT-STRING is handed to `hierarchy-labelfn-indent'."
-  (let ((to-string (or to-string (lambda (item) (format "%s" item)))))
+This function is not responsible for indentation, but it can be
+achieved by providing a function such as
+`hierarch-labelfun-indent' for LABELFN."
+  (let ((labelfn (or labelfn (lambda (item) (format "%s" item)))))
     (hierarchy-map
-     (hierarchy-labelfn-indent (lambda (item indent)
-                                 (insert (funcall to-string item indent) "\n"))
-                               indent-string)
+     (lambda (item indent)
+       (insert (funcall labelfn item indent) "\n"))
      hierarchy)))
 
 ;;; VARS
@@ -1363,11 +1376,11 @@ For viewing a plain list of comments, not a hierarchy."
     (lem-ui--build-hierarchy list)) ; sets `lem-comments-hierarchy'
   (with-current-buffer (get-buffer-create "*lem-post*")
     (let ((inhibit-read-only t))
-      (lem--hierarchy-print
-       lem-comments-hierarchy
-       (lambda (item indent)
-         (lem-ui-format-comment item indent))
-       (lem-ui-symbol 'reply-bar)))))
+      (lem--hierarchy-print-line lem-comments-hierarchy
+                                 (hierarchy-labelfn-indent
+                                  (lambda (item indent)
+                                    (lem-ui-format-comment item indent))
+                                  (lem-ui-symbol 'reply-bar))))))
 
 (defun lem-ui-get-comment-path (comment)
   "Get path value from COMMENT."
