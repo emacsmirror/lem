@@ -30,18 +30,30 @@
 (require 'lem-api)
 (require 'lem-ui)
 
+(defalias 'lem-post-cancel #'fedi-post-cancel)
+(defalias 'lem-post-toggle-nsfw #'fedi-post-toggle-nsfw)
+(defalias 'lem-post-set-post-language #'fedi-post-set-post-language)
+
 (defvar lem-post-mode-map
   (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map fedi-post-mode-map)
-    (define-key map (kbd "C-c C-c") #'lem-post-submit)
+    ;; inheriting doesn't work for our post docs display
+    ;; (set-keymap-parent map fedi-post-mode-map)
+    (define-key map (kbd "C-c C-k") #'lem-post-cancel)
+    (define-key map (kbd "C-c C-n") #'lem-post-toggle-nsfw)
+    (when (require 'emojify nil :noerror)
+      (define-key map (kbd "C-c C-e") #'lem-post-insert-emoji))
+    (define-key map (kbd "C-c C-l") #'lem-post-set-post-language)
+    (define-key map (kbd "C-c C-o") #'lem-post-select-community)
     (define-key map (kbd "C-c C-t") #'lem-post-read-title)
     (define-key map (kbd "C-c C-u") #'lem-post-read-url)
+    (define-key map (kbd "C-c C-c") #'lem-post-submit)
     ;; (define-key map (kbd "C-c C-l") #'fedi-post-set-post-language)
     map)
   "Keymap for `lem-post-mode'.")
 
 (defvar-local lem-post-title nil)
 (defvar-local lem-post-url nil)
+(defvar-local lem-post-community-id nil)
 
 (defun lem-post-read-title ()
   ""
@@ -56,29 +68,35 @@
   (setq lem-post-url
         (read-string "Post URL: ")))
 
-(defun lem-post-compose
-    (&optional reply-to-user reply-to-id reply-json initial-text edit)
+(defun lem-post-select-community ()
   ""
   (interactive)
-  (fedi-post--compose-buffer
-   reply-to-user reply-to-id reply-json initial-text edit #'lem-post-mode))
-
-(defun lem-post-submit ()
-  ""
-  (interactive)
-  ;; TODO: check for title/url first?
-  (let* ((body (fedi-post--remove-docs))
-         (communities (lem-list-communities "Subscribed"))
+  (let* ((communities (lem-list-communities "Subscribed"))
          (list (lem-ui--communities-alist
                 (alist-get 'communities communities)))
          (choice (completing-read "Community: " ; TODO: default to current view
                                   list))
          (community-id (string-to-number
-                        (alist-get choice list nil nil #'equal)))
-         (response
-          (lem-create-post lem-post-title community-id body
-                           lem-post-url fedi-post-content-nsfw
-                           nil fedi-post-language))) ; TODO: honeypot
+                        (alist-get choice list nil nil #'equal))))
+    (setq lem-post-community-id community-id)
+    (message "posting to: %s" choice)))
+
+(defun lem-post-compose
+    (&optional reply-to-user reply-to-id reply-json initial-text edit)
+  ""
+  (interactive)
+  (fedi-post--compose-buffer
+   reply-to-user reply-to-id reply-json initial-text edit
+   #'lem-post-mode lem-post-mode-map))
+
+(defun lem-post-submit ()
+  ""
+  (interactive)
+  ;; TODO: check for title/url/comm-id first
+  (let* ((body (fedi-post--remove-docs))
+         (response (lem-create-post lem-post-title lem-post-community-id body
+                                    lem-post-url fedi-post-content-nsfw
+                                    nil fedi-post-language))) ; TODO: honeypot
     (when response
       (let-alist response
         (message "Post %s created!" .post_view.post.name)))))
