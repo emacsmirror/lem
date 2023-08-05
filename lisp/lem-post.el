@@ -87,7 +87,7 @@
   (interactive)
   (fedi-post--compose-buffer
    reply-to-user reply-to-id reply-json initial-text edit
-   #'lem-post-mode lem-post-mode-map))
+   #'lem-post-mode))
 
 (defun lem-post-submit ()
   ""
