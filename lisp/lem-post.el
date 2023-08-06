@@ -53,6 +53,17 @@
     map)
   "Keymap for `lem-post-mode'.")
 
+(defvar lem-post-comment-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-k") #'lem-post-cancel)
+    (define-key map (kbd "C-c C-n") #'lem-post-toggle-nsfw)
+    (when (require 'emojify nil :noerror)
+      (define-key map (kbd "C-c C-e") #'lem-post-insert-emoji))
+    (define-key map (kbd "C-c C-l") #'lem-post-set-post-language)
+    (define-key map (kbd "C-c C-c") #'lem-post-submit)
+    map)
+  "Keymap for `lem-post-comment-mode'.")
+
 (defvar-local lem-post-title nil)
 (defvar-local lem-post-url nil)
 (defvar-local lem-post-community-id nil)
@@ -91,10 +102,12 @@
     (setq lem-post-community-id community-id)
     (message "%s" choice)))
 
-(defun lem-post-compose (&optional edit)
+(defun lem-post-compose (&optional edit mode)
   ""
   (interactive)
-  (fedi-post--compose-buffer edit #'lem-post-mode))
+  (fedi-post--compose-buffer edit
+                             (or mode #'lem-post-mode)
+                             (when mode "lem-post")))
 
 (defun lem-post-submit ()
   ""
@@ -152,7 +165,7 @@
                     (lem-ui--id-from-json json 'post)))
          (comment-id (when (equal type 'comment)
                        (lem-ui--id-from-json json 'comment))))
-    (lem-post-compose)
+    (lem-post-compose nil #'lem-post-comment-mode)
     (setq lem-post-reply-post-id post-id)
     (setq lem-post-reply-comment-id comment-id)))
 
@@ -180,8 +193,13 @@
             (auto-fill-mode -1)))
 
 (define-minor-mode lem-post-mode
-  "Minor mode for submitting posts and comments to lemmy."
+  "Minor mode for submitting posts to lemmy."
   :keymap lem-post-mode-map
+  :global nil)
+
+(define-minor-mode lem-post-comment-mode
+  "Minor mode for submitting comments to lemmy."
+  :keymap lem-post-comment-mode-map
   :global nil)
 
 (provide 'lem-post)
