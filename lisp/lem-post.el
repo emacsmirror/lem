@@ -148,7 +148,7 @@
                     (lem-ui--id-from-json json 'post)))
          (comment-id (when (equal type 'comment)
                        (lem-ui--id-from-json json 'comment))))
-    (lem-post-compose post-id)
+    (lem-post-compose)
     (setq lem-post-reply-post-id post-id)
     (setq lem-post-reply-comment-id comment-id)))
 
