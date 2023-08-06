@@ -80,9 +80,10 @@
 (defun lem-post-select-community ()
   ""
   (interactive)
-  (let* ((communities (lem-list-communities "Subscribed"))
-         (list (lem-ui--communities-alist
-                (alist-get 'communities communities)))
+  (let* ((communities (lem-api-get-subscribed-communities))
+         ;; (lem-list-communities "Subscribed"))
+         (list (lem-ui--communities-alist communities))
+         ;; (alist-get 'communities communities)))
          (choice (completing-read "Community: " ; TODO: default to current view
                                   list nil :match))
          (community-id (string-to-number
