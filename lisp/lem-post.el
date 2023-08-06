@@ -72,7 +72,7 @@
 (defvar-local lem-post-reply-comment-id nil)
 
 (defun lem-post-read-title ()
-  ""
+  "Read post title."
   (interactive)
   (setq lem-post-title
         (read-string "Post title: "
@@ -80,7 +80,7 @@
   (message "%s" lem-post-title))
 
 (defun lem-post-read-url ()
-  ""
+  "Read post URL."
   (interactive)
   ;; TODO: check against rough URL regex
   (setq lem-post-url
@@ -89,7 +89,7 @@
   (message "%s" lem-post-url))
 
 (defun lem-post-select-community ()
-  ""
+  "Select community to post to."
   (interactive)
   (let* ((communities (lem-api-get-subscribed-communities))
          ;; (lem-list-communities "Subscribed"))
@@ -103,14 +103,16 @@
     (message "%s" choice)))
 
 (defun lem-post-compose (&optional edit mode)
-  ""
+  "Compose a new post.
+EDIT means we are editing.
+MODE is the lem.el minor mode to enable in the compose buffer."
   (interactive)
   (fedi-post--compose-buffer edit
                              (or mode #'lem-post-mode)
                              (when mode "lem-post")))
 
 (defun lem-post-submit ()
-  ""
+  "Post the post to lemmy."
   (interactive)
   ;; TODO: check for title/url/comm-id first
   (let* ((body (fedi-post--remove-docs))
@@ -156,7 +158,7 @@
 ;;         (message "Post %s created!" .post_view.post.name)))))
 
 (defun lem-post-reply ()
-  ""
+  "Reply to a post or comment."
   (interactive)
   (let* ((json (lem-ui-thing-json))
          (type (lem-ui--item-type))
@@ -203,4 +205,4 @@
   :global nil)
 
 (provide 'lem-post)
-;;; lem-ui.el ends here
+;;; lem-post.el ends here
