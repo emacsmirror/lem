@@ -109,6 +109,17 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 |           | lem-login-set-token                    | Login and set current user details.                                |
 |           | lem-mode                               | Major mode for Lemmy, the federated link-aggregator and forum.     |
 | n         | lem-next-item                          | Move to next item.                                                 |
+|           | lem-post-cancel                        | Kill new-post buffer/window. Does not POST content to Mastodon.    |
+|           | lem-post-comment-mode                  | Minor mode for submitting comments to lemmy.                       |
+|           | lem-post-compose                       |                                                                    |
+|           | lem-post-mode                          | Minor mode for submitting posts to lemmy.                          |
+|           | lem-post-read-title                    |                                                                    |
+|           | lem-post-read-url                      |                                                                    |
+|           | lem-post-reply                         |                                                                    |
+|           | lem-post-select-community              |                                                                    |
+|           | lem-post-set-post-language             | Prompt for a language and set `fedi-post-language'.                |
+|           | lem-post-submit                        |                                                                    |
+|           | lem-post-toggle-nsfw                   | Toggle `fedi-post-content-nsfw'.                                   |
 | p         | lem-prev-item                          | Move to prev item.                                                 |
 |           | lem-ui--follow-link-at-point           | Follow link at point.                                              |
 |           | lem-ui-choose-sort                     | Read a sort type and load it.                                      |
