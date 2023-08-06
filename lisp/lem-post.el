@@ -113,8 +113,12 @@
         (if lem-post-reply-post-id
             (progn
               (message "Comment created: %s" .comment_view.comment.content)
-              (lem-ui-view-post (number-to-string post-id))))
-        (message "Post %s created!" .post_view.post.name)))))
+              (lem-ui-view-post (number-to-string lem-post-reply-post-id)))
+          (message "Post %s created!" .post_view.post.name)))
+      (with-current-buffer "*new post*"
+        ;; FIXME: we have to call this after using b-local
+        ;; `lem-post-reply-post-id', but it baulks:
+        (fedi-post-kill)))))
 
 ;; (defun lem-ui-new-post-simple ()
 ;;   "Create and submit new post."
