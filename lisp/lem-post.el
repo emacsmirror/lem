@@ -34,6 +34,8 @@
 (defalias 'lem-post-toggle-nsfw #'fedi-post-toggle-nsfw)
 (defalias 'lem-post-set-post-language #'fedi-post-set-post-language)
 
+;; FIXME: not all post options are applicable when commenting!
+;; maybe `fedi-post-mode-map' for comments?
 (defvar lem-post-mode-map
   (let ((map (make-sparse-keymap)))
     ;; inheriting doesn't work for our post docs display
@@ -55,18 +57,25 @@
 (defvar-local lem-post-url nil)
 (defvar-local lem-post-community-id nil)
 
+(defvar-local lem-post-reply-post-id nil)
+(defvar-local lem-post-reply-comment-id nil)
+
 (defun lem-post-read-title ()
   ""
   (interactive)
   (setq lem-post-title
-        (read-string "Post title: ")))
+        (read-string "Post title: "
+                     lem-post-title))
+  (message "%s" lem-post-title))
 
 (defun lem-post-read-url ()
   ""
   (interactive)
   ;; TODO: check against rough URL regex
   (setq lem-post-url
-        (read-string "Post URL: ")))
+        (read-string "Post URL: "
+                     lem-post-url))
+  (message "%s" lem-post-url))
 
 (defun lem-post-select-community ()
   ""
@@ -75,72 +84,90 @@
          (list (lem-ui--communities-alist
                 (alist-get 'communities communities)))
          (choice (completing-read "Community: " ; TODO: default to current view
-                                  list))
+                                  list nil :match))
          (community-id (string-to-number
                         (alist-get choice list nil nil #'equal))))
     (setq lem-post-community-id community-id)
-    (message "posting to: %s" choice)))
+    (message "%s" choice)))
 
-(defun lem-post-compose
-    (&optional reply-to-user reply-to-id reply-json initial-text edit)
+(defun lem-post-compose (&optional edit)
   ""
   (interactive)
-  (fedi-post--compose-buffer
-   reply-to-user reply-to-id reply-json initial-text edit
-   #'lem-post-mode))
+  (fedi-post--compose-buffer edit #'lem-post-mode))
 
 (defun lem-post-submit ()
   ""
   (interactive)
   ;; TODO: check for title/url/comm-id first
   (let* ((body (fedi-post--remove-docs))
-         (response (lem-create-post lem-post-title lem-post-community-id body
-                                    lem-post-url fedi-post-content-nsfw
-                                    nil fedi-post-language))) ; TODO: honeypot
+         (response (if lem-post-reply-post-id
+                       (lem-create-comment lem-post-reply-post-id
+                                           body
+                                           lem-post-reply-comment-id)
+                     (lem-create-post lem-post-title lem-post-community-id body
+                                      lem-post-url fedi-post-content-nsfw
+                                      nil fedi-post-language)))) ; TODO: honeypot
     (when response
       (let-alist response
+        (if lem-post-reply-post-id
+            (progn
+              (message "Comment created: %s" .comment_view.comment.content)
+              (lem-ui-view-post (number-to-string post-id))))
         (message "Post %s created!" .post_view.post.name)))))
 
-(defun lem-ui-new-post-simple ()
-  "Create and submit new post."
-  (interactive)
-  (let* ((name (read-string "Post title: "))
-         (communities (lem-list-communities "Subscribed"))
-         (list (lem-ui--communities-alist
-                (alist-get 'communities communities)))
-         (choice (completing-read "Community: " ; TODO: default to current view
-                                  list))
-         (community-id (string-to-number
-                        (alist-get choice list nil nil #'equal)))
-         (body (read-string "Post body [optional]: "))
-         (url (read-string "URL [optional]: "))
-         (response
-          (lem-create-post name community-id body
-                           (when (not (equal "" url))
-                             url))))
-    ;; TODO: nsfw, etc.
-    (when response
-      (let-alist response
-        (message "Post %s created!" .post_view.post.name)))))
+;; (defun lem-ui-new-post-simple ()
+;;   "Create and submit new post."
+;;   (interactive)
+;;   (let* ((name (read-string "Post title: "))
+;;          (communities (lem-list-communities "Subscribed"))
+;;          (list (lem-ui--communities-alist
+;;                 (alist-get 'communities communities)))
+;;          (choice (completing-read "Community: " ; TODO: default to current view
+;;                                   list))
+;;          (community-id (string-to-number
+;;                         (alist-get choice list nil nil #'equal)))
+;;          (body (read-string "Post body [optional]: "))
+;;          (url (read-string "URL [optional]: "))
+;;          (response
+;;           (lem-create-post name community-id body
+;;                            (when (not (equal "" url))
+;;                              url))))
+;;     ;; TODO: nsfw, etc.
+;;     (when response
+;;       (let-alist response
+;;         (message "Post %s created!" .post_view.post.name)))))
 
-(defun lem-ui-reply-simple ()
-  "Reply to post or comment at point.
-Simple means we just read a string."
+(defun lem-post-reply ()
+  ""
   (interactive)
   (let* ((json (lem-ui-thing-json))
          (type (lem-ui--item-type))
-         (content (read-string "Reply: "))
          (post-id (if (equal type 'post)
                       (lem-ui--id-from-prop)
                     (lem-ui--id-from-json json 'post)))
          (comment-id (when (equal type 'comment)
-                       (lem-ui--id-from-json json 'comment)))
-         (response (lem-create-comment post-id content comment-id)))
-    (when response
-      (let-alist response
-        (message "Comment created: %s" .comment_view.comment.content)
-        (lem-ui-view-post (number-to-string post-id))))))
+                       (lem-ui--id-from-json json 'comment))))
+    (lem-post-compose post-id)
+    (setq lem-post-reply-post-id post-id)
+    (setq lem-post-reply-comment-id comment-id)))
 
+;; (defun lem-ui-reply-simple ()
+;;   "Reply to post or comment at point.
+;; Simple means we just read a string."
+;;   (interactive)
+;;   (let* ((json (lem-ui-thing-json))
+;;          (type (lem-ui--item-type))
+;;          (content (read-string "Reply: "))
+;;          (post-id (if (equal type 'post)
+;;                       (lem-ui--id-from-prop)
+;;                     (lem-ui--id-from-json json 'post)))
+;;          (comment-id (when (equal type 'comment)
+;;                        (lem-ui--id-from-json json 'comment)))
+;;          (response (lem-create-comment post-id content comment-id)))
+;;     (when response
+;;       (let-alist response
+;;         (message "Comment created: %s" .comment_view.comment.content)
+;;         (lem-ui-view-post (number-to-string post-id))))))
 
 ;; disable auto-fill-mode:
 (add-hook 'lem-post-mode-hook
@@ -148,7 +175,7 @@ Simple means we just read a string."
             (auto-fill-mode -1)))
 
 (define-minor-mode lem-post-mode
-  "Minor mode for posting to lemmy."
+  "Minor mode for submitting posts and comments to lemmy."
   :keymap lem-post-mode-map
   :global nil)
 
