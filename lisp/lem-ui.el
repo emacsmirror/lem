@@ -1374,11 +1374,11 @@ Optionally only view UNREAD items."
          (t
           ,@body)))
 
+;; TODO: implement post edits:
 ;; (defun lem-ui-edit-post ()
 ;;   ""
 ;;   (interactive)
 ;;   (lem-ui-do-own-item 'post))
-;; TODO: implement post edits:
 ;; (lem-post-compose :edit)))
 
 (defun lem-ui-edit-comment ()
@@ -1391,19 +1391,24 @@ Optionally only view UNREAD items."
            (new-str (read-string "Edit comment: " old-str)))
       (lem-edit-comment id new-str))))
 
+(defun lem-ui-delete-item (item fun)
+  "Delete item of type ITEM at point, calling FUN."
+  (lem-ui-do-own-item item
+    (let* ((id (lem-ui--property 'id)))
+      (when (y-or-n-p (format "Delete %s?" item))
+        (progn
+          (funcall fun id)
+          (message "%s %s deleted!" item id))))))
+
 (defun lem-ui-delete-comment ()
   "Delete comment at point."
   (interactive)
-  (lem-ui-do-own-item 'comment
-    (let* ((id (lem-ui--property 'id)))
-      (lem-delete-comment id))))
+  (lem-ui-delete-item 'comment #'lem-delete-comment))
 
 (defun lem-ui-delete-post ()
   "Delete post at point."
   (interactive)
-  (lem-ui-do-own-item 'post
-    (let* ((id (lem-ui--property 'id)))
-      (lem-delete-post id))))
+  (lem-ui-delete-item 'post #'lem-delete-post))
 
 ;;; COMMENTS
 
