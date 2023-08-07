@@ -1279,20 +1279,6 @@ Simple means we just read a string."
         (message "Comment created: %s" .comment_view.comment.content)
         (lem-ui-view-post (number-to-string post-id))))))
 
-(defun lem-ui-edit-comment ()
-  "Edit comment at point if possible."
-  (interactive)
-  (cond ((not (eq 'comment (lem-ui--property 'type)))
-         (message "No comment at point?"))
-        ((not (equal lem-user-id (lem-ui--property 'creator-id)))
-         (message "You can only edit your own comments"))
-        (t
-         (let* ((id (lem-ui--property 'id))
-                (json (lem-ui--property 'json))
-                (old-str (alist-get 'content (alist-get 'comment json)))
-                (new-str (read-string "Edit comment: " old-str)))
-           (lem-edit-comment id new-str)))))
-
 (defun lem-ui-view-replies-unread ()
   "View unread replies."
   (interactive)
@@ -1374,6 +1360,50 @@ Optionally only view UNREAD items."
   (interactive)
   (let ((id (lem-ui--property 'id)))
     (lem-mark-private-message-read id)))
+
+;;; EDIT/DELETE POSTS/COMMENTS
+
+(defmacro lem-ui-do-own-item (item-type &rest body)
+  "Call BODY if ITEM-TYPE is at point and owned by the current user."
+  (declare (debug t)
+           (indent 1))
+  `(cond ((not (eq ,item-type (lem-ui--property 'type)))
+          (message "No %s at point?" ,item-type))
+         ((not (equal lem-user-id (lem-ui--property 'creator-id)))
+          (message "You can only modify your own items"))
+         (t
+          ,@body)))
+
+;; (defun lem-ui-edit-post ()
+;;   ""
+;;   (interactive)
+;;   (lem-ui-do-own-item 'post))
+;; TODO: implement post edits:
+;; (lem-post-compose :edit)))
+
+(defun lem-ui-edit-comment ()
+  "Edit comment at point if possible."
+  (interactive)
+  (lem-ui-do-own-item 'comment
+    (let* ((id (lem-ui--property 'id))
+           (json (lem-ui--property 'json))
+           (old-str (alist-get 'content (alist-get 'comment json)))
+           (new-str (read-string "Edit comment: " old-str)))
+      (lem-edit-comment id new-str))))
+
+(defun lem-ui-delete-comment ()
+  "Delete comment at point."
+  (interactive)
+  (lem-ui-do-own-item 'comment
+    (let* ((id (lem-ui--property 'id)))
+      (lem-delete-comment id))))
+
+(defun lem-ui-delete-post ()
+  "Delete post at point."
+  (interactive)
+  (lem-ui-do-own-item 'post
+    (let* ((id (lem-ui--property 'id)))
+      (lem-delete-post id))))
 
 ;;; COMMENTS
 
