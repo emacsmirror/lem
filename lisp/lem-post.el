@@ -205,18 +205,37 @@ MODE is the lem.el minor mode to enable in the compose buffer."
                  (buffer-substring-no-properties (1+ start) ; cull '@'
                                                  end)
                  nil nil "50")) ; max limit
-         (users (alist-get 'users query))
-         (list (lem-post-users-alist users)))
-    (setq fedi-post-completions list)))
+         (users (alist-get 'users query)))
+    (lem-post-users-alist users)))
 
-(defun lem-post--mentions-annotation-fun (candidate)
+(defun lem-post--mentions-annot-fun (candidate)
   "Given a handle completion CANDIDATE, return its annotation string, a username."
   (cdr (assoc candidate fedi-post-completions)))
+
+;; (defun lem-post--mentions-affix-fun (cands)
+;;   ""
+;;   (cl-loop for c in cands
+;;            for link = (cdr (assoc candidate fedi-post-completions))
+;;            collect (list c
+;;                          "["
+;;                          (concat "](" link ")"))))
+
+(defun lem-post--mentions-exit-fun (str _status)
+  ""
+  (save-excursion
+    (backward-char (length str))
+    (insert "["))
+  (insert "]("
+          (cdr (assoc str fedi-post-completions))
+          ")"))
 
 (defun lem-post--mentions-capf ()
   "Build a mentions completion backend for `completion-at-point-functions'."
   (fedi-post--return-capf fedi-post-handle-regex
-                          #'lem-post-mentions-fun #'lem-post--mentions-annotation-fun))
+                          #'lem-post-mentions-fun
+                          #'lem-post--mentions-annot-fun
+                          nil ; #'lem-post--mentions-affix-fun
+                          #'lem-post--mentions-exit-fun))
 
 ;; disable auto-fill-mode:
 (add-hook 'lem-post-mode-hook
