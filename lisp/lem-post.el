@@ -189,6 +189,48 @@ MODE is the lem.el minor mode to enable in the compose buffer."
 ;;         (message "Comment created: %s" .comment_view.comment.content)
 ;;         (lem-ui-view-post (number-to-string post-id))))))
 
+;;; COMPLETION
+
+(defun lem-post-mentions-fun (start end)
+  "Return a list of mentions for capf."
+  (let* ((query (lem-api-search-users
+                 (buffer-substring-no-properties (1+ start) ; cull '@'
+                                                 end)))
+         (users (alist-get 'users query))
+         (list (lem-post-users-alist users)))
+    (setq fedi-post-completions list)))
+
+(defun lem-post-users-alist (users)
+  ""
+  (cl-loop for u in users
+           for person = (alist-get 'person u)
+           collect (cons (concat "@" (alist-get 'name person))
+                         (alist-get 'actor_id person))))
+
+(defun lem-post--mentions-capf ()
+  "Build a mentions completion backend for `completion-at-point-functions'."
+  (let* ((bounds (fedi-post--get-bounds fedi-post-handle-regex))
+         (start (car bounds))
+         (end (cdr bounds)))
+    (when bounds
+      (list start
+            end
+            (completion-table-dynamic ; only search when necessary
+             (lambda (_)
+               ;; Interruptible candidate computation, from minad/d mendler, thanks!
+               (let ((result
+                      (while-no-input
+                        (lem-post-mentions-fun start end))))
+                 (and (consp result) result))))
+            :exclusive 'no ;))))
+            :annotation-function
+            (lambda (cand)
+              (concat " " (lem-post--mentions-annotation-fun cand)))))))
+
+(defun lem-post--mentions-annotation-fun (candidate)
+  "Given a handle completion CANDIDATE, return its annotation string, a username."
+  (nth 1 (assoc candidate fedi-post-completions)))
+
 ;; disable auto-fill-mode:
 (add-hook 'lem-post-mode-hook
           (lambda ()
