@@ -71,6 +71,12 @@
 (defvar-local lem-post-reply-post-id nil)
 (defvar-local lem-post-reply-comment-id nil)
 
+(defvar lem-post-community-regex
+  (rx (| (any ?\( "\n" "\t "" ") bol) ; preceding things
+      (group-n 2 (+ ?! (* (any ?- ?_ ?. "A-Z" "a-z" "0-9" ))) ; community
+               (? ?@ (* (not (any "\n" "\t" " "))))) ; optional domain
+      (| "'" word-boundary)))
+
 (defun lem-post-read-title ()
   "Read post title."
   (interactive)
@@ -110,7 +116,8 @@ MODE is the lem.el minor mode to enable in the compose buffer."
   (fedi-post--compose-buffer edit
                              (or mode #'lem-post-mode)
                              (when mode "lem-post")
-                             (list #'lem-post--mentions-capf)))
+                             (list #'lem-post--mentions-capf
+                                   #'lem-post--comms-capf)))
 
 (defun lem-post-submit ()
   "Post the post to lemmy."
@@ -192,15 +199,23 @@ MODE is the lem.el minor mode to enable in the compose buffer."
 
 ;;; COMPLETION
 
+(defun lem-post-items-alist (items type prefix)
+  "Return an alist of ITEMS, of TYPE, with PREFIX."
+  (cl-loop for i in items
+           for it = (alist-get type i)
+           collect (cons (concat prefix (alist-get 'name it))
+                         (alist-get 'actor_id it))))
+
 (defun lem-post-users-alist (users)
   "Return an alist of USERS, each element a cons of name and URL."
-  (cl-loop for u in users
-           for person = (alist-get 'person u)
-           collect (cons (concat "@" (alist-get 'name person))
-                         (alist-get 'actor_id person))))
+  (lem-post-items-alist users 'person "@"))
+
+(defun lem-post-comms-alist (comms)
+  "Return an alist of communities COMMS, each element a cons of name and URL."
+  (lem-post-items-alist comms 'community "!"))
 
 (defun lem-post-mentions-fun (start end)
-  "Return a list of mentions for capf."
+  "Given prefix str between START and END, return an alist of mentions for capf."
   (let* ((query (lem-api-search-users
                  (buffer-substring-no-properties (1+ start) ; cull '@'
                                                  end)
@@ -208,9 +223,18 @@ MODE is the lem.el minor mode to enable in the compose buffer."
          (users (alist-get 'users query)))
     (lem-post-users-alist users)))
 
+(defun lem-post-comms-fun (start end)
+  "Given prefix str between START and END, return a list of communities for capf."
+  (let* ((query (lem-api-search-communities
+                 (buffer-substring-no-properties (1+ start) ; cull '!'
+                                                 end)
+                 nil nil "50")) ; max limit
+         (communities (alist-get 'communities query)))
+    (lem-post-comms-alist communities)))
+
 (defun lem-post--mentions-annot-fun (candidate)
-  "Given a handle completion CANDIDATE, return its annotation string, a username."
-  (cdr (assoc candidate fedi-post-completions)))
+  "Given a completion CANDIDATE, return its annotation."
+  (concat " " (cdr (assoc candidate fedi-post-completions))))
 
 ;; (defun lem-post--mentions-affix-fun (cands)
 ;;   ""
@@ -220,8 +244,8 @@ MODE is the lem.el minor mode to enable in the compose buffer."
 ;;                          "["
 ;;                          (concat "](" link ")"))))
 
-(defun lem-post--mentions-exit-fun (str _status)
-  ""
+(defun lem-post--md-link-exit-fun (str _status)
+  "Turn completion STR into a markdown link."
   (save-excursion
     (backward-char (length str))
     (insert "["))
@@ -235,7 +259,15 @@ MODE is the lem.el minor mode to enable in the compose buffer."
                           #'lem-post-mentions-fun
                           #'lem-post--mentions-annot-fun
                           nil ; #'lem-post--mentions-affix-fun
-                          #'lem-post--mentions-exit-fun))
+                          #'lem-post--md-link-exit-fun))
+
+(defun lem-post--comms-capf ()
+  "Build a communities completion backend for `completion-at-point-functions'."
+  (fedi-post--return-capf lem-post-community-regex
+                          #'lem-post-comms-fun
+                          #'lem-post--mentions-annot-fun
+                          nil ; #'lem-post--mentions-affix-fun
+                          #'lem-post--md-link-exit-fun))
 
 ;; disable auto-fill-mode:
 (add-hook 'lem-post-mode-hook
