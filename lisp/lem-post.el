@@ -195,7 +195,8 @@ MODE is the lem.el minor mode to enable in the compose buffer."
   "Return a list of mentions for capf."
   (let* ((query (lem-api-search-users
                  (buffer-substring-no-properties (1+ start) ; cull '@'
-                                                 end)))
+                                                 end)
+                 nil nil "50")) ; max limit
          (users (alist-get 'users query))
          (list (lem-post-users-alist users)))
     (setq fedi-post-completions list)))
