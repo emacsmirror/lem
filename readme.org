@@ -111,14 +111,16 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 | n         | lem-next-item                          | Move to next item.                                                 |
 |           | lem-post-cancel                        | Kill new-post buffer/window. Does not POST content to Mastodon.    |
 |           | lem-post-comment-mode                  | Minor mode for submitting comments to lemmy.                       |
-|           | lem-post-compose                       |                                                                    |
+|           | lem-post-compose                       | Compose a new post.                                                |
 |           | lem-post-mode                          | Minor mode for submitting posts to lemmy.                          |
-|           | lem-post-read-title                    |                                                                    |
-|           | lem-post-read-url                      |                                                                    |
-|           | lem-post-reply                         |                                                                    |
-|           | lem-post-select-community              |                                                                    |
+|           | lem-post-new-post-simple               | Create and submit new post.                                        |
+|           | lem-post-read-title                    | Read post title.                                                   |
+|           | lem-post-read-url                      | Read post URL.                                                     |
+|           | lem-post-reply                         | Reply to a post or comment.                                        |
+|           | lem-post-reply-simple                  | Reply to post or comment at point.                                 |
+|           | lem-post-select-community              | Select community to post to.                                       |
 |           | lem-post-set-post-language             | Prompt for a language and set `fedi-post-language'.                |
-|           | lem-post-submit                        |                                                                    |
+|           | lem-post-submit                        | Submit the post to lemmy.                                          |
 |           | lem-post-toggle-nsfw                   | Toggle `fedi-post-content-nsfw'.                                   |
 | p         | lem-prev-item                          | Move to prev item.                                                 |
 |           | lem-ui--follow-link-at-point           | Follow link at point.                                              |
@@ -126,8 +128,11 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 |           | lem-ui-choose-type                     | Read a listing type and load it.                                   |
 | C-c C-c   | lem-ui-cycle-listing-type              | Cycle view between `lem-listing-types'.                            |
 | C-c C-s   | lem-ui-cycle-sort                      | Cycle view between some `lem-sort-types'.                          |
+|           | lem-ui-delete-comment                  | Delete comment at point.                                           |
+|           | lem-ui-delete-post                     | Delete post at point.                                              |
 |           | lem-ui-dislike-item                    | Dislike (downvote) item at point.                                  |
 |           | lem-ui-edit-comment                    | Edit comment at point if possible.                                 |
+|           | lem-ui-edit-post                       |                                                                    |
 | s         | lem-ui-jump-to-subscribed              | Prompt for a subscribed community and view it.                     |
 |           | lem-ui-like-item                       | Like (upvote) item at point.                                       |
 |           | lem-ui-mark-all-read                   | Mark all replies as read.                                          |
