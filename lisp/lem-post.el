@@ -200,7 +200,7 @@ Simple means we just read a string."
 
 ;;; COMPLETION
 
-(defun lem-post-items-alist (items type prefix)
+(defun lem-post--items-alist (items type prefix)
   "Return an alist of ITEMS, of TYPE, with PREFIX, a string.
 ITEMS is a list returned by lem-api-search-$item.
 TYPE is a symbol, either community or person.
@@ -216,24 +216,24 @@ Prefix is either \"@\" or \"!\"."
                                  domain)
                          acid)))
 
-(defun lem-post-users-alist (users)
+(defun lem-post--users-alist (users)
   "Return an alist of USERS, each element a cons of name and URL."
-  (lem-post-items-alist users 'person "@"))
+  (lem-post--items-alist users 'person "@"))
 
 (defun lem-post-comms-alist (comms)
   "Return an alist of communities COMMS, each element a cons of name and URL."
-  (lem-post-items-alist comms 'community "!"))
+  (lem-post--items-alist comms 'community "!"))
 
-(defun lem-post-mentions-fun (start end)
+(defun lem-post--mentions-fun (start end)
   "Given prefix str between START and END, return an alist of mentions for capf."
   (let* ((query (lem-api-search-users
                  (buffer-substring-no-properties (1+ start) ; cull '@'
                                                  end)
                  nil nil "50")) ; max limit
          (users (alist-get 'users query)))
-    (lem-post-users-alist users)))
+    (lem-post--users-alist users)))
 
-(defun lem-post-comms-fun (start end)
+(defun lem-post--comms-fun (start end)
   "Given prefix str between START and END, return a list of communities for capf."
   (let* ((query (lem-api-search-communities
                  (buffer-substring-no-properties (1+ start) ; cull '!'
@@ -266,7 +266,7 @@ Prefix is either \"@\" or \"!\"."
 (defun lem-post--mentions-capf ()
   "Build a mentions completion backend for `completion-at-point-functions'."
   (fedi-post--return-capf fedi-post-handle-regex
-                          #'lem-post-mentions-fun
+                          #'lem-post--mentions-fun
                           #'lem-post--mentions-annot-fun
                           nil ; #'lem-post--mentions-affix-fun
                           #'lem-post--md-link-exit-fun))
@@ -274,7 +274,7 @@ Prefix is either \"@\" or \"!\"."
 (defun lem-post--comms-capf ()
   "Build a communities completion backend for `completion-at-point-functions'."
   (fedi-post--return-capf lem-post-community-regex
-                          #'lem-post-comms-fun
+                          #'lem-post--comms-fun
                           #'lem-post--mentions-annot-fun
                           nil ; #'lem-post--mentions-affix-fun
                           #'lem-post--md-link-exit-fun))
