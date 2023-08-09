@@ -114,6 +114,7 @@ EDIT means we are editing.
 MODE is the lem.el minor mode to enable in the compose buffer."
   (interactive)
   (fedi-post--compose-buffer edit
+                             #'markdown-mode
                              (or mode #'lem-post-mode)
                              (when mode "lem-post")
                              (list #'lem-post--mentions-capf
