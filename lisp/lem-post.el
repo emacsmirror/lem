@@ -200,11 +200,20 @@ Simple means we just read a string."
 ;;; COMPLETION
 
 (defun lem-post-items-alist (items type prefix)
-  "Return an alist of ITEMS, of TYPE, with PREFIX."
+  "Return an alist of ITEMS, of TYPE, with PREFIX, a string.
+ITEMS is a list returned by lem-api-search-$item.
+TYPE is a symbol, either community or person.
+Prefix is either \"@\" or \"!\"."
   (cl-loop for i in items
            for it = (alist-get type i)
-           collect (cons (concat prefix (alist-get 'name it))
-                         (alist-get 'actor_id it))))
+           for acid = (alist-get 'actor_id it)
+           for url = (url-generic-parse-url acid)
+           for domain = (url-domain url)
+           collect (cons (concat prefix
+                                 (alist-get 'name it)
+                                 "@"
+                                 domain)
+                         acid)))
 
 (defun lem-post-users-alist (users)
   "Return an alist of USERS, each element a cons of name and URL."
