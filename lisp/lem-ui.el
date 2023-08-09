@@ -148,7 +148,8 @@ Used for pagination.")
     (pinned    . ("📌" . "[pinned]"))
     (replied   . ("⬇" . "↓"))
     (community . ("👪" . "[community]"))
-    (reply-bar . ("┃" . "|")))
+    (reply-bar . ("┃" . "|"))
+    (deleted   . ("🗑" . "[deleted]")))
   "A set of symbols (and fallback strings) to be used in timeline.
 If a symbol does not look right (tofu), it means your
 font settings do not support it."
@@ -794,7 +795,7 @@ START and END are the boundaries of the link in the post body."
 
 (defun lem-ui-top-byline (title url username _score timestamp
                                 &optional community _community-url
-                                featured-p op-p admin-p mod-p)
+                                featured-p op-p admin-p mod-p del-p)
   "Format a top byline for post with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
 COMMUNITY and COMMUNITY-URL are those of the community the item belongs to.
 FEATURED-P means the item is pinned.
@@ -822,6 +823,9 @@ ADMIN-P means we add same for admins, MOD-P means add same for moderators."
       (when mod-p
         (concat " "
                 (lem-ui-propertize-box "MOD")))
+      (when del-p
+        (concat " "
+                (lem-ui-symbol 'deleted)))
       (when community
         (concat
          (propertize " to "
@@ -943,7 +947,8 @@ SORT must be a member of `lem-sort-types'."
            (body (when .post.body
                    (lem-ui-render-body .post.body (alist-get 'post post))))
            (admin-p (eq t .creator.admin))
-           (mod-p (lem-ui--mod-p .creator.id .community.id)))
+           (mod-p (lem-ui--mod-p .creator.id .community.id))
+           (del-p (eq t .post.deleted)))
       (insert
        (propertize
         (concat
@@ -955,7 +960,7 @@ SORT must be a member of `lem-sort-types'."
                             (when community .community.name)
                             (when community .community.actor_id)
                             .post.featured_local
-                            nil admin-p mod-p)
+                            nil admin-p mod-p del-p)
          "\n"
          (if .post.body
              (if trim
