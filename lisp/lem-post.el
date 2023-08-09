@@ -121,7 +121,7 @@ MODE is the lem.el minor mode to enable in the compose buffer."
                                    #'lem-post--comms-capf)))
 
 (defun lem-post-submit ()
-  "Post the post to lemmy."
+  "Submit the post to lemmy."
   (interactive)
   ;; TODO: check for title/url/comm-id first
   (let* ((body (fedi-post--remove-docs))
@@ -144,8 +144,8 @@ MODE is the lem.el minor mode to enable in the compose buffer."
         ;; `lem-post-reply-post-id', but it baulks:
         (fedi-post-kill)))))
 
-(defun lem-post-new-post-simple ()
-  "Create and submit new post."
+(defun lem-post-compose-simple ()
+  "Create and submit new post, reading strings in the minibuffer."
   (interactive)
   (let* ((name (read-string "Post title: "))
          (communities (lem-list-communities "Subscribed"))
