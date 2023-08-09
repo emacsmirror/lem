@@ -117,9 +117,9 @@
 ;; purgePerson
 ;; purgePost
 ;; register
-;; removeComment
-;; removeCommunity
-;; removePost
+;; removeComment TODO
+;; removeCommunity TODO
+;; removePost TODO
 ;; resolveCommentReport
 ;; resolveObject DONE
 ;; resolvePostReport
