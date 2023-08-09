@@ -143,27 +143,27 @@ MODE is the lem.el minor mode to enable in the compose buffer."
         ;; `lem-post-reply-post-id', but it baulks:
         (fedi-post-kill)))))
 
-;; (defun lem-ui-new-post-simple ()
-;;   "Create and submit new post."
-;;   (interactive)
-;;   (let* ((name (read-string "Post title: "))
-;;          (communities (lem-list-communities "Subscribed"))
-;;          (list (lem-ui--communities-alist
-;;                 (alist-get 'communities communities)))
-;;          (choice (completing-read "Community: " ; TODO: default to current view
-;;                                   list))
-;;          (community-id (string-to-number
-;;                         (alist-get choice list nil nil #'equal)))
-;;          (body (read-string "Post body [optional]: "))
-;;          (url (read-string "URL [optional]: "))
-;;          (response
-;;           (lem-create-post name community-id body
-;;                            (when (not (equal "" url))
-;;                              url))))
-;;     ;; TODO: nsfw, etc.
-;;     (when response
-;;       (let-alist response
-;;         (message "Post %s created!" .post_view.post.name)))))
+(defun lem-post-new-post-simple ()
+  "Create and submit new post."
+  (interactive)
+  (let* ((name (read-string "Post title: "))
+         (communities (lem-list-communities "Subscribed"))
+         (list (lem-ui--communities-alist
+                (alist-get 'communities communities)))
+         (choice (completing-read "Community: " ; TODO: default to current view
+                                  list))
+         (community-id (string-to-number
+                        (alist-get choice list nil nil #'equal)))
+         (body (read-string "Post body [optional]: "))
+         (url (read-string "URL [optional]: "))
+         (response
+          (lem-create-post name community-id body
+                           (when (not (equal "" url))
+                             url))))
+    ;; TODO: nsfw, etc.
+    (when response
+      (let-alist response
+        (message "Post %s created!" .post_view.post.name)))))
 
 (defun lem-post-reply ()
   "Reply to a post or comment."
@@ -179,23 +179,23 @@ MODE is the lem.el minor mode to enable in the compose buffer."
     (setq lem-post-reply-post-id post-id)
     (setq lem-post-reply-comment-id comment-id)))
 
-;; (defun lem-ui-reply-simple ()
-;;   "Reply to post or comment at point.
-;; Simple means we just read a string."
-;;   (interactive)
-;;   (let* ((json (lem-ui-thing-json))
-;;          (type (lem-ui--item-type))
-;;          (content (read-string "Reply: "))
-;;          (post-id (if (equal type 'post)
-;;                       (lem-ui--id-from-prop)
-;;                     (lem-ui--id-from-json json 'post)))
-;;          (comment-id (when (equal type 'comment)
-;;                        (lem-ui--id-from-json json 'comment)))
-;;          (response (lem-create-comment post-id content comment-id)))
-;;     (when response
-;;       (let-alist response
-;;         (message "Comment created: %s" .comment_view.comment.content)
-;;         (lem-ui-view-post (number-to-string post-id))))))
+(defun lem-post-reply-simple ()
+  "Reply to post or comment at point.
+Simple means we just read a string."
+  (interactive)
+  (let* ((json (lem-ui-thing-json))
+         (type (lem-ui--item-type))
+         (content (read-string "Reply: "))
+         (post-id (if (equal type 'post)
+                      (lem-ui--id-from-prop)
+                    (lem-ui--id-from-json json 'post)))
+         (comment-id (when (equal type 'comment)
+                       (lem-ui--id-from-json json 'comment)))
+         (response (lem-create-comment post-id content comment-id)))
+    (when response
+      (let-alist response
+        (message "Comment created: %s" .comment_view.comment.content)
+        (lem-ui-view-post (number-to-string post-id))))))
 
 ;;; COMPLETION
 
