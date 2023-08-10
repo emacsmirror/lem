@@ -393,11 +393,11 @@ SORT, LIMIT, PAGE are all for `lem-get-person'."
 ;; (setq lem-user-me (lem-api-get-person-by-name "blawsybogsy"))
 
 (lem-def-request "post" "block-user" "user/block"
-  (person-id)
+  (person-id block)
   "Block user with PERSON-ID.
 Returns a person_view plus a blocked boolean."
   (person-id)
-  '(("block" . t)))
+  `(("block" . ,block)))
 
 ;; (lem-block-person ??)
 
@@ -462,14 +462,15 @@ discussion_languages, default_post_language."
 ;; (lem-list-communities "Local")
 
 (lem-def-request "post" "follow-community" "community/follow"
-  (community-id)
+  (community-id follow)
   "Follow a community with COMMUNITY-ID.
 Returns a community_view and discussion_languages."
   (community-id)
-  '(("follow" . t)))
+  `(("follow" . follow)))
 
-;; (lem-follow-community 14711)
-;; (lem-follow-community 88259)
+;; (lem-follow-community 14711 t)
+;; (lem-follow-community 88259 t)
+;; (lem-follow-community 88259 :json-false)
 
 ;; cb:
 ;; (let* ((json (fedi-http--process-json))
@@ -491,22 +492,24 @@ Returns a community_view and discussion_languages."
 ;; (lem-create-community "communeity" "com")
 
 (lem-def-request "post" "delete-community" "community/delete"
-  (community-id)
+  (community-id delete)
   "Delete community with COMMUNITY-ID, a number.
 Returns a community_view and discussion_languages."
   (community-id)
-  '(("deleted" . t)))
+  `(("deleted" . ,delete)))
 
-;; (lem-delete-community 98302)
+;; (lem-delete-community 98302 t)
+;; (lem-delete-community 98302 :json-false)
 
 (lem-def-request "post" "block-community" "community/block"
-  (community-id)
+  (community-id block)
   "Block community with COMMUNITY-ID.
 Returns a community_view plus a blocked boolean."
   (community-id)
-  '(("block" . t)))
+  `(("block" . ,block)))
 
-;; (lem-block-community 96200)
+;; (lem-block-community 96200 t)
+;; (lem-block-community 96200 :json-false)
 
 ;; TODO: hide community
 
@@ -596,12 +599,13 @@ Returns a post_view."
 ;; (lem-edit-post 1341246 "blaodh" "trep")
 
 (lem-def-request "post" "delete-post" "post/delete"
-  (post-id)
+  (post-id deleted)
   ""
   (post-id)
-  '(("deleted" . t)))
+  `(("deleted" . ,deleted)))
 
-;; (lem-delete-post 1341246)
+;; (lem-delete-post 1635706 t)
+;; (lem-delete-post 1635706 :json-false)
 
 (lem-def-request "post" "report-post" "post/report"
   (post-id reason)
@@ -726,12 +730,13 @@ Returns a comment_view."
 ;; (lem-like-comment 765662 1)
 
 (lem-def-request "post" "delete-comment" "comment/delete"
-  (comment-id)
+  (comment-id deleted)
   ""
   (comment-id)
-  '(("deleted" . t)))
+  `(("deleted" . ,deleted)))
 
-;; (lem-delete-comment 765662)
+;; (lem-delete-comment 765662 t)
+;; (lem-delete-comment 765662 :json-false)
 
 (lem-def-request "post" "report-comment" "comment/report"
   (comment-id reason)
@@ -778,16 +783,16 @@ Returns a private_message_view."
 ;;; SAVING
 
 (lem-def-request "put" "save-post" "post/save"
-  (post-id)
+  (post-id save)
   "Save post with POST-ID, a number."
   (post-id)
-  '(("save" . t)))
+  `(("save" . ,save)))
 
 (lem-def-request "put" "save-comment" "comment/save"
-  (comment-id)
+  (comment-id save)
   "Save comment with COMMENT-ID, a number."
   (comment-id)
-  '(("save" . t)))
+  `(("save" . ,save)))
 
 ;;; ASYNC
 
