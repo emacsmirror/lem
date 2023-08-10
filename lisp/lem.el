@@ -31,6 +31,7 @@
 (require 'emojify)
 (require 'lem-api)
 (require 'lem-ui)
+(require 'lem-post)
 
 ;;; AUTOLOADS
 
