@@ -1011,6 +1011,7 @@ TRIM means trim each post for length."
   (cl-loop for x in posts
            do (lem-ui-render-post x community trim)))
 
+;; TODO: implement unsaving
 (defun lem-ui-save-item ()
   "Save item at point.
 Saved items can be viewed in your profile, like bookmarks."
@@ -1018,10 +1019,10 @@ Saved items can be viewed in your profile, like bookmarks."
   (let ((id (lem-ui--id-from-prop))
         (type (lem-ui--item-type)))
     (cond ((eq type 'post)
-           (lem-save-post id)
+           (lem-save-post id t)
            (message "%s %s saved!" type id))
           ((eq type 'comment)
-           (lem-save-comment id)
+           (lem-save-comment id t)
            (message "%s %s saved!" type id))
           (t
            (message "You can only save posts and comments.")))))
