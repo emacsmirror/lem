@@ -1063,13 +1063,14 @@ LIMIT is the max results to return."
       (lem-ui-set-buffer-spec type sort #'lem-ui-view-communities 'communities)
       (goto-char (point-min)))))
 
+;; TODO: implement unfollow community
 (defun lem-ui-subscribe-to-community-at-point ()
   "Subscribe to community at point."
   (interactive)
   (lem-ui-with-id
       (if (not (equal 'community (lem-ui--item-type)))
           (message "no community at point?")
-        (let ((fol (lem-follow-community id)))
+        (let ((fol (lem-follow-community id t)))
           (if-let ((comm (alist-get 'community
                                     (alist-get 'community_view fol)))
                    (name (or (alist-get 'title comm)
