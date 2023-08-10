@@ -1355,14 +1355,17 @@ Optionally only view UNREAD items."
            (new-str (read-string "Edit comment: " old-str)))
       (lem-edit-comment id new-str))))
 
-(defun lem-ui-delete-item (item fun)
+(defun lem-ui-delete-item (item fun &optional restore)
   "Delete item of type ITEM at point, calling FUN."
   (lem-ui-do-own-item item
     (let* ((id (lem-ui--property 'id)))
-      (when (y-or-n-p (format "Delete %s?" item))
+      (when (y-or-n-p (format "%s %s?"
+                              (if restore "Restore" "Delete")
+                              item))
         (progn
-          (funcall fun id)
-          (message "%s %s deleted!" item id))))))
+          (funcall fun id (if restore :json-false t))
+          (message "%s %s %s!" item id
+                   (if restore "restored" "deleted")))))))
 
 (defun lem-ui-delete-comment ()
   "Delete comment at point."
@@ -1373,6 +1376,11 @@ Optionally only view UNREAD items."
   "Delete post at point."
   (interactive)
   (lem-ui-delete-item 'post #'lem-delete-post))
+
+(defun lem-ui-restore-post ()
+  "Restore deleted post at point."
+  (interactive)
+  (lem-ui-delete-item 'post #'lem-delete-post :restore))
 
 ;;; COMMENTS
 
