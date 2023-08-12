@@ -189,13 +189,14 @@ The name of functions generated with this will be the result of:
 The full URL for the endpoint is constructed by `fedi-http--api',
 which see. ENDPOINT does not require a preceding slash.
 
-For example, to define a GET request, called PKG-search to endpoint /search:
+For example, to define a GET request, called PKG-search to
+endpoint /search:
 
-\(fedi-request \"get\" \"search\" \"search\"
+\(lem-def-request \"get\" \"search\" \"search\"
   (q)
   \"Make a GET request.
 Q is the search query.\"
-  \\=(q))."
+  \=(q))."
   (declare (debug t)
            (indent 3))
   (let ((req-fun (intern (concat "fedi-http--" method))))
