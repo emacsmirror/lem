@@ -202,10 +202,10 @@ If STRING, return the id as a string."
         (number-to-string id)
       id)))
 
+;; TODO: add to `lem-ui-with-buffer'? we almost always call it
 (defun lem-ui--init-view ()
-  "Initialize a view.
-Sets relative timestamp timers, buffer spec, etc."
-
+  "Initialize a lemmy view.
+Inserts images and sets relative timestamp timers."
   ;; load images
   (lem-ui-insert-images)
   ;; relative timestamps:
@@ -359,8 +359,8 @@ LIMIT is the amount of results to return."
       (lem-ui-render-instance instance :stats)
       (lem-ui-render-posts-instance posts)
       (lem-ui--init-view)
-      (lem-ui-set-buffer-spec type sort #'lem-ui-view-instance 'instance page)
-      (goto-char (point-min)))))
+      (lem-ui-set-buffer-spec
+       type sort #'lem-ui-view-instance 'instance page))))
 
 (defun lem-ui-view-instance-full (_args)
   "View view instance details."
@@ -688,8 +688,7 @@ LIMIT."
       (lem-ui-render-post post :community)
       (lem-ui-render-post-comments id sort limit)
       (lem-ui--init-view)
-      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)
-      (goto-char (point-min))))) ; limit
+      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)))) ; limit
 
 ;;; LINKS
 
@@ -1054,7 +1053,7 @@ SORT. LIMIT. PAGE."
       (lem-ui-render-posts posts)
       (lem-ui-insert-heading "SAVED COMMENTS")
       (lem-ui-render-comments comments)
-      (goto-char (point-min)))))
+      (lem-ui--init-view))))
 
 ;;; COMMUNITIES
 
@@ -1072,8 +1071,8 @@ LIMIT is the max results to return."
                for id = (alist-get 'id (alist-get 'community c))
                for view = (lem-get-community (number-to-string id) nil)
                do (lem-ui-render-community view :stats :view))
-      (lem-ui-set-buffer-spec type sort #'lem-ui-view-communities 'communities)
-      (goto-char (point-min)))))
+      (lem-ui-set-buffer-spec
+       type sort #'lem-ui-view-communities 'communities))))
 
 ;; TODO: implement unfollow community
 (defun lem-ui-subscribe-to-community-at-point ()
@@ -1167,8 +1166,7 @@ PAGE is the page number of items to display, a string."
         (lem-ui-render-posts items nil :trim)) ; no children
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-community
-                              (or item 'posts) page)
-      (goto-char (point-min)))))
+                              (or item 'posts) page))))
 
 (defun lem-ui-get-community-id (community &optional string)
   "Return ID of COMMUNITY.
@@ -1781,8 +1779,8 @@ CURRENT-USER means we are displaying the current user's profile."
                (lem-ui-render-posts .posts :community :trim)))
         (lem-ui--init-view)
         ;; FIXME: don't confuse view-type and listing-type (& fix cycling):
-        (lem-ui-set-buffer-spec view-type sort #'lem-ui-view-user view-type)
-        (goto-char (point-min))))))
+        (lem-ui-set-buffer-spec
+         view-type sort #'lem-ui-view-user view-type)))))
 
 (defun lem-ui-view-own-profile ()
   "View profile of the current user."
