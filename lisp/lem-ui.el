@@ -1089,43 +1089,50 @@ LIMIT is the max results to return."
             (message "something went wrong."))))
     :number))
 
-(defun lem-ui-unsubscribe-to-community ()
+(defun lem-ui-unsubscribe-from-community ()
   "Prompt for a subscribed community and unsubscribe from it."
   (interactive)
-  (let* ((communities (lem-api-get-subscribed-communities))
-         (list (lem-ui--communities-alist communities))
-         (choice (completing-read "Unsubscribe from community: "
-                                  list))
-         (id (alist-get choice list nil nil #'equal)))
-    (when (and (y-or-n-p "Unsubscribe from %s?" choice)
-               (lem-follow-community id :json-false))
-      (message "Community %s unsubscribed!" choice))))
+  (lem-ui-do-subscribed-completing
+   "Unsubscribe from community: "
+   (lambda (id choice)
+     (when (and (y-or-n-p (format "Unsubscribe from %s?" choice))
+                (lem-follow-community id :json-false))
+       (message "Community %s unsubscribed!" choice)))))
 
 (defun lem-ui-view-community-at-point ()
   "View community at point."
   (interactive)
   (lem-ui-with-id
-      ;; (let ((community (lem-get-community id)))
       (lem-ui-view-community id)))
 
 (defun lem-ui--communities-alist (communities)
   "Return an alist of name/description and ID from COMMUNITIES."
   (cl-loop for item in communities
            collect (let-alist item
-                     ;; TODO: best make 3-item lists instead, and annotate
-                     (cons (concat .community.name " | "
-                                   (string-limit .community.description 40))
-                           (number-to-string .community.id)))))
+                     (list .community.name
+                           .community.description
+                           .community.id))))
+
+(defun lem-ui-do-subscribed-completing (prompt-str action-fun)
+  "Read a subscribed community with PROMPT-STR and call ACTION-FUN on it."
+  (let* ((communities (lem-api-get-subscribed-communities))
+         (subs (lem-ui--communities-alist communities))
+         (completion-extra-properties
+          (list :annotation-function
+                (lambda (c)
+                  (let ((annot (nth 1 (assoc c subs #'equal))))
+                    (concat " | " (string-limit annot 50))))))
+         (choice (completing-read prompt-str subs))
+         (id (nth 2 (assoc choice subs #'equal))))
+    (funcall action-fun id choice)))
 
 (defun lem-ui-jump-to-subscribed ()
   "Prompt for a subscribed community and view it."
   (interactive)
-  (let* ((communities (lem-api-get-subscribed-communities))
-         (list (lem-ui--communities-alist communities))
-         (choice (completing-read "Jump to community: "
-                                  list))
-         (id (alist-get choice list nil nil #'equal)))
-    (lem-ui-view-community id 'posts)))
+  (lem-ui-do-subscribed-completing
+   "Jump to community: "
+   (lambda (id _choice)
+     (lem-ui-view-community (number-to-string id) 'posts))))
 
 (defun lem-ui-view-community (id &optional item sort limit page)
   "View community with ID.
