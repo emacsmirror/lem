@@ -1073,7 +1073,6 @@ LIMIT is the max results to return."
       (lem-ui-set-buffer-spec
        type sort #'lem-ui-view-communities 'communities))))
 
-;; TODO: implement unfollow community
 (defun lem-ui-subscribe-to-community-at-point ()
   "Subscribe to community at point."
   (interactive)
@@ -1368,13 +1367,6 @@ Optionally only view UNREAD items."
          (t
           ,@body)))
 
-;; TODO: implement post edits:
-;; (defun lem-ui-edit-post ()
-;;   ""
-;;   (interactive)
-;;   (lem-ui-do-own-item 'post))
-;; (lem-post-compose :edit)))
-
 (defun lem-ui-edit-comment ()
   "Edit comment at point if possible."
   (interactive)
@@ -1537,11 +1529,13 @@ REPLY means it is a comment-reply object."
   "Format PRIVATE-MESSAGE, optionally with INDENT amount of indent bars."
   (let-alist private-message
     (let ((content (when .private_message.content
-                     (lem-ui-render-body .private_message.content
-                                         (alist-get 'private_message private-message))))
+                     (lem-ui-render-body
+                      .private_message.content
+                      (alist-get 'private_message private-message))))
           (indent-str (when indent
-                        (make-string indent (string-to-char
-                                             (lem-ui-symbol 'reply-bar))))))
+                        (make-string indent
+                                     (string-to-char
+                                      (lem-ui-symbol 'reply-bar))))))
       (push .private_message.id lem-ui-current-items) ; pagination
       (propertize
        (concat
@@ -1552,14 +1546,11 @@ REPLY means it is a comment-reply object."
         "\n"
         (or content "")
         "\n"
-        ;; (lem-ui-bt-byline .counts.score .counts.child_count .private_message.id)
         "\n"
         lem-ui-horiz-bar
         "\n")
        'json private-message
        'id .private_message.id
-       ;; 'post-id .private_message.post_id
-       ;; 'community-id .post.community_id
        'creator-id .creator.id
        'type 'private-message
        'line-prefix indent-str))))
