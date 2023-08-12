@@ -112,8 +112,8 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 |           | lem-post-cancel                        | Kill new-post buffer/window. Does not POST content to Mastodon.    |
 |           | lem-post-comment-mode                  | Minor mode for submitting comments to lemmy.                       |
 |           | lem-post-compose                       | Compose a new post.                                                |
+|           | lem-post-compose-simple                | Create and submit new post, reading strings in the minibuffer.     |
 |           | lem-post-mode                          | Minor mode for submitting posts to lemmy.                          |
-|           | lem-post-new-post-simple               | Create and submit new post.                                        |
 |           | lem-post-read-title                    | Read post title.                                                   |
 |           | lem-post-read-url                      | Read post URL.                                                     |
 |           | lem-post-reply                         | Reply to a post or comment.                                        |
@@ -132,7 +132,6 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 |           | lem-ui-delete-post                     | Delete post at point.                                              |
 |           | lem-ui-dislike-item                    | Dislike (downvote) item at point.                                  |
 |           | lem-ui-edit-comment                    | Edit comment at point if possible.                                 |
-|           | lem-ui-edit-post                       |                                                                    |
 | s         | lem-ui-jump-to-subscribed              | Prompt for a subscribed community and view it.                     |
 |           | lem-ui-like-item                       | Like (upvote) item at point.                                       |
 |           | lem-ui-mark-all-read                   | Mark all replies as read.                                          |
@@ -140,14 +139,15 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 |           | lem-ui-mark-reply-comment-read         | Mark the comment-reply at point as read.                           |
 |           | lem-ui-message-user-at-point           | Send private message to user at point.                             |
 |           | lem-ui-more                            | Append more items to the current view.                             |
-|           | lem-ui-new-post-simple                 | Create and submit new post.                                        |
 | TAB       | lem-ui-next-tab-item                   | Jump to next tab item.                                             |
 | <backtab> | lem-ui-prev-tab-item                   | Jump to prev tab item.                                             |
-|           | lem-ui-reply-simple                    | Reply to post or comment at point.                                 |
+|           | lem-ui-restore-comment                 | Restore deleted comment at point.                                  |
+|           | lem-ui-restore-post                    | Restore deleted post at point.                                     |
 |           | lem-ui-save-item                       | Save item at point.                                                |
 | SPC       | lem-ui-scroll-up-command               | Call `scroll-up-command', loading more toots if necessary.         |
 |           | lem-ui-search                          | Do a search for one of the types in `lem-search-types'.            |
 | S         | lem-ui-subscribe-to-community-at-point | Subscribe to community at point.                                   |
+|           | lem-ui-unsave-item                     | Unsave item at point.                                              |
 |           | lem-ui-url-lookup                      | Perform a webfinger lookup on URL and load the result in `lem.el'. |
 |           | lem-ui-view-comment-post               | View post of comment at point.                                     |
 |           | lem-ui-view-communities                | View Lemmy communities.                                            |
