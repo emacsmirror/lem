@@ -205,24 +205,29 @@ Q is the search query.\"
        (let* ((req-url (fedi-http--api ,endpoint lem-instance-url))
               (url-request-method ,(upcase method))
               (url-request-extra-headers ,headers)
-              (auth `(("auth" . ,(or lem-auth-token
-                                     (lem-auth-fetch-token)))))
-              (params-alist (remove nil
-                                    (list ,@(fedi-make-params-alist
-                                             params #'fedi-arg-when-expr))))
-              (params (if ,man-params
-                          (append ,man-params params-alist)
-                        params-alist))
-              (params (if ,unauthorized
-                          params
-                        (append auth params)))
+              (auth ,(unless unauthorized
+                       ``(("auth" . ,(or lem-auth-token
+                                         (lem-auth-fetch-token))))))
+              (params-alist ,(when params
+                               `(remove nil
+                                        (list ,@(fedi-make-params-alist
+                                                 params #'fedi-arg-when-expr
+                                                 (when (equal method "get")
+                                                   `:coerce))))))
+              ;; `(list ,@(fedi-make-params-alist
+              ;;           params #'fedi-arg-when-expr)))))
+              (params ,(if man-params
+                           `(append ,man-params params-alist)
+                         `params-alist))
+              (params ,(if unauthorized
+                           `params
+                         `(append auth params)))
               (response
-               (cond ((or (equal ,method "post")
-                          (equal ,method "put"))
-                      ;; FIXME: deal with headers nil arg here:
-                      (funcall #',req-fun req-url params nil :json))
-                     (t
-                      (funcall #',req-fun req-url params)))))
+               ,(if (or (equal method "post")
+                        (equal method "put"))
+                    ;; FIXME: deal with headers nil arg here:
+                    `(funcall #',req-fun req-url params nil :json)
+                  `(funcall #',req-fun req-url params))))
          (fedi-http--triage response
                             (lambda ()
                               (with-current-buffer response
@@ -389,6 +394,7 @@ SORT, LIMIT, PAGE are all for `lem-get-person'."
     (list (assoc 'comments person))))
 
 ;; (lem-api-get-person-by-id "8511")
+;; (lem-api-get-person-by-id 8511)
 ;; (lem-api-get-person-by-id "899775")
 
 ;; (setq lem-user-me (lem-api-get-person-by-name "blawsybogsy"))
