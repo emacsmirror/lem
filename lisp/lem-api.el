@@ -466,7 +466,7 @@ discussion_languages, default_post_language."
   "Follow a community with COMMUNITY-ID.
 Returns a community_view and discussion_languages."
   (community-id)
-  `(("follow" . follow)))
+  `(("follow" . ,follow)))
 
 ;; (lem-follow-community 14711 t)
 ;; (lem-follow-community 88259 t)

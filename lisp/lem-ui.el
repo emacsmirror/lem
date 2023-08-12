@@ -1089,6 +1089,18 @@ LIMIT is the max results to return."
             (message "something went wrong."))))
     :number))
 
+(defun lem-ui-unsubscribe-to-community ()
+  "Prompt for a subscribed community and unsubscribe from it."
+  (interactive)
+  (let* ((communities (lem-api-get-subscribed-communities))
+         (list (lem-ui--communities-alist communities))
+         (choice (completing-read "Unsubscribe from community: "
+                                  list))
+         (id (alist-get choice list nil nil #'equal)))
+    (when (and (y-or-n-p "Unsubscribe from %s?" choice)
+               (lem-follow-community id :json-false))
+      (message "Community %s unsubscribed!" choice))))
+
 (defun lem-ui-view-community-at-point ()
   "View community at point."
   (interactive)
@@ -1100,6 +1112,7 @@ LIMIT is the max results to return."
   "Return an alist of name/description and ID from COMMUNITIES."
   (cl-loop for item in communities
            collect (let-alist item
+                     ;; TODO: best make 3-item lists instead, and annotate
                      (cons (concat .community.name " | "
                                    (string-limit .community.description 40))
                            (number-to-string .community.id)))))
