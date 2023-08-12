@@ -800,7 +800,8 @@ START and END are the boundaries of the link in the post body."
 COMMUNITY and COMMUNITY-URL are those of the community the item belongs to.
 FEATURED-P means the item is pinned.
 OP-P is a flag, meaning we add a boxed OP string to the byline.
-ADMIN-P means we add same for admins, MOD-P means add same for moderators."
+ADMIN-P means we add same for admins, MOD-P means add same for moderators.
+DEL-P means add icon for deleted item."
   (let ((url (lem-ui-render-url url))
         (parsed-time (date-to-time timestamp)))
     (propertize
@@ -1013,7 +1014,8 @@ TRIM means trim each post for length."
 
 (defun lem-ui-save-item (&optional unsave)
   "Save item at point.
-Saved items can be viewed in your profile, like bookmarks."
+Saved items can be viewed in your profile, like bookmarks.
+If UNSAVE, unsave the item instead."
   (interactive)
   (let* ((id (lem-ui--id-from-prop))
          (type (lem-ui--item-type))
@@ -1387,7 +1389,8 @@ Optionally only view UNREAD items."
       (lem-edit-comment id new-str))))
 
 (defun lem-ui-delete-item (item fun &optional restore)
-  "Delete item of type ITEM at point, calling FUN."
+  "Delete item of type ITEM at point, calling FUN.
+If RESTORE, restore the item instead."
   (lem-ui-do-own-item item
     (let* ((id (lem-ui--property 'id)))
       (when (y-or-n-p (format "%s %s?"
