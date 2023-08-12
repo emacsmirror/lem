@@ -671,7 +671,7 @@ Lemmy supports lookups for users, posts, comments and communities."
 ;;; POSTS
 
 (defun lem-ui-view-post-at-point ()
-  "."
+  "View post at point."
   (interactive)
   (lem-ui-with-id
       (lem-ui-view-post id)))
