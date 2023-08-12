@@ -1011,21 +1011,31 @@ TRIM means trim each post for length."
   (cl-loop for x in posts
            do (lem-ui-render-post x community trim)))
 
-;; TODO: implement unsaving
-(defun lem-ui-save-item ()
+(defun lem-ui-save-item (&optional unsave)
   "Save item at point.
 Saved items can be viewed in your profile, like bookmarks."
   (interactive)
-  (let ((id (lem-ui--id-from-prop))
-        (type (lem-ui--item-type)))
-    (cond ((eq type 'post)
-           (lem-save-post id t)
-           (message "%s %s saved!" type id))
+  (let* ((id (lem-ui--id-from-prop))
+         (type (lem-ui--item-type))
+         (s-str (if unsave "unsaved" "saved"))
+         (s-bool (if unsave :json-false t))
+         (json (lem-ui--property 'json))
+         (saved-p (alist-get 'saved json)))
+    (cond ((and unsave (equal saved-p :json-false))
+           (message "You can only unsave saved items."))
+          ((eq type 'post)
+           (lem-save-post id s-bool)
+           (message "%s %s %s!" type id s-str))
           ((eq type 'comment)
-           (lem-save-comment id t)
-           (message "%s %s saved!" type id))
+           (lem-save-comment id s-bool)
+           (message "%s %s %s!" type id s-str))
           (t
            (message "You can only save posts and comments.")))))
+
+(defun lem-ui-unsave-item ()
+  "Unsave item at point."
+  (interactive)
+  (lem-ui-save-item :unsave))
 
 (defun lem-ui-view-saved-items (&optional id sort limit page)
   "View saved items of the current user, or of user with ID.
