@@ -1673,6 +1673,7 @@ RENDER-FUN is the name of a function to render them."
 
 ;;; LIKES / VOTES
 
+;; TODO: check for liked status before changing it
 (defun lem-ui-like-item (&optional type)
   "Like (upvote) item at point.
 TYPE should be either :unlike, :dislike, or nil to like."
@@ -1699,15 +1700,13 @@ TYPE should be either :unlike, :dislike, or nil to like."
           (message "No post or comment at point?")))
     :number))
 
-;; TODO: unlike item?
-
 (defun lem-ui-dislike-item ()
   "Dislike (downvote) item at point."
   (interactive)
   (lem-ui-like-item :dislike))
 
 (defun lem-ui-unlike-item ()
-  ""
+  "Unlike item at point."
   (interactive)
   (lem-ui-like-item :unlike))
 
