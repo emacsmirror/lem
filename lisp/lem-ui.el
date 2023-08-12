@@ -1675,22 +1675,30 @@ RENDER-FUN is the name of a function to render them."
 
 ;;; LIKES / VOTES
 
-(defun lem-ui-like-item (&optional dislike)
+(defun lem-ui-like-item (&optional type)
   "Like (upvote) item at point.
-TYPE is either post or comment
-If DISLIKE, dislike (downvote) it."
+TYPE should be either :unlike, :dislike, or nil to like."
   (interactive)
   (lem-ui-with-id
-      (let* ((type (get-text-property (point) 'type))
-             (fun (if (eq type 'post)
+      (let* ((item (get-text-property (point) 'type))
+             (fun (if (eq item 'post)
                       #'lem-like-post
                     #'lem-like-comment))
              (id (string-to-number id))
-             (score (if dislike -1 1)))
-        (if (or (eq type 'post)
-                (eq type 'comment))
+             (score (cond ((eq type :unlike)
+                           0)
+                          ((eq type :dislike)
+                           -1)
+                          (t 1)))
+             (like-str (cond ((eq type :unlike)
+                              "unliked")
+                             ((eq type :dislike)
+                              "disliked")
+                             (t "liked"))))
+        (if (or (eq item 'post)
+                (eq item 'comment))
             (progn (funcall fun id score)
-                   (message "%s %s %sliked!" type id (if dislike "dis" "")))
+                   (message "%s %s %s!" item id like-str))
           (message "No post or comment at point?")))))
 
 ;; TODO: unlike item?
@@ -1699,6 +1707,11 @@ If DISLIKE, dislike (downvote) it."
   "Dislike (downvote) item at point."
   (interactive)
   (lem-ui-like-item :dislike))
+
+(defun lem-ui-unlike-item ()
+  ""
+  (interactive)
+  (lem-ui-like-item :unlike))
 
 ;;; USERS
 
