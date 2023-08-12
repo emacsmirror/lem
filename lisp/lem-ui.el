@@ -249,10 +249,9 @@ Thing can be anything handled by `lem-ui-thing-json', currently:
 comment, post, community or person.
 Within this macro call, args JSON and ID are available.
 NUMBER means return ID as a number."
-  (declare (debug 'body)
+  (declare (debug t)
            (indent 1))
-  `(let* (;(json (lem-ui-thing-json))
-          (id (lem-ui--id-from-prop (if ,number nil :string))))
+  `(let* ((id (lem-ui--id-from-prop (if ,number nil :string))))
      ,body))
 
 ;;; BUFFER DETAILS
