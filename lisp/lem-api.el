@@ -480,15 +480,6 @@ Returns a community_view and discussion_languages."
 ;; (lem-follow-community 88259 t)
 ;; (lem-follow-community 88259 :json-false)
 
-;; cb:
-;; (let* ((json (fedi-http--process-json))
-;;        (comm (alist-get 'community (car json)))
-;;        (subed (alist-get 'subscribed (car json)))
-;;        (name (alist-get 'name comm))
-;;        (desc (alist-get 'description comm)))
-;;   (when (equal subed "Subscribed")
-;;     (format "Subscribed to %s [%s]" name desc)))
-
 (lem-def-request "post" "create-community" "community"
   (name title &optional banner description discussion-languages
         icon nsfw posting-restricted-to-mods)
@@ -583,13 +574,6 @@ Returns a post_view."
 
 ;; (lem-create-post "tootle on" 96200 "hooley-dooley") ; always cross-posts?
 
-;; cb:
-;; (let* ((json (fedi-http--process-json))
-;;        (post (alist-get 'post (car json)))
-;;        (name (alist-get 'name post)))
-;;   (when name
-;;     (format "Post created: %s" name)))
-
 (lem-def-request "post" "like-post" "post/like"
   (post-id score)
   "Like post with POST-ID.
@@ -643,12 +627,6 @@ Returns a comment_view, recipient_ids, and form_id."
 
 ;; (lem-create-comment 1367490 "toot toot")
 ;; (lem-create-comment 1341246 "replying via lem.el")
-
-;; cb:
-;; (let* ((json (fedi-http--process-json))
-;;        (comment (alist-get 'comment (car json))))
-;;   (when comment
-;;     (format "Comment created: %s" comment)))
 
 (lem-def-request "get" "get-comments" "comment/list"
   (&optional post-id parent-id type- sort limit page
@@ -813,20 +791,6 @@ Returns a private_message_view."
 ;; (lem-api-get-json-async (fedi-http--api "site")
 ;;                         nil (lambda (status)
 ;;                               (message status)))
-
-
-;; eg ids:
-;; emacs community: 14856
-;; a post: 1235982 (emacs lemmy client?)
-;; my first comment on 1235982: 651145
-;; a comment on above post: 763989
-;; lem.el test community: 96200
-;; lem.el test community post: 1341246
-;; user: blawsybogsy, 8511 on lemmy.ml
-;; user: martian, 899775 on sh.itjust.works
-;; (lem-create-comment 1341243 "comment")
-;; (lem-create-post "title" 96200 "body text")
-;; (lem-create-comment 1341246 "another body text 2")
 
 (provide 'lem-api)
 ;;; lem-api.el ends here
