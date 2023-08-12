@@ -927,7 +927,7 @@ INDENT is a number, the level of indent for the item."
 
 (defun lem-ui--mod-p (id community-id)
   "Non-nil if user with ID is a moderator for community with COMMUNITY-ID."
-  (let* ((community-json (lem-get-community (number-to-string community-id)))
+  (let* ((community-json (lem-get-community community-id))
          (mods (alist-get 'moderators community-json))
          (mods-ids (cl-loop for mod in mods
                             collect (alist-get 'id
@@ -1042,7 +1042,7 @@ If UNSAVE, unsave the item instead."
 SORT. LIMIT. PAGE."
   (interactive)
   (let* ((saved-only (lem-api-get-person-saved-only
-                      (number-to-string (or id lem-user-id))
+                      (or id lem-user-id)
                       sort (or limit lem-ui-comments-limit) page))
          (posts (alist-get 'posts saved-only))
          (comments (alist-get 'comments saved-only))
@@ -1068,7 +1068,7 @@ LIMIT is the max results to return."
     (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode nil
       (cl-loop for c in list
                for id = (alist-get 'id (alist-get 'community c))
-               for view = (lem-get-community (number-to-string id) nil)
+               for view = (lem-get-community id nil)
                do (lem-ui-render-community view :stats :view))
       (lem-ui-set-buffer-spec
        type sort #'lem-ui-view-communities 'communities))))
@@ -1131,7 +1131,7 @@ LIMIT is the max results to return."
   (lem-ui-do-subscribed-completing
    "Jump to community: "
    (lambda (id _choice)
-     (lem-ui-view-community (number-to-string id) 'posts))))
+     (lem-ui-view-community id 'posts))))
 
 (defun lem-ui-view-community (id &optional item sort limit page)
   "View community with ID.
@@ -1266,8 +1266,7 @@ And optionally for instance COMMUNITIES."
   (interactive)
   (let ((id (get-text-property (point) 'community-id)))
     (if id
-        (let* ((str (number-to-string id)))
-          (lem-ui-view-community str))
+        (lem-ui-view-community id)
       (message "No item at point?"))))
 
 ;;; REPLIES
@@ -1620,9 +1619,9 @@ GET-FUN is the name of a function to fetch more items.
 RENDER-FUN is the name of a function to render them."
   (message "Loading more items...")
   (let* ((page (1+ (lem-ui-get-buffer-spec :page)))
-         (id (number-to-string (save-excursion
-                                 (goto-char (point-min))
-                                 (lem-ui--property 'id))))
+         (id (save-excursion
+               (goto-char (point-min))
+               (lem-ui--property 'id)))
          (sort (lem-ui-get-buffer-spec :sort))
          (all-items
           ;; get-instance-posts have no need of id arg:
@@ -1632,18 +1631,18 @@ RENDER-FUN is the name of a function to render them."
                           (or (lem-ui-get-buffer-spec :listing-type) "All")
                           sort
                           lem-ui-comments-limit
-                          (number-to-string page)))
+                          page))
                 ;; user funs have no list-type arg:
                 ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-user)
                  (funcall get-fun id sort
-                          lem-ui-comments-limit (number-to-string page)))
+                          lem-ui-comments-limit page))
                 (t
                  (funcall get-fun
                           id
                           (or (lem-ui-get-buffer-spec :listing-type) "All")
                           sort
                           lem-ui-comments-limit
-                          (number-to-string page)))))
+                          page))))
          (no-duplicates (lem-ui-remove-displayed-items all-items type)))
     (setf (alist-get (lem-ui-plural-symbol type) all-items)
           no-duplicates)
@@ -1669,9 +1668,8 @@ RENDER-FUN is the name of a function to render them."
   (if (not (or (eq (lem-ui--item-type) 'comment)
                (eq (lem-ui--item-type) 'comment-reply)))
       (message "Not at a comment?")
-    (let* ((post (lem-ui--property 'post-id))
-           (str (number-to-string post)))
-      (lem-ui-view-post str))))
+    (let* ((post (lem-ui--property 'post-id)))
+      (lem-ui-view-post post))))
 
 ;;; LIKES / VOTES
 
@@ -1684,7 +1682,6 @@ TYPE should be either :unlike, :dislike, or nil to like."
              (fun (if (eq item 'post)
                       #'lem-like-post
                     #'lem-like-comment))
-             (id (string-to-number id))
              (score (cond ((eq type :unlike)
                            0)
                           ((eq type :dislike)
@@ -1699,7 +1696,8 @@ TYPE should be either :unlike, :dislike, or nil to like."
                 (eq item 'comment))
             (progn (funcall fun id score)
                    (message "%s %s %s!" item id like-str))
-          (message "No post or comment at point?")))))
+          (message "No post or comment at point?")))
+    :number))
 
 ;; TODO: unlike item?
 
@@ -1789,7 +1787,7 @@ CURRENT-USER means we are displaying the current user's profile."
   "View profile of the current user."
   (interactive)
   (let* ((current-user (lem-api-get-current-user)))
-    (lem-ui-view-user (number-to-string lem-user-id) nil nil nil current-user)))
+    (lem-ui-view-user lem-user-id nil nil nil current-user)))
 
 ;; TODO: view own profile: full sort types
 ;; overview/comments/posts/saved listings
@@ -1801,8 +1799,7 @@ CURRENT-USER means we are displaying the current user's profile."
   (interactive)
   (let ((user (get-text-property (point) 'creator-id)))
     (if user
-        (let ((str (number-to-string user)))
-          (lem-ui-view-user str 'overview))
+        (lem-ui-view-user user 'overview)
       (message "No user item at point?"))))
 
 (defun lem-ui-view-user-at-point ()

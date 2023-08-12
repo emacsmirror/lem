@@ -355,7 +355,7 @@ Returns a person_view, comments, posts, moderates objects."
     '(("saved_only" . "true"))))
 
 (declare-function lem-get-person nil)
-
+;; (lem-get-person nil 8511 nil nil nil nil)
 ;; (lem-get-person nil "8511" nil nil nil nil)
 ;; (lem-get-person nil "8511" nil nil nil nil :saved-only)
 
@@ -450,6 +450,7 @@ Returns a community_view, site, moderators, online count,
 discussion_languages, default_post_language."
   (id name))
 
+;; (lem-get-community 96200 nil)
 ;; (lem-get-community "96200" nil)
 ;; (lem-get-community nil "revanced@lemmy.world")
 
@@ -553,7 +554,8 @@ LIMIT is the amount of results to return.
 PAGE is a number, indexed to 1."
   (lem-get-posts type sort limit page community-id))
 
-;; (lem-api-list-posts-community-by-id "14856")
+;; (lem-api-get-community-posts-by-id "14856")
+;; (lem-api-get-community-posts-by-id 14856)
 
 (defun lem-api-get-community-posts-by-name (community-name
                                             &optional type sort limit page)
