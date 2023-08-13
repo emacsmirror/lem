@@ -279,20 +279,21 @@ Prefix is either \"@\" or \"!\"."
                           nil ; #'lem-post--mentions-affix-fun
                           #'lem-post--md-link-exit-fun))
 
-;; disable auto-fill-mode:
-(add-hook 'lem-post-mode-hook
-          (lambda ()
-            (auto-fill-mode -1)))
-
 (define-minor-mode lem-post-mode
   "Minor mode for submitting posts to lemmy."
   :keymap lem-post-mode-map
-  :global nil)
+  :global nil
+  :after-hook ; disable auto-fill-mode:
+  (lambda ()
+    (auto-fill-mode -1)))
 
 (define-minor-mode lem-post-comment-mode
   "Minor mode for submitting comments to lemmy."
   :keymap lem-post-comment-mode-map
-  :global nil)
+  :global nil
+  :after-hook ; disable auto-fill-mode:
+  (lambda ()
+    (auto-fill-mode -1)))
 
 (provide 'lem-post)
 ;;; lem-post.el ends here
