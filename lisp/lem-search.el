@@ -29,6 +29,9 @@
 
 ;;; Code:
 
+(autoload 'lem-get-community "lem-api")
+(autoload 'lem-search "lem")
+
 (require 'lem-api)
 
 (defun lem-map-community-ids-names (communities)
