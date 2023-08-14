@@ -275,14 +275,6 @@ Returns follows data, from under my_user, from the site endpoint."
 
 ;; (lem-get-site-metadata "https://lemmy.world")
 
-(defun lem-api-get-instance-posts (&optional type sort limit page)
-  "List posts for the current instance.
-TYPE must be member of `lem-listing-types'.
-SORT must be a member of `lem-sort-types'.
-LIMIT is the amount of results to return.
-PAGE is a number, indexed at 1."
-  (lem-get-posts type sort limit page))
-
 ;; (setq lem-test-inst-posts (lem-api-get-instance-posts "Subscribed"))
 
 (lem-def-request "get" "get-federated-instances" "federated_instances")
@@ -467,6 +459,8 @@ discussion_languages, default_post_language."
   "Returns a list of community objects."
   (type- sort limit page))
 
+(declare-function lem-list-communities nil)
+
 ;; (lem-list-communities "All")
 ;; (lem-list-communities "Subscribed")
 ;; (lem-list-communities "Local")
@@ -489,6 +483,8 @@ Returns a community_view and discussion_languages."
 Returns a community_view and discussion_languages."
   (name title banner description discussion-languages
         icon nsfw posting-restricted-to-mods))
+
+(declare-function lem-create-community nil)
 
 ;; (lem-create-community "communeity" "com")
 
@@ -565,6 +561,14 @@ LIMIT is the amount of results to return.
 PAGE is a number, indexed at 1."
   (lem-get-posts type sort limit page nil community-name))
 
+(defun lem-api-get-instance-posts (&optional type sort limit page)
+  "List posts for the current instance.
+TYPE must be member of `lem-listing-types'.
+SORT must be a member of `lem-sort-types'.
+LIMIT is the amount of results to return.
+PAGE is a number, indexed at 1."
+  (lem-get-posts type sort limit page))
+
 ;; https://join-lemmy.org/api/interfaces/CreatePost.html
 (lem-def-request "post" "create-post" "post"
   (name community-id &optional body url nsfw honeypot language-id)
@@ -573,6 +577,8 @@ BODY is the post's content. URL is its link.
 NSFW and HONEYPOT not yet implemented.
 Returns a post_view."
   (name community-id body url nsfw honeypot language-id))
+
+(declare-function lem-create-post nil)
 
 ;; (lem-create-post "tootle on" 96200 "hooley-dooley") ; always cross-posts?
 
@@ -627,6 +633,7 @@ PARENT-ID is the parent comment to reply to.
 Returns a comment_view, recipient_ids, and form_id."
   (post-id content parent-id))
 
+(declare-function lem-create-comment nil)
 ;; (lem-create-comment 1367490 "toot toot")
 ;; (lem-create-comment 1341246 "replying via lem.el")
 
