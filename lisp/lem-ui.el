@@ -1679,7 +1679,7 @@ RENDER-FUN is the name of a function to render them."
 TYPE should be either :unlike, :dislike, or nil to like."
   (interactive)
   (lem-ui-with-id
-      (let* ((item (get-text-property (point) 'type))
+      (let* ((item (lem-ui--property 'type))
              (fun (if (eq item 'post)
                       #'lem-like-post
                     #'lem-like-comment))
@@ -1694,7 +1694,8 @@ TYPE should be either :unlike, :dislike, or nil to like."
                               "disliked")
                              (t "liked"))))
         (if (or (eq item 'post)
-                (eq item 'comment))
+                (eq item 'comment)
+                (eq item 'comment-reply))
             (progn (funcall fun id score)
                    (message "%s %s %s!" item id like-str))
           (message "No post or comment at point?")))
