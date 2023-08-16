@@ -1108,7 +1108,12 @@ LIMIT is the max results to return."
   "Return an alist of name/description and ID from COMMUNITIES."
   (cl-loop for item in communities
            collect (let-alist item
-                     (list .community.name
+                     (list (if (string-match "^https://\\(.*\\)/c/\\(.*\\)$"
+                                             .community.actor_id)
+                               (format "%s@%s"
+                                       (match-string 2 .community.actor_id)
+                                       (match-string 1 .community.actor_id))
+                             .community.name)
                            .community.description
                            .community.id))))
 
@@ -1120,7 +1125,10 @@ LIMIT is the max results to return."
           (list :annotation-function
                 (lambda (c)
                   (let ((annot (nth 1 (assoc c subs #'equal))))
-                    (concat " | " (string-limit annot 50))))))
+                    (concat
+                     (propertize " " 'display
+                                 '(space :align-to (- right-margin 51)))
+                     (string-replace "\n" "⏎" (string-limit annot 50)))))))
          (choice (completing-read prompt-str subs))
          (id (nth 2 (assoc choice subs #'equal))))
     (funcall action-fun id choice)))
