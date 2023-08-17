@@ -103,7 +103,7 @@
                                      (setq lem-post-community-name choice)
                                      (setq lem-post-community-id id)
                                      (message "Posting to %s" choice)))
-  (fedi-post--update-status-fields-list))
+  (fedi-post--update-status-fields))
 
 (defun lem-post-compose (&optional edit mode)
   "Compose a new post.
