@@ -67,6 +67,7 @@
 (defvar-local lem-post-title nil)
 (defvar-local lem-post-url nil)
 (defvar-local lem-post-community-id nil)
+(defvar-local lem-post-community-name nil)
 
 (defvar-local lem-post-reply-post-id nil)
 (defvar-local lem-post-reply-comment-id nil)
@@ -83,7 +84,7 @@
   (setq lem-post-title
         (read-string "Post title: "
                      lem-post-title))
-  (message "%s" lem-post-title))
+  (fedi-post--update-status-fields))
 
 (defun lem-post-read-url ()
   "Read post URL."
@@ -92,7 +93,7 @@
   (setq lem-post-url
         (read-string "Post URL: "
                      lem-post-url))
-  (message "%s" lem-post-url))
+  (fedi-post--update-status-fields))
 
 (defun lem-post-select-community ()
   "Select community to post to."
@@ -101,7 +102,8 @@
                                    (lambda (id choice)
                                      (setq lem-post-community-name choice)
                                      (setq lem-post-community-id id)
-                                     (message "Posting to %s" choice))))
+                                     (message "Posting to %s" choice)))
+  (fedi-post--update-status-fields-list))
 
 (defun lem-post-compose (&optional edit mode)
   "Compose a new post.
@@ -113,7 +115,16 @@ MODE is the lem.el minor mode to enable in the compose buffer."
                              (or mode #'lem-post-mode)
                              (when mode "lem-post")
                              (list #'lem-post--mentions-capf
-                                   #'lem-post--comms-capf)))
+                                   #'lem-post--comms-capf)
+                             '((name . "title")
+                               (prop . post-title)
+                               (item-var . lem-post-title))
+                             '((name . "URL")
+                               (prop . post-url)
+                               (item-var . lem-post-url))
+                             '((name . "community")
+                               (prop . post-community)
+                               (item-var . lem-post-community-name))))
 
 (defun lem-post-submit ()
   "Submit the post to lemmy."
