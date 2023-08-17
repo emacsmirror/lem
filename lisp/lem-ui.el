@@ -1126,7 +1126,7 @@ LIMIT is the max results to return."
                     (concat
                      (propertize " " 'display
                                  '(space :align-to (- right-margin 51)))
-                     (string-replace "\n" "⏎" (string-limit annot 50)))))))
+                     (string-limit (car (string-lines annot)) 50))))))
          (choice (completing-read prompt-str subs))
          (id (nth 2 (assoc choice subs #'equal))))
     (funcall action-fun id choice)))
