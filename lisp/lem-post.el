@@ -34,8 +34,6 @@
 (defalias 'lem-post-toggle-nsfw #'fedi-post-toggle-nsfw)
 (defalias 'lem-post-set-post-language #'fedi-post-set-post-language)
 
-;; FIXME: not all post options are applicable when commenting!
-;; maybe `fedi-post-mode-map' for comments?
 (defvar lem-post-mode-map
   (let ((map (make-sparse-keymap)))
     ;; inheriting doesn't work for our post docs display
