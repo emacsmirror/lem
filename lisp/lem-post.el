@@ -117,12 +117,16 @@ MODE is the lem.el minor mode to enable in the compose buffer."
                              (list #'lem-post--mentions-capf
                                    #'lem-post--comms-capf)
                              '((name . "title")
+                               (no-label . t)
                                (prop . post-title)
                                (item-var . lem-post-title))
                              '((name . "URL")
+                               (no-label . t)
                                (prop . post-url)
-                               (item-var . lem-post-url))
+                               (item-var . lem-post-url)
+                               (face . link))
                              '((name . "community")
+                               (no-label . t)
                                (prop . post-community)
                                (item-var . lem-post-community-name))))
 
