@@ -1108,12 +1108,10 @@ LIMIT is the max results to return."
   "Return an alist of name/description and ID from COMMUNITIES."
   (cl-loop for item in communities
            collect (let-alist item
-                     (list (if (string-match "^https://\\(.*\\)/c/\\(.*\\)$"
-                                             .community.actor_id)
-                               (format "%s@%s"
-                                       (match-string 2 .community.actor_id)
-                                       (match-string 1 .community.actor_id))
-                             .community.name)
+                     (list (format "%s@%s"
+                                   .community.name
+                                   (url-domain
+                                    (url-generic-parse-url .community.actor_id)))
                            .community.description
                            .community.id))))
 
