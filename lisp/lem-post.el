@@ -97,16 +97,11 @@
 (defun lem-post-select-community ()
   "Select community to post to."
   (interactive)
-  (let* ((communities (lem-api-get-subscribed-communities))
-         ;; (lem-list-communities "Subscribed"))
-         (list (lem-ui--communities-alist communities))
-         ;; (alist-get 'communities communities)))
-         (choice (completing-read "Community: " ; TODO: default to current view
-                                  list nil :match))
-         (community-id (string-to-number
-                        (alist-get choice list nil nil #'equal))))
-    (setq lem-post-community-id community-id)
-    (message "%s" choice)))
+  (lem-ui-do-subscribed-completing "Post to community: "
+                                   (lambda (id choice)
+                                     (setq lem-post-community-name choice)
+                                     (setq lem-post-community-id id)
+                                     (message "Posting to %s" choice))))
 
 (defun lem-post-compose (&optional edit mode)
   "Compose a new post.
