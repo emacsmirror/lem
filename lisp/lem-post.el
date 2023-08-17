@@ -78,6 +78,10 @@
                (? ?@ (* (not (any "\n" "\t" " "))))) ; optional domain
       (| "'" word-boundary)))
 
+(defface lem-post-community-face
+  '((t :inherit success))
+  "Face used for community status field.")
+
 (defun lem-post-read-title ()
   "Read post title."
   (interactive)
@@ -128,7 +132,8 @@ MODE is the lem.el minor mode to enable in the compose buffer."
                              '((name . "community")
                                (no-label . t)
                                (prop . post-community)
-                               (item-var . lem-post-community-name))))
+                               (item-var . lem-post-community-name)
+                               (face . lem-post-community-face))))
 
 (defun lem-post-submit ()
   "Submit the post to lemmy."
