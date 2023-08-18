@@ -30,6 +30,8 @@
 (require 'lem-api)
 (require 'lem-ui)
 
+(autoload 'ffap-url-p "ffap")
+
 (defalias 'lem-post-cancel #'fedi-post-cancel)
 (defalias 'lem-post-toggle-nsfw #'fedi-post-toggle-nsfw)
 (defalias 'lem-post-set-post-language #'fedi-post-set-post-language)
