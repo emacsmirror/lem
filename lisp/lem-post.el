@@ -138,26 +138,27 @@ MODE is the lem.el minor mode to enable in the compose buffer."
 (defun lem-post-submit ()
   "Submit the post to lemmy."
   (interactive)
-  ;; TODO: check for title/url/comm-id first
-  (let* ((body (fedi-post--remove-docs))
-         (response (if lem-post-reply-post-id
-                       (lem-create-comment lem-post-reply-post-id
-                                           body
-                                           lem-post-reply-comment-id)
-                     (lem-create-post lem-post-title lem-post-community-id body
-                                      lem-post-url fedi-post-content-nsfw
-                                      nil fedi-post-language)))) ; TODO: honeypot
-    (when response
-      (let-alist response
-        (if lem-post-reply-post-id
-            (progn
-              (message "Comment created: %s" .comment_view.comment.content)
-              (lem-ui-view-post (number-to-string lem-post-reply-post-id)))
-          (message "Post %s created!" .post_view.post.name)))
-      (with-current-buffer "*new post*"
-        ;; FIXME: we have to call this after using b-local
-        ;; `lem-post-reply-post-id', but it baulks:
-        (fedi-post-kill)))))
+  (if (not (and lem-post-title lem-post-community-id))
+      (message "You need to set at least a post name and community.")
+    (let* ((body (fedi-post--remove-docs))
+           (response (if lem-post-reply-post-id
+                         (lem-create-comment lem-post-reply-post-id
+                                             body
+                                             lem-post-reply-comment-id)
+                       (lem-create-post lem-post-title lem-post-community-id body
+                                        lem-post-url fedi-post-content-nsfw
+                                        nil fedi-post-language)))) ; TODO: honeypot
+      (when response
+        (let-alist response
+          (if lem-post-reply-post-id
+              (progn
+                (message "Comment created: %s" .comment_view.comment.content)
+                (lem-ui-view-post (number-to-string lem-post-reply-post-id)))
+            (message "Post %s created!" .post_view.post.name)))
+        (with-current-buffer "*new post*"
+          ;; FIXME: we have to call this after using b-local
+          ;; `lem-post-reply-post-id', but it baulks:
+          (fedi-post-kill))))))
 
 (defun lem-post-compose-simple ()
   "Create and submit new post, reading strings in the minibuffer."
