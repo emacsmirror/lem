@@ -69,8 +69,8 @@
 (defvar-local lem-post-community-id nil)
 (defvar-local lem-post-community-name nil)
 
-(defvar-local lem-post-reply-post-id nil)
-(defvar-local lem-post-reply-comment-id nil)
+(defvar-local lem-post-comment-post-id nil)
+(defvar-local lem-post-comment-comment-id nil)
 
 (defvar lem-post-community-regex
   (rx (| (any ?\( "\n" "\t "" ") bol) ; preceding things
@@ -143,23 +143,23 @@ MODE is the lem.el minor mode to enable in the compose buffer."
   (if (not (and lem-post-title lem-post-community-id))
       (message "You need to set at least a post name and community.")
     (let* ((body (fedi-post--remove-docs))
-           (response (if lem-post-reply-post-id
-                         (lem-create-comment lem-post-reply-post-id
+           (response (if lem-post-comment-post-id
+                         (lem-create-comment lem-post-comment-post-id
                                              body
-                                             lem-post-reply-comment-id)
+                                             lem-post-comment-comment-id)
                        (lem-create-post lem-post-title lem-post-community-id body
                                         lem-post-url fedi-post-content-nsfw
                                         nil fedi-post-language)))) ; TODO: honeypot
       (when response
         (let-alist response
-          (if lem-post-reply-post-id
+          (if lem-post-comment-post-id
               (progn
                 (message "Comment created: %s" .comment_view.comment.content)
-                (lem-ui-view-post (number-to-string lem-post-reply-post-id)))
+                (lem-ui-view-post (number-to-string lem-post-comment-post-id)))
             (message "Post %s created!" .post_view.post.name)))
         (with-current-buffer "*new post*"
           ;; FIXME: we have to call this after using b-local
-          ;; `lem-post-reply-post-id', but it baulks:
+          ;; `lem-post-comment-post-id', but it baulks:
           (fedi-post-kill))))))
 
 (defun lem-post-compose-simple ()
@@ -184,7 +184,7 @@ MODE is the lem.el minor mode to enable in the compose buffer."
       (let-alist response
         (message "Post %s created!" .post_view.post.name)))))
 
-(defun lem-post-reply ()
+(defun lem-post-comment ()
   "Reply to a post or comment."
   (interactive)
   (let* ((json (lem-ui-thing-json))
@@ -195,10 +195,10 @@ MODE is the lem.el minor mode to enable in the compose buffer."
          (comment-id (when (equal type 'comment)
                        (lem-ui--id-from-json json 'comment))))
     (lem-post-compose nil #'lem-post-comment-mode)
-    (setq lem-post-reply-post-id post-id)
-    (setq lem-post-reply-comment-id comment-id)))
+    (setq lem-post-comment-post-id post-id)
+    (setq lem-post-comment-comment-id comment-id)))
 
-(defun lem-post-reply-simple ()
+(defun lem-post-comment-simple ()
   "Reply to post or comment at point.
 Simple means we just read a string."
   (interactive)
