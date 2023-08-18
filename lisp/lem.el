@@ -117,17 +117,27 @@
 
 (defvar lem-mode-map
   (let ((map (make-sparse-keymap)))
+    ;; nav/sort:
     (define-key map (kbd "C-c C-c") #'lem-ui-cycle-listing-type)
     (define-key map (kbd "C-c C-s") #'lem-ui-cycle-sort)
     (define-key map (kbd "n") #'lem-next-item)
     (define-key map (kbd "p") #'lem-prev-item)
-    (define-key map (kbd "RET") #'lem-ui-view-thing-at-point)
     (define-key map (kbd "SPC") #'lem-ui-scroll-up-command)
     (define-key map (kbd "TAB") #'lem-ui-next-tab-item)
     (define-key map (kbd "<backtab>") #'lem-ui-prev-tab-item)
-    (define-key map (kbd "C") #'lem-ui-view-community-at-point)
+    (define-key map (kbd "RET") #'lem-ui-view-thing-at-point)
+    ;; views:
+    (define-key map (kbd "I") #'lem-ui-view-instance)
+    (define-key map (kbd "C") #'lem-ui-view-communities)
+    (define-key map (kbd "c") #'lem-ui-view-community-at-point)
     (define-key map (kbd "s") #'lem-ui-jump-to-subscribed)
+    (define-key map (kbd "P") #'lem-ui-view-user-at-point)
+    (define-key map (kbd "O") #'lem-ui-view-own-profile)
+    ;; actions:
     (define-key map (kbd "S") #'lem-ui-subscribe-to-community-at-point)
+    (define-key map (kbd "A") #'lem-ui-save-item)
+    (define-key map (kbd "r") #'lem-post-comment) ; Reply
+    (define-key map (kbd "N") #'lem-post-compose) ; New
     ;;;
     map)
   "Keymap for `lem-mode'.")

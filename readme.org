@@ -86,7 +86,7 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
                        "\n")))
                 ;; add more keymaps here
                 ;; some keys are in sub 'keymap keys inside a map
-                (maps (list lem-mode-map))
+                (maps (list lem-mode-map lem-post-mode-map lem-post-comment-mode-map))
                 (binding-code
                  (let ((keys (where-is-internal symbol maps nil nil (command-remapping symbol))))
                    ;; just take first 2 bindings:
@@ -109,19 +109,19 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 |           | lem-login-set-token                    | Login and set current user details.                                |
 |           | lem-mode                               | Major mode for Lemmy, the federated link-aggregator and forum.     |
 | n         | lem-next-item                          | Move to next item.                                                 |
-|           | lem-post-cancel                        | Kill new-post buffer/window. Does not POST content to Mastodon.    |
+| C-c C-k   | lem-post-cancel                        | Kill new-post buffer/window. Does not POST content.                |
+| r         | lem-post-comment                       | Reply to a post or comment.                                        |
 |           | lem-post-comment-mode                  | Minor mode for submitting comments to lemmy.                       |
-|           | lem-post-compose                       | Compose a new post.                                                |
+|           | lem-post-comment-simple                | Reply to post or comment at point.                                 |
+| N         | lem-post-compose                       | Compose a new post.                                                |
 |           | lem-post-compose-simple                | Create and submit new post, reading strings in the minibuffer.     |
 |           | lem-post-mode                          | Minor mode for submitting posts to lemmy.                          |
-|           | lem-post-read-title                    | Read post title.                                                   |
-|           | lem-post-read-url                      | Read post URL.                                                     |
-|           | lem-post-reply                         | Reply to a post or comment.                                        |
-|           | lem-post-reply-simple                  | Reply to post or comment at point.                                 |
-|           | lem-post-select-community              | Select community to post to.                                       |
-|           | lem-post-set-post-language             | Prompt for a language and set `fedi-post-language'.                |
+| C-c C-t   | lem-post-read-title                    | Read post title.                                                   |
+| C-c C-u   | lem-post-read-url                      | Read post URL.                                                     |
+| C-c C-o   | lem-post-select-community              | Select community to post to.                                       |
+| C-c C-l   | lem-post-set-post-language             | Prompt for a language and set `fedi-post-language'.                |
 |           | lem-post-submit                        | Submit the post to lemmy.                                          |
-|           | lem-post-toggle-nsfw                   | Toggle `fedi-post-content-nsfw'.                                   |
+| C-c C-n   | lem-post-toggle-nsfw                   | Toggle `fedi-post-content-nsfw'.                                   |
 | p         | lem-prev-item                          | Move to prev item.                                                 |
 |           | lem-ui--follow-link-at-point           | Follow link at point.                                              |
 |           | lem-ui-choose-sort                     | Read a sort type and load it.                                      |
@@ -141,9 +141,8 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 |           | lem-ui-more                            | Append more items to the current view.                             |
 | TAB       | lem-ui-next-tab-item                   | Jump to next tab item.                                             |
 | <backtab> | lem-ui-prev-tab-item                   | Jump to prev tab item.                                             |
-|           | lem-ui-restore-comment                 | Restore deleted comment at point.                                  |
 |           | lem-ui-restore-post                    | Restore deleted post at point.                                     |
-|           | lem-ui-save-item                       | Save item at point.                                                |
+| A         | lem-ui-save-item                       | Save item at point.                                                |
 | SPC       | lem-ui-scroll-up-command               | Call `scroll-up-command', loading more toots if necessary.         |
 |           | lem-ui-search                          | Do a search for one of the types in `lem-search-types'.            |
 | S         | lem-ui-subscribe-to-community-at-point | Subscribe to community at point.                                   |
@@ -152,17 +151,17 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 |           | lem-ui-unsubscribe-from-community      | Prompt for a subscribed community and unsubscribe from it.         |
 |           | lem-ui-url-lookup                      | Perform a webfinger lookup on URL and load the result in `lem.el'. |
 |           | lem-ui-view-comment-post               | View post of comment at point.                                     |
-|           | lem-ui-view-communities                | View Lemmy communities.                                            |
-| C         | lem-ui-view-community-at-point         | View community at point.                                           |
-|           | lem-ui-view-instance                   | View posts of current user's home instance.                        |
+| C         | lem-ui-view-communities                | View Lemmy communities.                                            |
+| c         | lem-ui-view-community-at-point         | View community at point.                                           |
+| I         | lem-ui-view-instance                   | View posts of current user's home instance.                        |
 |           | lem-ui-view-item-community             | View community of item at point.                                   |
 |           | lem-ui-view-item-user                  | View user of item at point.                                        |
 |           | lem-ui-view-mentions                   | View reply comments to the current user.                           |
-|           | lem-ui-view-own-profile                | View profile of the current user.                                  |
+| O         | lem-ui-view-own-profile                | View profile of the current user.                                  |
 |           | lem-ui-view-post-at-point              | View post at point.                                                |
 |           | lem-ui-view-private-messages           | View reply comments to the current user.                           |
 |           | lem-ui-view-replies                    | View reply comments to the current user.                           |
 |           | lem-ui-view-replies-unread             | View unread replies.                                               |
 |           | lem-ui-view-saved-items                | View saved items of the current user, or of user with ID.          |
 | RET       | lem-ui-view-thing-at-point             | View post, community or user at point.                             |
-|           | lem-ui-view-user-at-point              | View user at point.                                                |
+| P         | lem-ui-view-user-at-point              | View user at point.                                                |
