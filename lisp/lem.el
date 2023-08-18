@@ -3,7 +3,7 @@
 ;; Copyright (C) 2023  martian hiatus and mastodon.el authors
 ;; Author: martian hiatus <martianhiatus [a t] riseup [d o t] net>
 ;; Version: 0.1
-;; Package-Requires: ((emacs "28.1") (fedi "0.1") (emojify "1.2") (markdown-mode "2.5"))
+;; Package-Requires: ((emacs "28.1") (fedi "0.1") (markdown-mode "2.5"))
 ;; URL: https://codeberg.org/martianh/lem.el
 ;; Keywords: multimedia, comm, web, fediverse
 
@@ -29,7 +29,6 @@
 
 (require 'cl-lib)
 (require 'plstore)
-(require 'emojify)
 (require 'lem-api)
 (require 'lem-ui)
 (require 'lem-post)
@@ -100,18 +99,19 @@
 
 (defcustom lem-default-sort-type "Active"
   "The default sort type to use."
-  :type
-  (lem-map-customize-options lem-sort-types))
+  :type (lem-map-customize-options lem-sort-types))
 
 (defcustom lem-default-comment-sort-type "Hot"
   "The default comment sort type to use."
-  :type
-  (lem-map-customize-options lem-comment-sort-types))
+  :type (lem-map-customize-options lem-comment-sort-types))
 
 (defcustom lem-default-listing-type "All"
   "The default listing type to use."
-  :type
-  (lem-map-customize-options lem-listing-types))
+  :type (lem-map-customize-options lem-listing-types))
+
+(defcustom lem-use-emojify nil
+  ""
+  :type 'boolean)
 
 ;;; MAP
 
@@ -210,7 +210,9 @@ equal to `lem-instance-url'."
   "Major mode for Lemmy, the federated link-aggregator and forum."
   :group 'lem
   (read-only-mode 1)
-  (emojify-mode 1))
+  (when (and lem-use-emojify
+             (require 'emojify nil :no-error))
+    (emojify-mode 1)))
 
 (provide 'lem)
 ;;; lem.el ends here
