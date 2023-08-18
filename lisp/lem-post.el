@@ -91,10 +91,12 @@
 (defun lem-post-read-url ()
   "Read post URL."
   (interactive)
-  ;; TODO: check against rough URL regex
   (setq lem-post-url
         (read-string "Post URL: "
-                     lem-post-url))
+                     (or lem-post-url "https://")))
+  (unless (ffap-url-p lem-post-url)
+    (when (y-or-n-p "URL doesn't look too good. Try again?")
+      (lem-post-read-url)))
   (fedi-post--update-status-fields))
 
 (defun lem-post-select-community ()
