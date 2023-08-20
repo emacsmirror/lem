@@ -115,7 +115,7 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 |           | lem-ui-save-item                       | Save item at point.                                                |
 | a         | lem-ui-save-item-toggle                | Toggle saved status of item at point.                              |
 | SPC       | lem-ui-scroll-up-command               | Call `scroll-up-command', loading more toots if necessary.         |
-|           | lem-ui-search                          | Do a search for one of the types in `lem-search-types'.            |
+| h         | lem-ui-search                          | Do a search for one of the types in `lem-search-types'.            |
 | S         | lem-ui-subscribe-to-community-at-point | Subscribe to community at point.                                   |
 |           | lem-ui-unlike-item                     | Unlike item at point.                                              |
 |           | lem-ui-unsave-item                     | Unsave item at point.                                              |
