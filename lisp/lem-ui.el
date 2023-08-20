@@ -845,18 +845,29 @@ DEL-P means add icon for deleted item."
        'face font-lock-comment-face))
      'byline-top t)))
 
+(defun lem-ui-prop-score (my-vote score)
+  "Propertize byline SCORE according to MY-VOTE, a number."
+  (cond ((eq my-vote 1)
+         (propertize (number-to-string score)
+                     'face '(:inherit success :box t
+                                      :weight bold)
+                     'help-echo "you voted"))
+        ((eq my-vote -1)
+         (propertize (number-to-string score)
+                     'face '(:inherit warning :box t
+                                      :weight bold)
+                     'help-echo "you voted"))
+        (t
+         (number-to-string score))))
+
 (defun lem-ui-bt-byline (score comments &optional my-vote)
   "Format a bottom byline for an item.
 SCORE is the item's score.
-COMMENTS is the comments count to render."
-  (let* ((my-score (if my-vote
-                       (propertize (number-to-string score)
-                                   'face '(:box t :weight bold)
-                                   'help-echo "you voted")
-                     (number-to-string score)))
+COMMENTS is the comments count to render.
+MY-VOTE is a number, the current vote by the current user."
+  (let* ((my-score (lem-ui-prop-score my-vote score))
          (str (concat (lem-ui-symbol 'upvote) " "
-                      my-score
-                      " | "
+                      my-score " | "
                       (lem-ui-symbol 'reply) " "
                       (number-to-string comments))))
     (propertize str
@@ -864,7 +875,8 @@ COMMENTS is the comments count to render."
 
 (defun lem-ui-update-bt-byline-from-json (&optional vote)
   "Update the text of the bottom byline based on item JSON.
-Used to adjust counts after (un)liking."
+Used to adjust counts after (un)liking.
+VOTE is a number, handed to `lem-ui-bt-byline'."
   (let-alist (lem-ui--property 'json)
     (let ((inhibit-read-only t)
           (byline
@@ -873,14 +885,26 @@ Used to adjust counts after (un)liking."
                                         :backwards))))
       ;; `emojify-mode' doesn't work with display prop, so we replace byline
       ;; string:
-      (replace-region-contents
+      (lem-ui--replace-region-contents
        (car byline) (cdr byline)
        (lambda ()
          (lem-ui-bt-byline .counts.score
                            (or .counts.child_count
                                .counts.comments)
-                           (when (not (eq 0 vote))
-                             :my-vote)))))))
+                           vote))))))
+
+(defun lem-ui--replace-region-contents (beg end replace-fun)
+  "Replace buffer contents from BEG to END with REPLACE-FUN.
+We roll our own `replace-region-contents' because it is as
+non-destructive as possible, whereas we need to always replace
+the whole likes count in order to propertize it fully."
+  (save-excursion
+    (save-restriction
+      (narrow-to-region beg end)
+      (goto-char (point-min))
+      (delete-region (point-min) (point-max))
+      (insert
+       (funcall replace-fun)))))
 
 (defun lem-ui-render-url (url &optional no-shorten)
   "Render URL, a plain non-html string.
@@ -1751,7 +1775,7 @@ TYPE should be either :unlike, :dislike, or nil to like."
   (lem-ui-like-item :unlike))
 
 (defun lem-ui-like-item-toggle ()
-  "Toggle like status of item at point"
+  "Toggle like status of item at point."
   (interactive)
   (let* ((json (lem-ui--property 'json))
          (my-vote (alist-get 'my_vote json)))
