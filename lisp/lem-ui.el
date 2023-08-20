@@ -1717,6 +1717,28 @@ TYPE should be either :unlike, :dislike, or nil to like."
   (interactive)
   (lem-ui-like-item :unlike))
 
+(defun lem-ui-like-item-toggle ()
+  "Toggle like status of item at point"
+  (interactive)
+  (let* ((json (lem-ui--property 'json))
+         (my-vote (alist-get 'my_vote json)))
+    (if json
+        (cond ((eq my-vote -1)
+               (lem-ui-unlike-item))
+              ((eq my-vote 1)
+               (lem-ui-dislike-item))
+              ((or (eq my-vote nil)
+                   (eq my-vote 0))
+               (lem-ui-like-item)))
+      (message "No item at point?"))))
+
+(defun lem-ui--update-item-json (new-json)
+  "Replace the json property of item at point with NEW-JSON."
+  (let ((inhibit-read-only t)
+        (region (fedi--find-property-range 'json (point) :backwards)))
+    (add-text-properties (car region) (cdr region)
+                         `(json ,new-json))))
+
 ;;; USERS
 
 (defun lem-ui-render-users (json)
