@@ -72,6 +72,7 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 | Binding   | Command                                | Description                                                        |
 |-----------+----------------------------------------+--------------------------------------------------------------------|
 |           | lem                                    | Open lem, a Lemmy client.                                          |
+| C-M-q     | lem-kill-all-buffers                   | Kill all lem.el buffers                                            |
 |           | lem-login-set-token                    | Login and set current user details.                                |
 |           | lem-mode                               | Major mode for Lemmy, the federated link-aggregator and forum.     |
 | n         | lem-next-item                          | Move to next item.                                                 |
@@ -97,6 +98,7 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 | C-c C-s   | lem-ui-cycle-sort                      | Cycle view between some `lem-sort-types'.                          |
 |           | lem-ui-delete-comment                  | Delete comment at point.                                           |
 |           | lem-ui-delete-post                     | Delete post at point.                                              |
+| d         | lem-ui-delete-post-or-comment          | Delete post or comment at point.                                   |
 |           | lem-ui-dislike-item                    | Dislike (downvote) item at point.                                  |
 | e         | lem-ui-edit-comment                    | Edit comment at point if possible.                                 |
 | s         | lem-ui-jump-to-subscribed              | Prompt for a subscribed community and view it.                     |
