@@ -53,7 +53,6 @@
 
 ;;; HIERARCHY PATCHES
 
-
 (defun lem--hierarchy-print (hierarchy &optional to-string)
   "Insert HIERARCHY in current buffer as plain text.
 
@@ -244,16 +243,18 @@ than `switch-to-buffer'."
        ,@body
        (goto-char (point-min)))))
 
-(defmacro lem-ui-with-id (body &optional number)
+(defmacro lem-ui-with-item (body &optional number)
   "Call BODY after fetching ID of thing (at point).
 Thing can be anything handled by `lem-ui-thing-json', currently:
 comment, post, community or person.
-Within this macro call, args JSON and ID are available.
+Within this macro call, arg ID is available.
 NUMBER means return ID as a number."
   (declare (debug t)
            (indent 1))
   `(let* ((id (lem-ui--id-from-prop (if ,number nil :string))))
-     ,body))
+     (if (not id)
+         (message "Looks like there's no item at point?")
+       ,body)))
 
 ;;; BUFFER DETAILS
 
@@ -317,10 +318,9 @@ Optionally start from POS."
 
 (defun lem-ui-view-item-user-at-point ()
   "."
-  (let ((id (get-text-property (point) 'creator-id)))
-    (if id
-        (lem-ui-view-user id 'overview)
-      (message "No item at point?"))))
+  (lem-ui-with-item
+      (let ((id (lem-ui--property 'creator-id)))
+        (lem-ui-view-user id 'overview))))
 
 (defun lem-ui-scroll-up-command ()
   "Call `scroll-up-command', loading more toots if necessary.
@@ -674,7 +674,7 @@ Lemmy supports lookups for users, posts, comments and communities."
 (defun lem-ui-view-post-at-point ()
   "View post at point."
   (interactive)
-  (lem-ui-with-id
+  (lem-ui-with-item
       (lem-ui-view-post id)))
 
 (defun lem-ui-view-post (id &optional sort limit)
@@ -1127,7 +1127,7 @@ LIMIT is the max results to return."
 (defun lem-ui-subscribe-to-community-at-point ()
   "Subscribe to community at point."
   (interactive)
-  (lem-ui-with-id
+  (lem-ui-with-item
       (if (not (equal 'community (lem-ui--item-type)))
           (message "no community at point?")
         (let ((fol (lem-follow-community id t)))
@@ -1152,7 +1152,7 @@ LIMIT is the max results to return."
 (defun lem-ui-view-community-at-point ()
   "View community at point."
   (interactive)
-  (lem-ui-with-id
+  (lem-ui-with-item
       (lem-ui-view-community id)))
 
 (defun lem-ui--communities-alist (communities)
@@ -1321,10 +1321,9 @@ And optionally for instance COMMUNITIES."
 (defun lem-ui-view-item-community ()
   "View community of item at point."
   (interactive)
-  (let ((id (get-text-property (point) 'community-id)))
-    (if id
-        (lem-ui-view-community id)
-      (message "No item at point?"))))
+  (lem-ui-with-item
+      (let ((id (lem-ui--property 'community-id)))
+        (lem-ui-view-community id))))
 
 ;;; REPLIES
 
@@ -1412,7 +1411,7 @@ Optionally only view UNREAD items."
 
 ;;; EDIT/DELETE POSTS/COMMENTS
 
-(defmacro lem-ui-do-own-item (item-type &rest body)
+(defmacro lem-ui-with-own-item (item-type &rest body)
   "Call BODY if ITEM-TYPE is at point and owned by the current user."
   (declare (debug t)
            (indent 1))
@@ -1426,25 +1425,25 @@ Optionally only view UNREAD items."
 (defun lem-ui-edit-comment ()
   "Edit comment at point if possible."
   (interactive)
-  (lem-ui-do-own-item 'comment
-    (let* ((id (lem-ui--property 'id))
-           (json (lem-ui--property 'json))
-           (old-str (alist-get 'content (alist-get 'comment json)))
-           (new-str (read-string "Edit comment: " old-str)))
-      (lem-edit-comment id new-str))))
+  (lem-ui-with-own-item 'comment
+                        (let* ((id (lem-ui--property 'id))
+                               (json (lem-ui--property 'json))
+                               (old-str (alist-get 'content (alist-get 'comment json)))
+                               (new-str (read-string "Edit comment: " old-str)))
+                          (lem-edit-comment id new-str))))
 
 (defun lem-ui-delete-item (item fun &optional restore)
   "Delete item of type ITEM at point, calling FUN.
 If RESTORE, restore the item instead."
-  (lem-ui-do-own-item item
-    (let* ((id (lem-ui--property 'id)))
-      (when (y-or-n-p (format "%s %s?"
-                              (if restore "Restore" "Delete")
-                              item))
-        (progn
-          (funcall fun id (if restore :json-false t))
-          (message "%s %s %s!" item id
-                   (if restore "restored" "deleted")))))))
+  (lem-ui-with-own-item item
+                        (let* ((id (lem-ui--property 'id)))
+                          (when (y-or-n-p (format "%s %s?"
+                                                  (if restore "Restore" "Delete")
+                                                  item))
+                            (progn
+                              (funcall fun id (if restore :json-false t))
+                              (message "%s %s %s!" item id
+                                       (if restore "restored" "deleted")))))))
 
 (defun lem-ui-delete-comment ()
   "Delete comment at point."
@@ -1736,7 +1735,7 @@ RENDER-FUN is the name of a function to render them."
   "Like (upvote) item at point.
 TYPE should be either :unlike, :dislike, or nil to like."
   (interactive)
-  (lem-ui-with-id
+  (lem-ui-with-item
       (let* ((item (lem-ui--property 'type))
              (fun (if (eq item 'post)
                       #'lem-like-post
@@ -1762,8 +1761,7 @@ TYPE should be either :unlike, :dislike, or nil to like."
                 (when my-vote
                   (lem-ui--update-item-json i)
                   (lem-ui-update-bt-byline-from-json my-vote)
-                  (message "%s %s %s!" item id like-str))))
-          (message "No post or comment at point?")))
+                  (message "%s %s %s!" item id like-str))))))
     :number))
 
 (defun lem-ui-dislike-item ()
@@ -1779,17 +1777,17 @@ TYPE should be either :unlike, :dislike, or nil to like."
 (defun lem-ui-like-item-toggle ()
   "Toggle like status of item at point."
   (interactive)
-  (let* ((json (lem-ui--property 'json))
-         (my-vote (alist-get 'my_vote json)))
-    (if json
-        (cond ((eq my-vote -1)
-               (lem-ui-unlike-item))
-              ((eq my-vote 1)
-               (lem-ui-dislike-item))
-              ((or (eq my-vote nil)
-                   (eq my-vote 0))
-               (lem-ui-like-item)))
-      (message "No item at point?"))))
+  (lem-ui-with-item
+      (let* ((json (lem-ui--property 'json))
+             (my-vote (alist-get 'my_vote json)))
+        (if json
+            (cond ((eq my-vote -1)
+                   (lem-ui-unlike-item))
+                  ((eq my-vote 1)
+                   (lem-ui-dislike-item))
+                  ((or (eq my-vote nil)
+                       (eq my-vote 0))
+                   (lem-ui-like-item)))))))
 
 (defun lem-ui--update-item-json (new-json)
   "Replace the json property of item at point with NEW-JSON."
@@ -1884,24 +1882,22 @@ CURRENT-USER means we are displaying the current user's profile."
 (defun lem-ui-view-item-user ()
   "View user of item at point."
   (interactive)
-  (let ((user (get-text-property (point) 'creator-id)))
-    (if user
-        (lem-ui-view-user user 'overview)
-      (message "No user item at point?"))))
+  (lem-ui-with-item
+      (let ((user (lem-ui--property 'creator-id)))
+        (lem-ui-view-user user 'overview))))
 
 (defun lem-ui-view-user-at-point ()
   "View user at point."
   (interactive)
-  (lem-ui-with-id
+  (lem-ui-with-item
       (lem-ui-view-user id 'overview)))
 
 (defun lem-ui-message-user-at-point ()
   "Send private message to user at point."
   (interactive)
-  (lem-ui-with-id
+  (lem-ui-with-item
       (let ((message (read-string "Private message: ")))
         (lem-send-private-message message id))))
-
 
 ;;; IMAGES
 (defun lem-ui-insert-images ()
@@ -1921,14 +1917,14 @@ It's a cheap hack, alas."
 (defun lem-ui-copy-item-url ()
   "Copy the URL (ap_id) of the post or comment at point."
   (interactive)
-  (let* ((json (lem-ui--property 'json))
-         (item (or (alist-get 'comment json)
-                   (alist-get 'post json)))
-         (url (alist-get 'ap_id item)))
-    (if item
-        (progn (kill-new url)
-               (message "url %s copied!" url))
-      (message "No item at point?"))))
+  (lem-ui-with-item
+      (let* ((json (lem-ui--property 'json))
+             (item (or (alist-get 'comment json)
+                       (alist-get 'post json)))
+             (url (alist-get 'ap_id item)))
+        (if item
+            (progn (kill-new url)
+                   (message "url %s copied!" url))))))
 
 (provide 'lem-ui)
 ;;; lem-ui.el ends here
