@@ -36,9 +36,9 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 
 [[file:lem.png][file:./lem.png]]
 
-file:./lem-post.png
+[[file:./lem-post.png][file:./lem-post.png]]
 
-* lem commands index
+* commands index
 #+BEGIN_SRC emacs-lisp :results table :colnames '("Binding" "Command" "Description") :exports results
   (let ((rows))
     (mapatoms
