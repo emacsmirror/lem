@@ -126,6 +126,7 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 |           | lem-ui--follow-link-at-point           | Follow link at point.                                              |
 |           | lem-ui-choose-sort                     | Read a sort type and load it.                                      |
 |           | lem-ui-choose-type                     | Read a listing type and load it.                                   |
+|           | lem-ui-copy-item-url                   | Copy the URL (ap_id) of the post or comment at point.              |
 | C-c C-c   | lem-ui-cycle-listing-type              | Cycle view between `lem-listing-types'.                            |
 | C-c C-s   | lem-ui-cycle-sort                      | Cycle view between some `lem-sort-types'.                          |
 |           | lem-ui-delete-comment                  | Delete comment at point.                                           |
@@ -134,6 +135,7 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 |           | lem-ui-edit-comment                    | Edit comment at point if possible.                                 |
 | s         | lem-ui-jump-to-subscribed              | Prompt for a subscribed community and view it.                     |
 |           | lem-ui-like-item                       | Like (upvote) item at point.                                       |
+| l         | lem-ui-like-item-toggle                | Toggle like status of item at point                                |
 |           | lem-ui-mark-all-read                   | Mark all replies as read.                                          |
 |           | lem-ui-mark-private-message-read       | Mark the private message at point as read.                         |
 |           | lem-ui-mark-reply-comment-read         | Mark the comment-reply at point as read.                           |
