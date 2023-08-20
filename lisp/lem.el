@@ -138,7 +138,7 @@
     (define-key map (kbd "A") #'lem-ui-save-item)
     (define-key map (kbd "r") #'lem-post-comment) ; Reply
     (define-key map (kbd "N") #'lem-post-compose) ; New
-    ;;;
+    (define-key map (kbd "l") #'lem-ui-like-item-toggle)
     map)
   "Keymap for `lem-mode'.")
 
