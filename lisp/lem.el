@@ -110,7 +110,7 @@
   :type (lem-map-customize-options lem-listing-types))
 
 (defcustom lem-use-emojify nil
-  ""
+  "Whether to enable `emojify-mode' in lem buffers."
   :type 'boolean)
 
 ;;; MAP
@@ -223,7 +223,7 @@ equal to `lem-instance-url'."
     (setq lem-user-id id)))
 
 (defun lem-kill-all-buffers ()
-  "Kill all lem.el buffers"
+  "Kill all lem.el buffers."
   (interactive)
   (fedi-kill-all-buffers "*lem-"))
 
