@@ -1837,5 +1837,17 @@ It's a cheap hack, alas."
                (delete-char 1))
         (goto-char (prop-match-end match))))))
 
+(defun lem-ui-copy-item-url ()
+  "Copy the URL (ap_id) of the post or comment at point."
+  (interactive)
+  (let* ((json (lem-ui--property 'json))
+         (item (or (alist-get 'comment json)
+                   (alist-get 'post json)))
+         (url (alist-get 'ap_id item)))
+    (if item
+        (progn (kill-new url)
+               (message "url %s copied!" url))
+      (message "No item at point?"))))
+
 (provide 'lem-ui)
 ;;; lem-ui.el ends here
