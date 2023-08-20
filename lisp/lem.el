@@ -143,6 +143,8 @@
     (define-key map (kbd "u") #'lem-ui-view-item-user)
     (define-key map (kbd "c") #'lem-ui-view-item-community)
     (define-key map (kbd "e") #'lem-ui-edit-comment)
+    (define-key map (kbd "/") #'lem-switch-to-buffer)
+    (define-key map (kbd "M-C-Q") #'lem-kill-all-buffers)
     map)
   "Keymap for `lem-mode'.")
 
@@ -219,6 +221,16 @@ equal to `lem-instance-url'."
          (person (alist-get 'person_view user))
          (id (alist-get 'id (alist-get 'person person))))
     (setq lem-user-id id)))
+
+(defun lem-kill-all-buffers ()
+  "Kill all lem.el buffers."
+  (interactive)
+  (fedi-kill-all-buffers "*lem-"))
+
+(defun lem-switch-to-buffer ()
+  "Switch to a live lem.el buffer."
+  (interactive)
+  (fedi-switch-to-buffer "*lem-"))
 
 (define-derived-mode lem-mode special-mode "lem"
   "Major mode for Lemmy, the federated link-aggregator and forum."
