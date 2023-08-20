@@ -1060,27 +1060,40 @@ TRIM means trim each post for length."
 Saved items can be viewed in your profile, like bookmarks.
 If UNSAVE, unsave the item instead."
   (interactive)
-  (let* ((id (lem-ui--id-from-prop))
-         (type (lem-ui--item-type))
-         (s-str (if unsave "unsaved" "saved"))
-         (s-bool (if unsave :json-false t))
-         (json (lem-ui--property 'json))
-         (saved-p (alist-get 'saved json)))
-    (cond ((and unsave (equal saved-p :json-false))
-           (message "You can only unsave saved items."))
-          ((eq type 'post)
-           (lem-save-post id s-bool)
-           (message "%s %s %s!" type id s-str))
-          ((eq type 'comment)
-           (lem-save-comment id s-bool)
-           (message "%s %s %s!" type id s-str))
-          (t
-           (message "You can only save posts and comments.")))))
+  (lem-ui-with-item
+      (let* ( ;(id (lem-ui--id-from-prop))
+             (type (lem-ui--item-type))
+             (s-str (if unsave "unsaved" "saved"))
+             (s-bool (if unsave :json-false t))
+             (json (lem-ui--property 'json))
+             (saved-p (alist-get 'saved json)))
+        (cond ((and unsave (eq saved-p :json-false))
+               (message "You can only unsave saved items."))
+              ((eq type 'post)
+               (let ((json (lem-save-post id s-bool)))
+                 (lem-ui--update-item-json (alist-get 'post_view json))
+                 (message "%s %s %s!" type id s-str)))
+              ((eq type 'comment)
+               (let ((json (lem-save-comment id s-bool)))
+                 (lem-ui--update-item-json (alist-get 'comment_view json))
+                 (message "%s %s %s!" type id s-str)))
+              (t
+               (message "You can only save posts and comments."))))
+    :number))
 
 (defun lem-ui-unsave-item ()
   "Unsave item at point."
   (interactive)
   (lem-ui-save-item :unsave))
+
+(defun lem-ui-save-item-toggle ()
+  "Toggle saved status of item at point."
+  (interactive)
+  (let* ((json (lem-ui--property 'json))
+         (saved-p (alist-get 'saved json)))
+    (if (eq saved-p :json-false)
+        (lem-ui-save-item)
+      (lem-ui-unsave-item))))
 
 (defun lem-ui-view-saved-items (&optional id sort limit page)
   "View saved items of the current user, or of user with ID.
