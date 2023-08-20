@@ -206,23 +206,24 @@ If STRING, return the id as a string."
 (defun lem-ui--init-view ()
   "Initialize a lemmy view.
 Inserts images and sets relative timestamp timers."
-  ;; load images
-  (lem-ui-insert-images)
-  ;; relative timestamps:
-  (setq
-   ;; Initialize with a minimal interval; we re-scan at least once
-   ;; every 5 minutes to catch any timestamps we may have missed
-   fedi-timestamp-next-update (time-add (current-time)
-                                        (seconds-to-time 300)))
-  (setq fedi-timestamp-update-timer
-        (when fedi-enable-relative-timestamps
-          (run-at-time (time-to-seconds
-                        (time-subtract fedi-timestamp-next-update
-                                       (current-time)))
-                       nil ;; don't repeat
-                       #'fedi--update-timestamps-callback
-                       (current-buffer)
-                       nil))))
+  (let ((inhibit-read-only t))
+    ;; load images
+    (lem-ui-insert-images)
+    ;; relative timestamps:
+    (setq
+     ;; Initialize with a minimal interval; we re-scan at least once
+     ;; every 5 minutes to catch any timestamps we may have missed
+     fedi-timestamp-next-update (time-add (current-time)
+                                          (seconds-to-time 300)))
+    (setq fedi-timestamp-update-timer
+          (when fedi-enable-relative-timestamps
+            (run-at-time (time-to-seconds
+                          (time-subtract fedi-timestamp-next-update
+                                         (current-time)))
+                         nil ;; don't repeat
+                         #'fedi--update-timestamps-callback
+                         (current-buffer)
+                         nil)))))
 
 ;;; MACROS
 
@@ -1716,6 +1717,7 @@ RENDER-FUN is the name of a function to render them."
         (funcall render-fun (alist-get (lem-ui-plural-symbol type)
                                        all-items)))
       (goto-char old-max)
+      (lem-ui--init-view)
       (message "Loading more items... [done]"))))
 
 (defun lem-ui-view-comment-post ()
