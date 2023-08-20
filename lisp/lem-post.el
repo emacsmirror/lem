@@ -111,15 +111,17 @@
                                      (message "Posting to %s" choice)))
   (fedi-post--update-status-fields))
 
-(defun lem-post-compose (&optional edit mode)
+(defun lem-post-compose (&optional edit mode comment)
   "Compose a new post.
 EDIT means we are editing.
-MODE is the lem.el minor mode to enable in the compose buffer."
+MODE is the lem.el minor mode to enable in the compose buffer.
+COMMENT means we are composing a comment."
   (interactive)
   (fedi-post--compose-buffer edit
                              #'markdown-mode
                              (or mode #'lem-post-mode)
                              (when mode "lem-post")
+                             (or comment 'post)
                              (list #'lem-post--mentions-capf
                                    #'lem-post--comms-capf)
                              '((name . "title")
@@ -140,27 +142,31 @@ MODE is the lem.el minor mode to enable in the compose buffer."
 (defun lem-post-submit ()
   "Submit the post to lemmy."
   (interactive)
-  (if (not (and lem-post-title lem-post-community-id))
-      (message "You need to set at least a post name and community.")
-    (let* ((body (fedi-post--remove-docs))
-           (response (if lem-post-comment-post-id
-                         (lem-create-comment lem-post-comment-post-id
-                                             body
-                                             lem-post-comment-comment-id)
-                       (lem-create-post lem-post-title lem-post-community-id body
-                                        lem-post-url fedi-post-content-nsfw
-                                        nil fedi-post-language)))) ; TODO: honeypot
-      (when response
-        (let-alist response
-          (if lem-post-comment-post-id
-              (progn
+  (let ((buf (buffer-name)))
+    (if (and (string-suffix-p "-post*" buf)
+             (not (and lem-post-title lem-post-community-id)))
+        (message "You need to set at least a post name and community.")
+      (let* ((body (fedi-post--remove-docs))
+             (response (if lem-post-comment-post-id
+                           (lem-create-comment lem-post-comment-post-id
+                                               body
+                                               lem-post-comment-comment-id)
+                         (lem-create-post lem-post-title lem-post-community-id body
+                                          lem-post-url fedi-post-content-nsfw
+                                          nil fedi-post-language)))) ; TODO: honeypot
+        (when response
+          (let-alist response
+            (if lem-post-comment-post-id
+                ;; (progn
                 (message "Comment created: %s" .comment_view.comment.content)
-                (lem-ui-view-post (number-to-string lem-post-comment-post-id)))
-            (message "Post %s created!" .post_view.post.name)))
-        (with-current-buffer "*new post*"
-          ;; FIXME: we have to call this after using b-local
-          ;; `lem-post-comment-post-id', but it baulks:
-          (fedi-post-kill))))))
+              ;; FIXME: prev window config + reload instead, coz maybe in a diff view:
+              ;; this breaks `fedi-post-kill'
+              ;; (lem-ui-view-post (number-to-string lem-post-comment-post-id)))
+              (message "Post %s created!" .post_view.post.name)))
+          (with-current-buffer buf
+            ;; FIXME: we have to call this after using b-local
+            ;; `lem-post-comment-post-id', but it baulks:
+            (fedi-post-kill)))))))
 
 (defun lem-post-compose-simple ()
   "Create and submit new post, reading strings in the minibuffer."
