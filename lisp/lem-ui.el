@@ -1810,7 +1810,6 @@ TYPE should be either :unlike, :dislike, or nil to like."
     (insert
      (propertize
       (concat
-       (number-to-string .person.id) " "
        (propertize .person.name
                    'face '(:weight bold))
        " "
