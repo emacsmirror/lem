@@ -1477,6 +1477,16 @@ If RESTORE, restore the item instead."
   (interactive)
   (lem-ui-delete-item 'post #'lem-delete-post :restore))
 
+(defun lem-ui-delete-post-or-comment ()
+  "Delete post or comment at point."
+  (interactive)
+  ;; TODO: check for deleted status first
+  (let ((type (lem-ui--property 'type)))
+    (cond ((eq type 'post)
+           (lem-ui-delete-post))
+          ((eq type 'comment)
+           (lem-ui-delete-comment)))))
+
 ;;; COMMENTS
 
 (defun lem-ui-render-comment (comment &optional reply)

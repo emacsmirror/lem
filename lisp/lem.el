@@ -142,6 +142,7 @@
     (define-key map (kbd "l") #'lem-ui-like-item-toggle)
     (define-key map (kbd "u") #'lem-ui-view-item-user)
     (define-key map (kbd "c") #'lem-ui-view-item-community)
+    (define-key map (kbd "d") #'lem-ui-delete-post-or-comment)
     (define-key map (kbd "e") #'lem-ui-edit-comment)
     (define-key map (kbd "/") #'lem-switch-to-buffer)
     (define-key map (kbd "M-C-Q") #'lem-kill-all-buffers)
