@@ -855,23 +855,28 @@ DEL-P means add icon for deleted item."
         (t
          (number-to-string score))))
 
-(defun lem-ui-bt-byline (score comments &optional my-vote)
+(defun lem-ui-bt-byline (score comments &optional my-vote saved)
   "Format a bottom byline for an item.
 SCORE is the item's score.
 COMMENTS is the comments count to render.
-MY-VOTE is a number, the current vote by the current user."
+MY-VOTE is a number, the current vote by the current user.
+SAVED means to add saved icon."
   (let* ((my-score (lem-ui-prop-score my-vote score))
          (str (concat (lem-ui-symbol 'upvote) " "
                       my-score " | "
                       (lem-ui-symbol 'reply) " "
-                      (number-to-string comments))))
+                      (number-to-string comments)
+                      (when (eq saved t)
+                        (concat " | "
+                                (lem-ui-symbol 'bookmark))))))
     (propertize str
                 'byline-bottom t)))
 
-(defun lem-ui-update-bt-byline-from-json (&optional vote)
+(defun lem-ui-update-bt-byline-from-json (&optional vote saved)
   "Update the text of the bottom byline based on item JSON.
 Used to adjust counts after (un)liking.
-VOTE is a number, handed to `lem-ui-bt-byline'."
+VOTE is a number, handed to `lem-ui-bt-byline'.
+SAVED means to add saved icon."
   (let-alist (lem-ui--property 'json)
     (let ((inhibit-read-only t)
           (byline
@@ -886,7 +891,8 @@ VOTE is a number, handed to `lem-ui-bt-byline'."
          (lem-ui-bt-byline .counts.score
                            (or .counts.child_count
                                .counts.comments)
-                           vote))))))
+                           vote
+                           saved))))))
 
 (defun lem-ui--replace-region-contents (beg end replace-fun)
   "Replace buffer contents from BEG to END with REPLACE-FUN.
@@ -1013,7 +1019,7 @@ SORT must be a member of `lem-sort-types'."
            "")
          (lem-ui-insert-post-image-maybe post)
          "\n"
-         (lem-ui-bt-byline .counts.score .counts.comments)
+         (lem-ui-bt-byline .counts.score .counts.comments nil .saved)
          "\n"
          lem-ui-horiz-bar
          "\n\n")
@@ -1070,12 +1076,16 @@ If UNSAVE, unsave the item instead."
         (cond ((and unsave (eq saved-p :json-false))
                (message "You can only unsave saved items."))
               ((eq type 'post)
-               (let ((json (lem-save-post id s-bool)))
+               (let ((json (lem-save-post id s-bool))
+                     (my-vote (alist-get 'my_vote json)))
                  (lem-ui--update-item-json (alist-get 'post_view json))
+                 (lem-ui-update-bt-byline-from-json my-vote s-bool)
                  (message "%s %s %s!" type id s-str)))
               ((eq type 'comment)
-               (let ((json (lem-save-comment id s-bool)))
+               (let ((json (lem-save-comment id s-bool))
+                     (my-vote (alist-get 'my_vote json)))
                  (lem-ui--update-item-json (alist-get 'comment_view json))
+                 (lem-ui-update-bt-byline-from-json my-vote s-bool)
                  (message "%s %s %s!" type id s-str)))
               (t
                (message "You can only save posts and comments."))))
@@ -1764,10 +1774,11 @@ TYPE should be either :unlike, :dislike, or nil to like."
               (let* ((vote (funcall fun id score))
                      (obj (intern (concat (symbol-name item) "_view")))
                      (i (alist-get obj vote))
+                     (saved (alist-get 'saved i))
                      (my-vote (alist-get 'my_vote i)))
                 (when my-vote
                   (lem-ui--update-item-json i)
-                  (lem-ui-update-bt-byline-from-json my-vote)
+                  (lem-ui-update-bt-byline-from-json my-vote saved)
                   (message "%s %s %s!" item id like-str))))))
     :number))
 
