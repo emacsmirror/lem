@@ -1019,7 +1019,7 @@ SORT must be a member of `lem-sort-types'."
            "")
          (lem-ui-insert-post-image-maybe post)
          "\n"
-         (lem-ui-bt-byline .counts.score .counts.comments nil .saved)
+         (lem-ui-bt-byline .counts.score .counts.comments .my_vote .saved)
          "\n"
          lem-ui-horiz-bar
          "\n\n")
@@ -1584,7 +1584,7 @@ REPLY means it is a comment-reply object."
         "\n"
         (or content "")
         "\n"
-        (lem-ui-bt-byline .counts.score .counts.child_count)
+        (lem-ui-bt-byline .counts.score .counts.child_count .my_vote .saved)
         "\n"
         lem-ui-horiz-bar
         "\n")
