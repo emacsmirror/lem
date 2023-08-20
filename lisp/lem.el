@@ -133,14 +133,16 @@
     (define-key map (kbd "s") #'lem-ui-jump-to-subscribed)
     (define-key map (kbd "P") #'lem-ui-view-user-at-point)
     (define-key map (kbd "O") #'lem-ui-view-own-profile)
+    (define-key map (kbd "A") #'lem-ui-view-saved-items)
     ;; actions:
     (define-key map (kbd "S") #'lem-ui-subscribe-to-community-at-point)
-    (define-key map (kbd "A") #'lem-ui-save-item)
+    (define-key map (kbd "a") #'lem-ui-save-item-toggle)
     (define-key map (kbd "r") #'lem-post-comment) ; Reply
     (define-key map (kbd "N") #'lem-post-compose) ; New
     (define-key map (kbd "l") #'lem-ui-like-item-toggle)
     (define-key map (kbd "u") #'lem-ui-view-item-user)
     (define-key map (kbd "c") #'lem-ui-view-item-community)
+    (define-key map (kbd "e") #'lem-ui-edit-comment)
     map)
   "Keymap for `lem-mode'.")
 

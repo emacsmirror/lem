@@ -132,10 +132,10 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 |           | lem-ui-delete-comment                  | Delete comment at point.                                           |
 |           | lem-ui-delete-post                     | Delete post at point.                                              |
 |           | lem-ui-dislike-item                    | Dislike (downvote) item at point.                                  |
-|           | lem-ui-edit-comment                    | Edit comment at point if possible.                                 |
+| e         | lem-ui-edit-comment                    | Edit comment at point if possible.                                 |
 | s         | lem-ui-jump-to-subscribed              | Prompt for a subscribed community and view it.                     |
 |           | lem-ui-like-item                       | Like (upvote) item at point.                                       |
-| l         | lem-ui-like-item-toggle                | Toggle like status of item at point                                |
+| l         | lem-ui-like-item-toggle                | Toggle like status of item at point.                               |
 |           | lem-ui-mark-all-read                   | Mark all replies as read.                                          |
 |           | lem-ui-mark-private-message-read       | Mark the private message at point as read.                         |
 |           | lem-ui-mark-reply-comment-read         | Mark the comment-reply at point as read.                           |
@@ -144,7 +144,8 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 | TAB       | lem-ui-next-tab-item                   | Jump to next tab item.                                             |
 | <backtab> | lem-ui-prev-tab-item                   | Jump to prev tab item.                                             |
 |           | lem-ui-restore-post                    | Restore deleted post at point.                                     |
-| A         | lem-ui-save-item                       | Save item at point.                                                |
+|           | lem-ui-save-item                       | Save item at point.                                                |
+| a         | lem-ui-save-item-toggle                | Toggle saved status of item at point.                              |
 | SPC       | lem-ui-scroll-up-command               | Call `scroll-up-command', loading more toots if necessary.         |
 |           | lem-ui-search                          | Do a search for one of the types in `lem-search-types'.            |
 | S         | lem-ui-subscribe-to-community-at-point | Subscribe to community at point.                                   |
@@ -154,16 +155,16 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 |           | lem-ui-url-lookup                      | Perform a webfinger lookup on URL and load the result in `lem.el'. |
 |           | lem-ui-view-comment-post               | View post of comment at point.                                     |
 | C         | lem-ui-view-communities                | View Lemmy communities.                                            |
-| c         | lem-ui-view-community-at-point         | View community at point.                                           |
+|           | lem-ui-view-community-at-point         | View community at point.                                           |
 | I         | lem-ui-view-instance                   | View posts of current user's home instance.                        |
-|           | lem-ui-view-item-community             | View community of item at point.                                   |
-|           | lem-ui-view-item-user                  | View user of item at point.                                        |
+| c         | lem-ui-view-item-community             | View community of item at point.                                   |
+| u         | lem-ui-view-item-user                  | View user of item at point.                                        |
 |           | lem-ui-view-mentions                   | View reply comments to the current user.                           |
 | O         | lem-ui-view-own-profile                | View profile of the current user.                                  |
 |           | lem-ui-view-post-at-point              | View post at point.                                                |
 |           | lem-ui-view-private-messages           | View reply comments to the current user.                           |
 |           | lem-ui-view-replies                    | View reply comments to the current user.                           |
 |           | lem-ui-view-replies-unread             | View unread replies.                                               |
-|           | lem-ui-view-saved-items                | View saved items of the current user, or of user with ID.          |
+| A         | lem-ui-view-saved-items                | View saved items of the current user, or of user with ID.          |
 | RET       | lem-ui-view-thing-at-point             | View post, community or user at point.                             |
 | P         | lem-ui-view-user-at-point              | View user at point.                                                |
