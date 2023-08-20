@@ -32,42 +32,6 @@ Contributions are welcome. Open an issue to explain if you're working on somethi
 
 Also feel free to get in touch if you want to use =lem-api.el= to build another frontend.
 
-* UI TODOS doing
-
-- [ ] update current buffer with new items (less important than in masto)
-  
-* UI TODOS done
-
-- [X] rich compose interface (from mastodon.el)
-- [X] timestamp logic (from mastodon.el)
-- [X] image loading
-- [X] tabstop navigation logic (from mastodon.el)
-- [X] webfinger lookup bindings for all links
-- [X] finish pagination/add older items to buffer
-- [X] =lem.plstore= for auth token
-- [X] webfinger lookups
-- [X] proper buffer naming/separation
-- [X] view saved posts
-- [X] comment threads (uwu!)
-- [X] finish cycling of views by sort/listing-type
-- [X] view instance
-- [X] list communities
-- [X] view community
-- [X] view user
-- [X] list users
-- [X] view post and comments
-- [X] adjust listing type and sort for current view
-- [X] buffer macro
-- [X] simple reply
-- [X] simple private message
-- [X] subscribe to community
-- [X] jump to subscribed community
-- [X] search by type: user, community, post, comment, all
-- [X] prev/next item
-- [X] render post/comment body as markdown
-- [X] generic like/dislike cmds
-- [X] "save" items [bookmarking]
-
 * screenshots
 
 [[file:lem.png][file:./lem.png]]
