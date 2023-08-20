@@ -68,9 +68,11 @@ Also feel free to get in touch if you want to use =lem-api.el= to build another 
 - [X] generic like/dislike cmds
 - [X] "save" items [bookmarking]
 
-* screenshot
+* screenshots
 
 [[file:lem.png][file:./lem.png]]
+
+file:./lem-post.png
 
 * lem commands index
 #+BEGIN_SRC emacs-lisp :results table :colnames '("Binding" "Command" "Description") :exports results
