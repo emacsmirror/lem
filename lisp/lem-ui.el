@@ -1443,24 +1443,24 @@ Optionally only view UNREAD items."
   "Edit comment at point if possible."
   (interactive)
   (lem-ui-with-own-item 'comment
-                        (let* ((id (lem-ui--property 'id))
-                               (json (lem-ui--property 'json))
-                               (old-str (alist-get 'content (alist-get 'comment json)))
-                               (new-str (read-string "Edit comment: " old-str)))
-                          (lem-edit-comment id new-str))))
+    (let* ((id (lem-ui--property 'id))
+           (json (lem-ui--property 'json))
+           (old-str (alist-get 'content (alist-get 'comment json)))
+           (new-str (read-string "Edit comment: " old-str)))
+      (lem-edit-comment id new-str))))
 
 (defun lem-ui-delete-item (item fun &optional restore)
   "Delete item of type ITEM at point, calling FUN.
 If RESTORE, restore the item instead."
   (lem-ui-with-own-item item
-                        (let* ((id (lem-ui--property 'id)))
-                          (when (y-or-n-p (format "%s %s?"
-                                                  (if restore "Restore" "Delete")
-                                                  item))
-                            (progn
-                              (funcall fun id (if restore :json-false t))
-                              (message "%s %s %s!" item id
-                                       (if restore "restored" "deleted")))))))
+    (let* ((id (lem-ui--property 'id)))
+      (when (y-or-n-p (format "%s %s?"
+                              (if restore "Restore" "Delete")
+                              item))
+        (progn
+          (funcall fun id (if restore :json-false t))
+          (message "%s %s %s!" item id
+                   (if restore "restored" "deleted")))))))
 
 (defun lem-ui-delete-comment ()
   "Delete comment at point."
