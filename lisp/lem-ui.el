@@ -845,16 +845,42 @@ DEL-P means add icon for deleted item."
        'face font-lock-comment-face))
      'byline-top t)))
 
-(defun lem-ui-bt-byline (score comments)
+(defun lem-ui-bt-byline (score comments &optional my-vote)
   "Format a bottom byline for an item.
 SCORE is the item's score.
 COMMENTS is the comments count to render."
-  (propertize
-   (concat (lem-ui-symbol 'upvote) " "
-           (number-to-string score) " | "
-           (lem-ui-symbol 'reply) " "
-           (number-to-string comments))
-   'byline-bottom t))
+  (let* ((my-score (if my-vote
+                       (propertize (number-to-string score)
+                                   'face '(:box t :weight bold)
+                                   'help-echo "you voted")
+                     (number-to-string score)))
+         (str (concat (lem-ui-symbol 'upvote) " "
+                      my-score
+                      " | "
+                      (lem-ui-symbol 'reply) " "
+                      (number-to-string comments))))
+    (propertize str
+                'byline-bottom t)))
+
+(defun lem-ui-update-bt-byline-from-json (&optional vote)
+  "Update the text of the bottom byline based on item JSON.
+Used to adjust counts after (un)liking."
+  (let-alist (lem-ui--property 'json)
+    (let ((inhibit-read-only t)
+          (byline
+           (fedi--find-property-range 'byline-bottom (point)
+                                      (when (lem-ui--property 'byline-bottom)
+                                        :backwards))))
+      ;; `emojify-mode' doesn't work with display prop, so we replace byline
+      ;; string:
+      (replace-region-contents
+       (car byline) (cdr byline)
+       (lambda ()
+         (lem-ui-bt-byline .counts.score
+                           (or .counts.child_count
+                               .counts.comments)
+                           (when (not (eq 0 vote))
+                             :my-vote)))))))
 
 (defun lem-ui-render-url (url &optional no-shorten)
   "Render URL, a plain non-html string.
@@ -1702,8 +1728,15 @@ TYPE should be either :unlike, :dislike, or nil to like."
         (if (or (eq item 'post)
                 (eq item 'comment)
                 (eq item 'comment-reply))
-            (progn (funcall fun id score)
-                   (message "%s %s %s!" item id like-str))
+            (progn
+              (let* ((vote (funcall fun id score))
+                     (obj (intern (concat (symbol-name item) "_view")))
+                     (i (alist-get obj vote))
+                     (my-vote (alist-get 'my_vote i)))
+                (when my-vote
+                  (lem-ui--update-item-json i)
+                  (lem-ui-update-bt-byline-from-json my-vote)
+                  (message "%s %s %s!" item id like-str))))
           (message "No post or comment at point?")))
     :number))
 
