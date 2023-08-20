@@ -110,7 +110,7 @@
   :type (lem-map-customize-options lem-listing-types))
 
 (defcustom lem-use-emojify nil
-  ""
+  "Whether to enable `emojify-mode' in lem buffers."
   :type 'boolean)
 
 ;;; MAP
