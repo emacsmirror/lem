@@ -316,12 +316,6 @@ Optionally start from POS."
           ((eq type 'person)
            (lem-ui-view-user-at-point)))))
 
-(defun lem-ui-view-item-user-at-point ()
-  "."
-  (lem-ui-with-item
-      (let ((id (lem-ui--property 'creator-id)))
-        (lem-ui-view-user id 'overview))))
-
 (defun lem-ui-scroll-up-command ()
   "Call `scroll-up-command', loading more toots if necessary.
 If we hit `point-max', call `lem-ui-more' then `scroll-up-command'."
