@@ -849,7 +849,7 @@ DEL-P means add icon for deleted item."
                      'help-echo "you liked"))
         ((eq my-vote -1)
          (propertize (number-to-string score)
-                     'face '(:inherit warning :box t
+                     'face '(:inherit error :box t
                                       :weight bold)
                      'help-echo "you disliked"))
         (t
