@@ -229,7 +229,7 @@ Q is the search query.\"
                         (equal method "put"))
                     ;; FIXME: deal with headers nil arg here:
                     `(funcall #',req-fun req-url params nil :json)
-                  `(funcall #',req-fun req-url params))))
+                  `(funcall #',req-fun req-url params :silent))))
          (fedi-http--triage response
                             (lambda ()
                               (with-current-buffer response
