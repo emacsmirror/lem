@@ -266,6 +266,8 @@ Returns follows data, from under my_user, from the site endpoint."
 ;; no auth: because we call this before sending the instance our creds:
 (lem-def-request "get" "get-site" "site")
 
+(declare-function lem-get-site nil)
+
 ;; (lem-get-site)
 
 (lem-def-request "get" "get-site-metadata" "post/site_metadata"
@@ -342,6 +344,8 @@ are for `lem-search'."
   "Log in to `lem-instance-url' with NAME and PASSWORD."
   (username-or-email password)
   nil nil :unauthed)
+
+(declare-function lem-login nil)
 
 ;;; USERS / PERSON
 (lem-def-request "get" "get-person" "user"
