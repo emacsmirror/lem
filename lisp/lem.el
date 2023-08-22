@@ -240,6 +240,7 @@ equal to `lem-instance-url'."
   (read-only-mode 1)
   (when (and lem-use-emojify
              (require 'emojify nil :no-error))
+    (declare-function emojify-mode nil)
     (emojify-mode 1)))
 
 (provide 'lem)
