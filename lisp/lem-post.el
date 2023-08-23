@@ -78,6 +78,11 @@
                (? ?@ (* (not (any "\n" "\t" " "))))) ; optional domain
       (| "'" word-boundary)))
 
+(defgroup lem-post
+  "Posting for lem.el."
+  :prefix "lem-post-"
+  :group 'lem)
+
 (defface lem-post-community-face
   '((t :inherit success))
   "Face used for community status field.")
