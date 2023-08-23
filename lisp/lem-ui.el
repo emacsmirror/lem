@@ -718,7 +718,10 @@ etc.")
           ;; admin display in instance header:
           ;; (type user, but id not creator-id)
           ((eq item-type 'user)
-           (lem-ui-view-user id)))))
+           (lem-ui-view-user id))
+          ((and (eq (lem-ui--property 'type) 'post)
+                (lem-ui--property 'title))
+           (lem-ui-view-post-at-point)))))
 
 (defun lem-ui--propertize-link (item id type &optional url)
   "Propertize a link ITEM with ID and TYPE.
@@ -786,6 +789,14 @@ START and END are the boundaries of the link in the post body."
   (propertize str
               'face '(:inherit font-lock-keyword-face :box t)))
 
+(defun lem-ui-propertize-title (title-str)
+  "Propertize TITLE-STR as a post title."
+  (propertize title-str
+              'mouse-face 'highlight
+              'title t
+              'keymap lem-ui--link-map
+              'face '(:weight bold)))
+
 (defun lem-ui-top-byline (title url username _score timestamp
                                 &optional community _community-url
                                 featured-p op-p admin-p mod-p del-p)
@@ -800,8 +811,7 @@ DEL-P means add icon for deleted item."
     (propertize
      (concat
       (if title
-          (concat (propertize title
-                              'face '(:weight bold))
+          (concat (lem-ui-propertize-title title)
                   "\n")
         "")
       (if url
