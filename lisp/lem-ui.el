@@ -793,6 +793,7 @@ START and END are the boundaries of the link in the post body."
   "Propertize TITLE-STR as a post title."
   (propertize title-str
               'mouse-face 'highlight
+              'cursor-face '(:inherit highlight :extend t)
               'title t
               'keymap lem-ui--link-map
               'face '(:weight bold)))

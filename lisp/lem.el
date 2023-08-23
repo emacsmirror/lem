@@ -113,6 +113,11 @@
   "Whether to enable `emojify-mode' in lem buffers."
   :type 'boolean)
 
+(defcustom lem-highlight-current-post-title nil
+  "Whether to highlight the current post's title.
+Uses `cursor-face-highlight-mode'."
+  :type 'boolean)
+
 ;;; MAP
 
 (defvar lem-mode-map
@@ -241,7 +246,9 @@ equal to `lem-instance-url'."
   (when (and lem-use-emojify
              (require 'emojify nil :no-error))
     (declare-function emojify-mode nil)
-    (emojify-mode 1)))
+    (emojify-mode 1))
+  (when lem-highlight-current-post-title
+    (cursor-face-highlight-mode)))
 
 (provide 'lem)
 ;;; lem.el ends here
