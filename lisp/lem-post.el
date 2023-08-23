@@ -79,6 +79,7 @@
       (| "'" word-boundary)))
 
 (defgroup lem-post
+  nil
   "Posting for lem.el."
   :prefix "lem-post-"
   :group 'lem)
