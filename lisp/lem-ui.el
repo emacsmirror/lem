@@ -282,15 +282,7 @@ ITEM is a symbol, either posts or comments."
   "Search for item with FUN.
 If search returns nil, execute REFRESH function.
 Optionally start from POS."
-  (let* ((npos (funcall fun
-                        (or pos (point))
-                        'byline-top
-                        (current-buffer))))
-    (if npos
-        (if (not (get-text-property npos 'byline-top))
-            (lem--goto-pos fun refresh npos)
-          (goto-char npos))
-      (funcall refresh))))
+  (fedi--goto-pos fun 'byline-top refresh pos))
 
 (defun lem-next-item ()
   "Move to next item."
