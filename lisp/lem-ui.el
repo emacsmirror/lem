@@ -576,14 +576,14 @@ LIMIT is the max results to return."
                   (remove "All" lem-search-types)))
          (type (downcase (lem-ui-read-type "Search type: " types)))
          ;; FIXME: LISTING/SORT doesn't make sense for all search types, eg users!:
-         (listing-type (lem-ui-read-type "Listing type: " lem-listing-types))
-         (sort (lem-ui-read-type "Sort by: " lem-sort-types))
+         ;; (listing-type (lem-ui-read-type "Listing type: " lem-listing-types))
+         ;; (sort (lem-ui-read-type "Sort by: " lem-sort-types))
          (query (read-string "Query: "))
          (type-fun (intern (concat "lem-ui-render-" type)))
          (buf-name (format "*lem-search-%s*" type))
          (buf (get-buffer-create buf-name))
          ;; TODO: handle all search args: community, page, limit
-         (response (lem-search query (capitalize type) listing-type sort
+         (response (lem-search query (capitalize type) nil nil ; listing-type sort
                                (or limit lem-ui-comments-limit)))
          (data (alist-get (intern type) response)))
     ;; TODO: render other responses:
