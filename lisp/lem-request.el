@@ -31,6 +31,9 @@
 ;;; Code:
 (require 'fedi)
 
+(defvar lem-api-version)
+(defvar lem-instance-url)
+
 (defmacro lem-def-request
     (method name endpoint
             &optional args docstring params man-params headers
@@ -58,9 +61,8 @@ HEADERS is an alist that will be bound as `url-request-extra-headers'.
 This macro is designed to generate functions for fetching data
 from JSON APIs.
 
-To use it, you first need to set `fedi-package-prefix' to the
-name of your package, and set `lem-instance-url' to the URL of
-an instance of your fedi service.
+To use it, you first need to set `lem-instance-url' to the URL of
+a lemmy instance.
 
 The name of functions generated with this will be the result of:
 \(concat fedi-package-prefix \"-\" NAME).
@@ -79,9 +81,9 @@ Q is the search query.\"
   (declare (debug t)
            (indent 3))
   (let ((req-fun (intern (concat "fedi-http--" method))))
-    `(defun ,(intern (concat fedi-package-prefix "-" name)) ,args
+    `(defun ,(intern (concat "lem-" name)) ,args
        ,docstring
-       (let* ((req-url (fedi-http--api ,endpoint lem-instance-url))
+       (let* ((req-url (fedi-http--api ,endpoint lem-instance-url lem-api-version))
               (url-request-method ,(upcase method))
               (url-request-extra-headers ,headers)
               ,(if unauthorized
