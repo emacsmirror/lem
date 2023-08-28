@@ -157,8 +157,6 @@ taglines.")
 
 ;; (lem-get-instance)
 
-(declare-function lem-get-instance nil)
-
 (defun lem-api-get-current-user ()
   "Get data for the current user, from the site endpoint.
 Returns a local_user_view, containing local_user object, person
@@ -177,8 +175,6 @@ Returns follows data, from under my_user, from the site endpoint."
 
 ;; no auth: because we call this before sending the instance our creds:
 (lem-def-request "get" "get-site" "site")
-
-(declare-function lem-get-site nil)
 
 ;; (lem-get-site)
 
@@ -205,9 +201,8 @@ LISTING-TYPE must be a member of `lem-listing-types'.
 LIMIT and PAGE are numbers."
   (q type- listing-type sort limit page community-name community-id)) ;  creator-id
 
-(declare-function lem-search nil)
-
 ;; (lem-search "emacs" "Posts")
+
 (defun lem-api-search (q type)
   "Search for Q.
 TYPE must be a member of `lem-search-types'. Defaults to All."
@@ -257,8 +252,6 @@ are for `lem-search'."
   (username-or-email password)
   nil nil :unauthed)
 
-(declare-function lem-login nil)
-
 ;;; USERS / PERSON
 (lem-def-request "get" "get-person" "user"
   (&optional username person-id sort limit page community-id saved-only)
@@ -269,7 +262,6 @@ Returns a person_view, comments, posts, moderates objects."
   (when saved-only
     '(("saved_only" . "true"))))
 
-(declare-function lem-get-person nil)
 ;; (lem-get-person nil 8511 nil nil nil nil)
 ;; (lem-get-person nil "8511" nil nil nil nil)
 ;; (lem-get-person nil "8511" nil nil nil nil :saved-only)
@@ -375,8 +367,6 @@ discussion_languages, default_post_language."
   "Returns a list of community objects."
   (type- sort limit page))
 
-(declare-function lem-list-communities nil)
-
 ;; (lem-list-communities "All")
 ;; (lem-list-communities "Subscribed")
 ;; (lem-list-communities "Local")
@@ -399,8 +389,6 @@ Returns a community_view and discussion_languages."
 Returns a community_view and discussion_languages."
   (name title banner description discussion-languages
         icon nsfw posting-restricted-to-mods))
-
-(declare-function lem-create-community nil)
 
 ;; (lem-create-community "communeity" "com")
 
@@ -454,8 +442,6 @@ Without either arg, get instance posts."
 ;; (lem-get-posts nil nil nil "86881" nil "2")
 ;; (lem-get-posts "All" nil nil nil nil nil :saved)
 
-(declare-function lem-get-posts nil)
-
 (defun lem-api-get-community-posts-by-id (community-id
                                           &optional type sort limit page)
   "List posts for COMMUNITY-ID.
@@ -493,8 +479,6 @@ BODY is the post's content. URL is its link.
 NSFW and HONEYPOT not yet implemented.
 Returns a post_view."
   (name community-id body url nsfw honeypot language-id))
-
-(declare-function lem-create-post nil)
 
 ;; (lem-create-post "tootle on" 96200 "hooley-dooley") ; always cross-posts?
 
@@ -549,7 +533,6 @@ PARENT-ID is the parent comment to reply to.
 Returns a comment_view, recipient_ids, and form_id."
   (post-id content parent-id))
 
-(declare-function lem-create-comment nil)
 ;; (lem-create-comment 1367490 "toot toot")
 ;; (lem-create-comment 1341246 "replying via lem.el")
 
@@ -565,8 +548,6 @@ Without any id or name, get instance comments."
            community-id community-name)
   (when saved-only
     '(("saved_only" . "true"))))
-
-(declare-function lem-get-comments nil)
 
 ;; (lem-get-comments "1694468")
 
