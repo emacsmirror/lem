@@ -137,13 +137,8 @@
 (require 'fedi)
 (require 'lem-request)
 
-(defvar fedi-http--api-version)
-(setq fedi-http--api-version "v3")
-
-(setq fedi-package-prefix "lem")
-
 (defvar lem-instance-url)
-(setq lem-instance-url "https://lemmy.ml")
+(defvar lem-api-version)
 
 ;;;###autoload
 (defvar lem-auth-token nil

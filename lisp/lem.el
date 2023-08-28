@@ -37,6 +37,10 @@
 
 
 ;;; VARS
+(defvar lem-api-version "v3")
+
+(defvar lem-instance-url "https://lemmy.ml")
+
 (defvar lem-auth-token)
 
 (defvar lem-user-id nil
