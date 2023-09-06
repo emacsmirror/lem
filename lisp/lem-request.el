@@ -86,6 +86,7 @@ Q is the search query.\"
        (let* ((req-url (fedi-http--api ,endpoint lem-instance-url lem-api-version))
               (url-request-method ,(upcase method))
               (url-request-extra-headers ,headers)
+              (url-user-agent "lem.el") ; lemmy.ml requres a non-nil agent
               ,(if unauthorized
                    `(_auth nil)
                  `(auth ,(unless unauthorized
