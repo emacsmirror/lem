@@ -330,7 +330,7 @@ If we hit `point-max', call `lem-ui-more' then `scroll-up-command'."
 ;;; INSTANCE
 
 ;; TODO: toggle posts or comments
-(defun lem-ui-view-instance (&optional type sort limit page)
+(defun lem-ui-view-instance (&optional type sort limit page sidebar)
   "View posts of current user's home instance.
 SORT must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
@@ -342,17 +342,19 @@ LIMIT is the amount of results to return."
          (sort (or sort lem-default-sort-type))
          (buf (get-buffer-create "*lem-instance*")))
     (lem-ui-with-buffer buf 'lem-mode nil
-      (lem-ui-render-instance instance :stats)
+      (lem-ui-render-instance instance :stats sidebar)
       (lem-ui-render-posts-instance posts)
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec
        type sort #'lem-ui-view-instance 'instance page))))
 
-(defun lem-ui-view-instance-full (_args)
+(defun lem-ui-view-instance-full ()
   "View view instance details."
   ;; TODO: full instance info: sidebar, full desc,
   ;; trending communities, stats, admins
-  )
+  (interactive)
+  (lem-ui-view-instance nil nil nil nil :sidebar))
+
 
 (defun lem-ui-view-modlog (_args)
   "Docstring."
@@ -374,7 +376,7 @@ STR is the preceding string to insert."
                                (cl-third x)))
     list " | ")))
 
-(defun lem-ui-render-instance (instance &optional stats)
+(defun lem-ui-render-instance (instance &optional stats sidebar)
   "INSTANCE.
 STATS."
   (let* ((admins-list (alist-get 'admins instance))
@@ -390,10 +392,9 @@ STATS."
          (lem-ui-font-lock-comment .site.actor_id)
          (lem-ui-font-lock-comment " created: " .site.published)
          "\n"
-         .site.description
-         "\n"
-         lem-ui-horiz-bar
-         "\n")
+         .site.description "\n"
+         (lem-ui-render-body .site.sidebar) "\n"
+         lem-ui-horiz-bar "\n")
         'json instance
         'byline-top t ; next/prev hack
         'id .site.id
