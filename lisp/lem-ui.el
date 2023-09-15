@@ -1149,6 +1149,42 @@ LIMIT is the max results to return."
       (lem-ui-set-buffer-spec
        type sort #'lem-ui-view-communities 'communities))))
 
+(defun lem-ui-view-communities-tl (&optional type sort limit)
+  "View Lemmy communities.
+TYPE must be one of `lem-listing-types'.
+SORT must be one of `lem-sort-types'.
+LIMIT is the max results to return."
+  (interactive)
+  (let* ((json (lem-list-communities (or type "All")
+                                     (or sort "TopAll")
+                                     (or limit "50")))
+         (list (alist-get 'communities json))
+         (buffer (format "*lem-communities*")))
+    (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode nil
+      (lem-ui-render-instance (lem-get-instance) :stats nil)
+      (make-vtable
+       :use-header-line nil
+       :columns '("Name" "Members" "Monthly users" "Posts"
+                  (:name "Sub" :min-width 4) "URL") ; "Description")
+       :objects-function
+       (lambda ()
+         (cl-loop for c in (alist-get 'communities json)
+                  collect (let-alist c
+                            (list .community.title .counts.subscribers
+                                  .counts.users_active_month .counts.posts
+                                  (if (equal "Subscribed" .subscribed)
+                                      "*"
+                                    "")
+                                  .community.actor_id
+                                  ;; .community.description
+                                  ))))
+       ;; TODO: :actions: view-community, subscribe
+       ;; TODO: search and tl list results
+       :row-colors  '(highlight vtable)
+       :divider-width 1)
+      (lem-ui-set-buffer-spec
+       type sort #'lem-ui-view-communities-tl 'communities))))
+
 (defun lem-ui-subscribe-to-community-at-point ()
   "Subscribe to community at point."
   (interactive)
