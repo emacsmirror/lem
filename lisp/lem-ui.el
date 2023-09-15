@@ -378,7 +378,8 @@ STR is the preceding string to insert."
 
 (defun lem-ui-render-instance (instance &optional stats sidebar)
   "INSTANCE.
-STATS."
+STATS.
+SIDEBAR."
   (let* ((admins-list (alist-get 'admins instance))
          (admins (lem-ui--names-list admins-list 'person))
          (inst (alist-get 'site_view instance)))
@@ -393,7 +394,10 @@ STATS."
          (lem-ui-font-lock-comment " created: " .site.published)
          "\n"
          .site.description "\n"
-         (lem-ui-render-body .site.sidebar) "\n"
+         (if sidebar
+             (concat (lem-ui-render-body .site.sidebar)
+                     "\n")
+           "")
          lem-ui-horiz-bar "\n")
         'json instance
         'byline-top t ; next/prev hack
