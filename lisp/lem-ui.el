@@ -36,6 +36,7 @@
 (require 'shr)
 (require 'markdown-mode)
 (require 'hierarchy)
+(require 'vtable)
 
 (require 'lem-api)
 
@@ -1148,6 +1149,77 @@ LIMIT is the max results to return."
                do (lem-ui-render-community view :stats :view))
       (lem-ui-set-buffer-spec
        type sort #'lem-ui-view-communities 'communities))))
+
+;;; PATCH VTABLE:
+
+(defvar-keymap vtable-map
+  "S" #'lem-vtable-sort-by-current-column
+  "{" #'vtable-narrow-current-column
+  "}" #'vtable-widen-current-column
+  "g" #'lem-vtable-revert-command
+  "M-<left>" #'vtable-previous-column
+  "M-<right>" #'vtable-next-column)
+
+(defun lem-vtable-sort-by-current-column ()
+  "Sort the table under point by the column under point."
+  (interactive)
+  (unless (vtable-current-column)
+    (user-error "No current column"))
+  (let* ((table (vtable-current-table))
+         (last (car (last (vtable-sort-by table))))
+         (index (vtable-current-column)))
+    ;; First prune any previous appearance of this column.
+    (setf (vtable-sort-by table)
+          (delq (assq index (vtable-sort-by table))
+                (vtable-sort-by table)))
+    ;; Then insert this as the last sort key.
+    (setf (vtable-sort-by table)
+          (append (vtable-sort-by table)
+                  (list (cons index
+                              (if (eq (car last) index)
+                                  (if (eq (cdr last) 'ascend)
+                                      'descend
+                                    'ascend)
+                                'ascend))))))
+  (lem-vtable-revert))
+
+(defun lem-vtable-revert-command ()
+  "Re-query data and regenerate the table under point."
+  (interactive)
+  (let ((table (vtable-current-table)))
+    (when (vtable-objects-function table)
+      (setf (vtable-objects table) (funcall (vtable-objects-function table))))
+    (vtable--clear-cache table))
+  (lem-vtable-revert))
+
+(defun lem-vtable-beginning-of-table ()
+  "Go to the start of the current table."
+  ;; pred arg stops `vtable-revert' from deleting non-table info in our
+  ;; buffer.
+  (if (text-property-search-backward 'vtable (vtable-current-table) t)
+      (point)
+    (goto-char (point-min))))
+
+(defun lem-vtable-end-of-table ()
+  "Go to the end of the current table."
+  (if (text-property-search-forward 'vtable (vtable-current-table) t)
+      (point)
+    (goto-char (point-max))))
+
+(defun lem-vtable-revert ()
+  "Regenerate the table under point."
+  (let ((table (vtable-current-table))
+        (object (vtable-current-object))
+        (column (vtable-current-column))
+        (inhibit-read-only t))
+    (unless table
+      (user-error "No table under point"))
+    (delete-region (lem-vtable-beginning-of-table) (lem-vtable-end-of-table))
+    (vtable-insert table)
+    (when object
+      (vtable-goto-object object))
+    (when column
+      (vtable-goto-column column))))
 
 (defun lem-ui-view-communities-tl (&optional type sort limit)
   "View Lemmy communities.
