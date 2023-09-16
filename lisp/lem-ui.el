@@ -1242,20 +1242,40 @@ LIMIT is the max results to return."
        (lambda ()
          (cl-loop for c in (alist-get 'communities json)
                   collect (let-alist c
-                            (list .community.title .counts.subscribers
-                                  .counts.users_active_month .counts.posts
-                                  (if (equal "Subscribed" .subscribed)
-                                      "*"
-                                    "")
-                                  .community.actor_id
-                                  ;; .community.description
-                                  ))))
-       ;; TODO: :actions: view-community, subscribe
-       ;; TODO: search and tl list results
+                            (cl-loop for i in
+                                     (list
+                                      (propertize .community.title
+                                                  'id .community.id)
+                                      .counts.subscribers
+                                      .counts.users_active_month .counts.posts
+                                      (if (equal "Subscribed" .subscribed)
+                                          "*"
+                                        "")
+                                      .community.actor_id
+                                      ;; .community.description
+                                      )
+                                     collect (propertize
+                                              (if (numberp i)
+                                                  (number-to-string i)
+                                                i)
+                                              'id .community.id
+                                              'type 'community)))))
        :row-colors  '(highlight vtable)
-       :divider-width 1)
+       :divider-width 1
+       :actions '("RET" lem-ui-view-community-at-point-tl
+                  "s" lem-ui-subscribe-to-community-at-point-tl))
       (lem-ui-set-buffer-spec
        type sort #'lem-ui-view-communities-tl 'communities))))
+
+;; actions are called on the column's object, but we use text props instead,
+;; so we have to reimplement these for tl:
+(defun lem-ui-view-community-at-point-tl (_)
+  "View community at point, from tabulated list."
+  (lem-ui-view-community-at-point))
+
+(defun lem-ui-subscribe-to-community-at-point-tl (_)
+  "Subscribe to community at point, from tabulated list."
+  (lem-ui-subscribe-to-community-at-point))
 
 (defun lem-ui-subscribe-to-community-at-point ()
   "Subscribe to community at point."
