@@ -1221,6 +1221,34 @@ LIMIT is the max results to return."
     (when column
       (vtable-goto-column column))))
 
+(define-button-type 'lem-tl-button
+  'follow-link t
+  'help-echo "View community"
+  'action #'lem-ui-view-community-at-point-tl)
+
+(defun lem-ui-return-community-obj (community)
+  ""
+  (let-alist community
+    (cl-loop for i in
+             (list
+              (propertize .community.title
+                          'id .community.id
+                          'type lem-tl-button)
+              .counts.subscribers
+              .counts.users_active_month .counts.posts
+              (if (equal "Subscribed" .subscribed)
+                  "*"
+                "")
+              .community.actor_id
+              ;; .community.description
+              )
+             collect (propertize
+                      (if (numberp i)
+                          (number-to-string i)
+                        i)
+                      'id .community.id
+                      'lem-type 'community))))
+
 (defun lem-ui-view-communities-tl (&optional type sort limit)
   "View Lemmy communities.
 TYPE must be one of `lem-listing-types'.
@@ -1241,25 +1269,7 @@ LIMIT is the max results to return."
        :objects-function
        (lambda ()
          (cl-loop for c in (alist-get 'communities json)
-                  collect (let-alist c
-                            (cl-loop for i in
-                                     (list
-                                      (propertize .community.title
-                                                  'id .community.id)
-                                      .counts.subscribers
-                                      .counts.users_active_month .counts.posts
-                                      (if (equal "Subscribed" .subscribed)
-                                          "*"
-                                        "")
-                                      .community.actor_id
-                                      ;; .community.description
-                                      )
-                                     collect (propertize
-                                              (if (numberp i)
-                                                  (number-to-string i)
-                                                i)
-                                              'id .community.id
-                                              'type 'community)))))
+                  collect (lem-ui-return-community-obj c)))
        :row-colors  '(highlight vtable)
        :divider-width 1
        :actions '("RET" lem-ui-view-community-at-point-tl
