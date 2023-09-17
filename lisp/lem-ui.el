@@ -180,7 +180,7 @@ NAME is not part of the symbol table, '?' is returned."
 
 (defun lem-ui--item-type ()
   "Return the type property of item at point."
-  (lem-ui--property 'type))
+  (lem-ui--property 'lem-type))
 
 (defun lem-ui--id-from-prop (&optional string type)
   "Return id as a string, from alist KEY in JSON.
@@ -403,7 +403,7 @@ SIDEBAR."
         'json instance
         'byline-top t ; next/prev hack
         'id .site.id
-        'type 'instance)))
+        'lem-type 'instance)))
     ;; stats:
     (when stats
       (let-alist (alist-get 'counts inst)
@@ -528,19 +528,19 @@ ID is the main view item's id."
          (type-list (if user-p
                         lem-user-view-types
                       lem-listing-types))
-         (list (if (eq sort-or-type 'type)
+         (list (if (eq sort-or-type 'lem-type)
                    type-list
                  sort-list))
          (choice (completing-read (format "View by %s" sort-or-type)
                                   list nil :match)))
     (if id
-        (cond ((eq sort-or-type 'type)
+        (cond ((eq sort-or-type 'lem-type)
                (funcall view-fun id choice sort))
               (post-p
                (funcall view-fun id choice))
               (t
                (funcall view-fun id type choice)))
-      (if (eq sort-or-type 'type)
+      (if (eq sort-or-type 'lem-type)
           (funcall view-fun choice sort)
         (funcall view-fun type choice)))))
 
@@ -550,7 +550,7 @@ SORT-OR-TYPE is either sort or type."
   (let ((view-fun (lem-ui-get-buffer-spec :view-fun))
         (id (lem-ui-get-view-id)))
     (if (and (eq view-fun #'lem-ui-view-post)
-             (eq sort-or-type 'type))
+             (eq sort-or-type 'lem-type))
         (message "Post views don't have listing type.")
       (if (or (eq view-fun #'lem-ui-view-post)
               (eq view-fun #'lem-ui-view-user)
@@ -561,7 +561,7 @@ SORT-OR-TYPE is either sort or type."
 (defun lem-ui-choose-type ()
   "Read a listing type and load it."
   (interactive)
-  (lem-ui-call-sort-or-type 'type))
+  (lem-ui-call-sort-or-type 'lem-type))
 
 (defun lem-ui-choose-sort ()
   "Read a sort type and load it."
@@ -717,7 +717,7 @@ etc.")
           ;; (type user, but id not creator-id)
           ((eq item-type 'user)
            (lem-ui-view-user id))
-          ((and (eq (lem-ui--property 'type) 'post)
+          ((and (eq (lem-ui--property 'lem-type) 'post)
                 (lem-ui--property 'title))
            (lem-ui-view-post-at-point)))))
 
@@ -1036,7 +1036,7 @@ SORT must be a member of `lem-sort-types'."
         'id .post.id
         'community-id .post.community_id
         'creator-id .creator.id
-        'type (caar post))))))
+        'lem-type (caar post))))))
 
 (defun lem-ui-insert-post-image-maybe (post) ; &optional alt)
   "Render URL of POST as an image if it resembles one."
@@ -1441,7 +1441,7 @@ profile page."
           'json community
           'byline-top t ; next/prev hack
           'id .community.id
-          'type 'community)))
+          'lem-type 'community)))
       ;; stats:
       (when stats
         (lem-ui-render-stats .counts.subscribers
@@ -1568,7 +1568,7 @@ Optionally only view UNREAD items."
   "Call BODY if ITEM-TYPE is at point and owned by the current user."
   (declare (debug t)
            (indent 1))
-  `(cond ((not (eq ,item-type (lem-ui--property 'type)))
+  `(cond ((not (eq ,item-type (lem-ui--property 'lem-type)))
           (message "No %s at point?" ,item-type))
          ((not (equal lem-user-id (lem-ui--property 'creator-id)))
           (message "You can only modify your own items"))
@@ -1617,7 +1617,7 @@ If RESTORE, restore the item instead."
   "Delete post or comment at point."
   (interactive)
   ;; TODO: check for deleted status first
-  (let ((type (lem-ui--property 'type)))
+  (let ((type (lem-ui--property 'lem-type)))
     (cond ((eq type 'post)
            (lem-ui-delete-post))
           ((eq type 'comment)
@@ -1739,7 +1739,7 @@ REPLY means it is a comment-reply object."
        'post-id .comment.post_id
        'community-id .post.community_id
        'creator-id .creator.id
-       'type (if reply 'comment-reply 'comment)
+       'lem-type (if reply 'comment-reply 'comment)
        'line-prefix indent-str))))
 
 ;; TODO: refactor format funs? will let-alist dot notation work?
@@ -1770,7 +1770,7 @@ REPLY means it is a comment-reply object."
        'json private-message
        'id .private_message.id
        'creator-id .creator.id
-       'type 'private-message
+       'lem-type 'private-message
        'line-prefix indent-str))))
 
 (defun lem-ui-render-post-comments (post-id &optional sort limit)
@@ -1899,7 +1899,7 @@ RENDER-FUN is the name of a function to render them."
 TYPE should be either :unlike, :dislike, or nil to like."
   (interactive)
   (lem-ui-with-item
-      (let* ((item (lem-ui--property 'type))
+      (let* ((item (lem-ui--property 'lem-type))
              (fun (if (eq item 'post)
                       #'lem-like-post
                     #'lem-like-comment))
@@ -1990,7 +1990,7 @@ TYPE should be either :unlike, :dislike, or nil to like."
        "\n")
       'json json
       'id .person.id
-      'type (caar json)))))
+      'lem-type (caar json)))))
 
 (defun lem-ui-render-user-subscriptions (json)
   "Render subscribed communities from JSON data."
