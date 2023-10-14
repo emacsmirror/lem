@@ -194,7 +194,7 @@ Load current user's instance posts."
   (let* ((plstore (plstore-open lem-auth-file))
          (print-length nil)
          (print-level nil)
-         (entry (plstore-get plstore (or lem-current-user username)))
+         (entry (plstore-get plstore (or username lem-current-user)))
          (token (plist-get (cdr entry) :jwt)))
     (plstore-close plstore)
     token))
