@@ -84,14 +84,17 @@ Q is the search query.\"
     `(defun ,(intern (concat "lem-" name)) ,args
        ,docstring
        (let* ((req-url (fedi-http--api ,endpoint lem-instance-url lem-api-version))
+              (auth-token ,lem-auth-token)
+              (auth-header `(("Authorization" .
+                              ,(concat "Bearer " auth-token))))
               (url-request-method ,(upcase method))
-              (url-request-extra-headers ,headers)
+              (url-request-extra-headers ,(if headers
+                                              `(append ,headers auth-header)
+                                            `auth-header))
               (url-user-agent "lem.el") ; lemmy.ml requres a non-nil agent
               ,(if unauthorized
                    `(_auth nil)
-                 `(auth ,(unless unauthorized
-                           ``(("auth" . ,(or lem-auth-token
-                                             (lem-auth-fetch-token)))))))
+                 `(auth `(("auth" . ,auth-token))))
               (params-alist ,(when params
                                `(remove nil
                                         (list ,@(fedi-make-params-alist
