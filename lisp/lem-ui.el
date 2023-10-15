@@ -1152,7 +1152,7 @@ LIMIT is the max results to return."
 
 ;;; PATCH VTABLE:
 
-(defvar-keymap vtable-map
+(defvar-keymap lem-vtable-map
   "S" #'lem-vtable-sort-by-current-column
   "{" #'vtable-narrow-current-column
   "}" #'vtable-widen-current-column
@@ -1227,13 +1227,13 @@ LIMIT is the max results to return."
   'action #'lem-ui-view-community-at-point-tl)
 
 (defun lem-ui-return-community-obj (community)
-  ""
+  "Return a vtable object for COMMUNITY."
   (let-alist community
     (cl-loop for i in
              (list
               (propertize .community.title
                           'id .community.id
-                          'type lem-tl-button)
+                          'type 'lem-tl-button)
               .counts.subscribers
               .counts.users_active_month .counts.posts
               (if (equal "Subscribed" .subscribed)
@@ -1258,7 +1258,7 @@ LIMIT is the max results to return."
   (let* ((json (lem-list-communities (or type "All")
                                      (or sort "TopAll")
                                      (or limit "50")))
-         (list (alist-get 'communities json))
+         ;; (list (alist-get 'communities json))
          (buffer (format "*lem-communities*")))
     (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode nil
       (lem-ui-render-instance (lem-get-instance) :stats nil)
@@ -1272,6 +1272,7 @@ LIMIT is the max results to return."
                   collect (lem-ui-return-community-obj c)))
        :row-colors  '(highlight vtable)
        :divider-width 1
+       :keymap lem-vtable-map
        :actions '("RET" lem-ui-view-community-at-point-tl
                   "s" lem-ui-subscribe-to-community-at-point-tl))
       (lem-ui-set-buffer-spec
