@@ -2079,7 +2079,8 @@ CURRENT-USER means we are displaying the current user's profile."
 It's a cheap hack, alas."
   (save-excursion
     (goto-char (point-min))
-    (let (match)
+    (let (match
+          (url-user-agent lem-user-agent))
       (while (setq match (text-property-search-forward 'image-url))
         (goto-char (prop-match-beginning match))
         ;; (re-search-forward "\*" nil :no-error) ; * is just for no alt-text

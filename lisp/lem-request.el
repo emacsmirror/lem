@@ -91,7 +91,7 @@ Q is the search query.\"
               (url-request-extra-headers ,(if headers
                                               `(append ,headers auth-header)
                                             `auth-header))
-              (url-user-agent "lem.el") ; lemmy.ml requres a non-nil agent
+              (url-user-agent lem-user-agent) ; lemmy.ml requres a non-nil agent
               ,(if unauthorized
                    `(_auth nil)
                  `(auth `(("auth" . ,auth-token))))
