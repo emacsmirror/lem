@@ -84,7 +84,7 @@ Q is the search query.\"
     `(defun ,(intern (concat "lem-" name)) ,args
        ,docstring
        (let* ((req-url (fedi-http--api ,endpoint lem-instance-url lem-api-version))
-              (auth-token ,lem-auth-token)
+              (auth-token lem-auth-token)
               (auth-header `(("Authorization" .
                               ,(concat "Bearer " auth-token))))
               (url-request-method ,(upcase method))
