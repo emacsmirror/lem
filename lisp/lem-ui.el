@@ -1150,7 +1150,7 @@ LIMIT is the max results to return."
       (lem-ui-set-buffer-spec
        type sort #'lem-ui-view-communities 'communities))))
 
-;;; PATCH VTABLE:
+;;; PATCH VTABLE (fixed in 30.0.50, needed in 29.1):
 
 (defvar-keymap lem-vtable-map
   "S" #'lem-vtable-sort-by-current-column
