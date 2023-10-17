@@ -350,12 +350,11 @@ LIMIT is the amount of results to return."
        type sort #'lem-ui-view-instance 'instance page))))
 
 (defun lem-ui-view-instance-full ()
-  "View view instance details."
+  "View full instance details."
   ;; TODO: full instance info: sidebar, full desc,
   ;; trending communities, stats, admins
   (interactive)
   (lem-ui-view-instance nil nil nil nil :sidebar))
-
 
 (defun lem-ui-view-modlog (_args)
   "Docstring."
@@ -1250,7 +1249,7 @@ LIMIT is the max results to return."
                       'lem-type 'community))))
 
 (defun lem-ui-view-communities-tl (&optional type sort limit)
-  "View Lemmy communities.
+  "View Lemmy communities in a tabulated list.
 TYPE must be one of `lem-listing-types'.
 SORT must be one of `lem-sort-types'.
 LIMIT is the max results to return."
