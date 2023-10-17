@@ -1292,7 +1292,7 @@ LIMIT is the max results to return."
   "Subscribe to a community, using ID or prompt for a handle."
   (interactive)
   (let* ((handle (unless id
-                   (read-string "Handle of community to follow: ")))
+                   (read-string "Handle of community to subscribe to: ")))
          (community (unless id
                       (lem-get-community nil handle))))
     (if-let ((id (or id (lem-ui-get-community-id community)))
@@ -1301,7 +1301,7 @@ LIMIT is the max results to return."
                               (alist-get 'community_view fol)))
              (name (or (alist-get 'title comm)
                        (alist-get 'name comm))))
-        (message "community %s followed!" name)
+        (message "Subscribed to community %s!" name)
       (message "something went wrong."))))
 
 (defun lem-ui-subscribe-to-community-at-point ()
