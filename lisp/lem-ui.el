@@ -1288,19 +1288,29 @@ LIMIT is the max results to return."
   "Subscribe to community at point, from tabulated list."
   (lem-ui-subscribe-to-community-at-point))
 
+(defun lem-ui-subscribe-to-community (&optional id)
+  "Subscribe to a community, using ID or prompt for a handle."
+  (interactive)
+  (let* ((handle (unless id
+                   (read-string "Handle of community to follow: ")))
+         (community (unless id
+                      (lem-get-community nil handle))))
+    (if-let ((id (or id (lem-ui-get-community-id community)))
+             (fol (lem-follow-community id t))
+             (comm (alist-get 'community
+                              (alist-get 'community_view fol)))
+             (name (or (alist-get 'title comm)
+                       (alist-get 'name comm))))
+        (message "community %s followed!" name)
+      (message "something went wrong."))))
+
 (defun lem-ui-subscribe-to-community-at-point ()
   "Subscribe to community at point."
   (interactive)
   (lem-ui-with-item
       (if (not (equal 'community (lem-ui--item-type)))
           (message "no community at point?")
-        (let ((fol (lem-follow-community id t)))
-          (if-let ((comm (alist-get 'community
-                                    (alist-get 'community_view fol)))
-                   (name (or (alist-get 'title comm)
-                             (alist-get 'name comm))))
-              (message "community %s followed!" name)
-            (message "something went wrong."))))
+        (lem-ui-subscribe-to-community id))
     :number))
 
 (defun lem-ui-unsubscribe-from-community ()
