@@ -36,6 +36,7 @@
 (require 'shr)
 (require 'markdown-mode)
 (require 'hierarchy)
+(require 'vtable)
 
 (require 'lem-api)
 
@@ -179,7 +180,7 @@ NAME is not part of the symbol table, '?' is returned."
 
 (defun lem-ui--item-type ()
   "Return the type property of item at point."
-  (lem-ui--property 'type))
+  (lem-ui--property 'lem-type))
 
 (defun lem-ui--id-from-prop (&optional string type)
   "Return id as a string, from alist KEY in JSON.
@@ -330,7 +331,7 @@ If we hit `point-max', call `lem-ui-more' then `scroll-up-command'."
 ;;; INSTANCE
 
 ;; TODO: toggle posts or comments
-(defun lem-ui-view-instance (&optional type sort limit page)
+(defun lem-ui-view-instance (&optional type sort limit page sidebar)
   "View posts of current user's home instance.
 SORT must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
@@ -342,17 +343,18 @@ LIMIT is the amount of results to return."
          (sort (or sort lem-default-sort-type))
          (buf (get-buffer-create "*lem-instance*")))
     (lem-ui-with-buffer buf 'lem-mode nil
-      (lem-ui-render-instance instance :stats)
+      (lem-ui-render-instance instance :stats sidebar)
       (lem-ui-render-posts-instance posts)
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec
        type sort #'lem-ui-view-instance 'instance page))))
 
-(defun lem-ui-view-instance-full (_args)
-  "View view instance details."
+(defun lem-ui-view-instance-full ()
+  "View full instance details."
   ;; TODO: full instance info: sidebar, full desc,
   ;; trending communities, stats, admins
-  )
+  (interactive)
+  (lem-ui-view-instance nil nil nil nil :sidebar))
 
 (defun lem-ui-view-modlog (_args)
   "Docstring."
@@ -374,9 +376,10 @@ STR is the preceding string to insert."
                                (cl-third x)))
     list " | ")))
 
-(defun lem-ui-render-instance (instance &optional stats)
+(defun lem-ui-render-instance (instance &optional stats sidebar)
   "INSTANCE.
-STATS."
+STATS.
+SIDEBAR."
   (let* ((admins-list (alist-get 'admins instance))
          (admins (lem-ui--names-list admins-list 'person))
          (inst (alist-get 'site_view instance)))
@@ -390,14 +393,16 @@ STATS."
          (lem-ui-font-lock-comment .site.actor_id)
          (lem-ui-font-lock-comment " created: " .site.published)
          "\n"
-         .site.description
-         "\n"
-         lem-ui-horiz-bar
-         "\n")
+         .site.description "\n"
+         (if sidebar
+             (concat (lem-ui-render-body .site.sidebar)
+                     "\n")
+           "")
+         lem-ui-horiz-bar "\n")
         'json instance
         'byline-top t ; next/prev hack
         'id .site.id
-        'type 'instance)))
+        'lem-type 'instance)))
     ;; stats:
     (when stats
       (let-alist (alist-get 'counts inst)
@@ -522,19 +527,19 @@ ID is the main view item's id."
          (type-list (if user-p
                         lem-user-view-types
                       lem-listing-types))
-         (list (if (eq sort-or-type 'type)
+         (list (if (eq sort-or-type 'lem-type)
                    type-list
                  sort-list))
          (choice (completing-read (format "View by %s" sort-or-type)
                                   list nil :match)))
     (if id
-        (cond ((eq sort-or-type 'type)
+        (cond ((eq sort-or-type 'lem-type)
                (funcall view-fun id choice sort))
               (post-p
                (funcall view-fun id choice))
               (t
                (funcall view-fun id type choice)))
-      (if (eq sort-or-type 'type)
+      (if (eq sort-or-type 'lem-type)
           (funcall view-fun choice sort)
         (funcall view-fun type choice)))))
 
@@ -544,7 +549,7 @@ SORT-OR-TYPE is either sort or type."
   (let ((view-fun (lem-ui-get-buffer-spec :view-fun))
         (id (lem-ui-get-view-id)))
     (if (and (eq view-fun #'lem-ui-view-post)
-             (eq sort-or-type 'type))
+             (eq sort-or-type 'lem-type))
         (message "Post views don't have listing type.")
       (if (or (eq view-fun #'lem-ui-view-post)
               (eq view-fun #'lem-ui-view-user)
@@ -555,7 +560,7 @@ SORT-OR-TYPE is either sort or type."
 (defun lem-ui-choose-type ()
   "Read a listing type and load it."
   (interactive)
-  (lem-ui-call-sort-or-type 'type))
+  (lem-ui-call-sort-or-type 'lem-type))
 
 (defun lem-ui-choose-sort ()
   "Read a sort type and load it."
@@ -711,7 +716,7 @@ etc.")
           ;; (type user, but id not creator-id)
           ((eq item-type 'user)
            (lem-ui-view-user id))
-          ((and (eq (lem-ui--property 'type) 'post)
+          ((and (eq (lem-ui--property 'lem-type) 'post)
                 (lem-ui--property 'title))
            (lem-ui-view-post-at-point)))))
 
@@ -1030,7 +1035,7 @@ SORT must be a member of `lem-sort-types'."
         'id .post.id
         'community-id .post.community_id
         'creator-id .creator.id
-        'type (caar post))))))
+        'lem-type (caar post))))))
 
 (defun lem-ui-insert-post-image-maybe (post) ; &optional alt)
   "Render URL of POST as an image if it resembles one."
@@ -1144,19 +1149,167 @@ LIMIT is the max results to return."
       (lem-ui-set-buffer-spec
        type sort #'lem-ui-view-communities 'communities))))
 
+;;; PATCH VTABLE (fixed in 30.0.50, needed in 29.1):
+
+(defvar-keymap lem-vtable-map
+  "S" #'lem-vtable-sort-by-current-column
+  "{" #'vtable-narrow-current-column
+  "}" #'vtable-widen-current-column
+  "g" #'lem-vtable-revert-command
+  "M-<left>" #'vtable-previous-column
+  "M-<right>" #'vtable-next-column)
+
+(defun lem-vtable-sort-by-current-column ()
+  "Sort the table under point by the column under point."
+  (interactive)
+  (unless (vtable-current-column)
+    (user-error "No current column"))
+  (let* ((table (vtable-current-table))
+         (last (car (last (vtable-sort-by table))))
+         (index (vtable-current-column)))
+    ;; First prune any previous appearance of this column.
+    (setf (vtable-sort-by table)
+          (delq (assq index (vtable-sort-by table))
+                (vtable-sort-by table)))
+    ;; Then insert this as the last sort key.
+    (setf (vtable-sort-by table)
+          (append (vtable-sort-by table)
+                  (list (cons index
+                              (if (eq (car last) index)
+                                  (if (eq (cdr last) 'ascend)
+                                      'descend
+                                    'ascend)
+                                'ascend))))))
+  (lem-vtable-revert))
+
+(defun lem-vtable-revert-command ()
+  "Re-query data and regenerate the table under point."
+  (interactive)
+  (let ((table (vtable-current-table)))
+    (when (vtable-objects-function table)
+      (setf (vtable-objects table) (funcall (vtable-objects-function table))))
+    (vtable--clear-cache table))
+  (lem-vtable-revert))
+
+(defun lem-vtable-beginning-of-table ()
+  "Go to the start of the current table."
+  ;; pred arg stops `vtable-revert' from deleting non-table info in our
+  ;; buffer.
+  (if (text-property-search-backward 'vtable (vtable-current-table) t)
+      (point)
+    (goto-char (point-min))))
+
+(defun lem-vtable-end-of-table ()
+  "Go to the end of the current table."
+  (if (text-property-search-forward 'vtable (vtable-current-table) t)
+      (point)
+    (goto-char (point-max))))
+
+(defun lem-vtable-revert ()
+  "Regenerate the table under point."
+  (let ((table (vtable-current-table))
+        (object (vtable-current-object))
+        (column (vtable-current-column))
+        (inhibit-read-only t))
+    (unless table
+      (user-error "No table under point"))
+    (delete-region (lem-vtable-beginning-of-table) (lem-vtable-end-of-table))
+    (vtable-insert table)
+    (when object
+      (vtable-goto-object object))
+    (when column
+      (vtable-goto-column column))))
+
+(define-button-type 'lem-tl-button
+  'follow-link t
+  'help-echo "View community"
+  'action #'lem-ui-view-community-at-point-tl)
+
+(defun lem-ui-return-community-obj (community)
+  "Return a vtable object for COMMUNITY."
+  (let-alist community
+    (cl-loop for i in
+             (list
+              (propertize .community.title
+                          'id .community.id
+                          'type 'lem-tl-button)
+              .counts.subscribers
+              .counts.users_active_month .counts.posts
+              (if (equal "Subscribed" .subscribed)
+                  "*"
+                "")
+              .community.actor_id
+              ;; .community.description
+              )
+             collect (propertize
+                      (if (numberp i)
+                          (number-to-string i)
+                        i)
+                      'id .community.id
+                      'lem-type 'community))))
+
+(defun lem-ui-view-communities-tl (&optional type sort limit)
+  "View Lemmy communities in a tabulated list.
+TYPE must be one of `lem-listing-types'.
+SORT must be one of `lem-sort-types'.
+LIMIT is the max results to return."
+  (interactive)
+  (let* ((json (lem-list-communities (or type "All")
+                                     (or sort "TopAll")
+                                     (or limit "50")))
+         ;; (list (alist-get 'communities json))
+         (buffer (format "*lem-communities*")))
+    (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode nil
+      (lem-ui-render-instance (lem-get-instance) :stats nil)
+      (make-vtable
+       :use-header-line nil
+       :columns '("Name" "Members" "Monthly users" "Posts"
+                  (:name "Sub" :min-width 4) "URL") ; "Description")
+       :objects-function
+       (lambda ()
+         (cl-loop for c in (alist-get 'communities json)
+                  collect (lem-ui-return-community-obj c)))
+       :row-colors  '(highlight vtable)
+       :divider-width 1
+       :keymap lem-vtable-map
+       :actions '("RET" lem-ui-view-community-at-point-tl
+                  "s" lem-ui-subscribe-to-community-at-point-tl))
+      (lem-ui-set-buffer-spec
+       type sort #'lem-ui-view-communities-tl 'communities))))
+
+;; actions are called on the column's object, but we use text props instead,
+;; so we have to reimplement these for tl:
+(defun lem-ui-view-community-at-point-tl (_)
+  "View community at point, from tabulated list."
+  (lem-ui-view-community-at-point))
+
+(defun lem-ui-subscribe-to-community-at-point-tl (_)
+  "Subscribe to community at point, from tabulated list."
+  (lem-ui-subscribe-to-community-at-point))
+
+(defun lem-ui-subscribe-to-community (&optional id)
+  "Subscribe to a community, using ID or prompt for a handle."
+  (interactive)
+  (let* ((handle (unless id
+                   (read-string "Handle of community to subscribe to: ")))
+         (community (unless id
+                      (lem-get-community nil handle))))
+    (if-let ((id (or id (lem-ui-get-community-id community)))
+             (fol (lem-follow-community id t))
+             (comm (alist-get 'community
+                              (alist-get 'community_view fol)))
+             (name (or (alist-get 'title comm)
+                       (alist-get 'name comm))))
+        (message "Subscribed to community %s!" name)
+      (message "something went wrong."))))
+
 (defun lem-ui-subscribe-to-community-at-point ()
   "Subscribe to community at point."
   (interactive)
   (lem-ui-with-item
       (if (not (equal 'community (lem-ui--item-type)))
           (message "no community at point?")
-        (let ((fol (lem-follow-community id t)))
-          (if-let ((comm (alist-get 'community
-                                    (alist-get 'community_view fol)))
-                   (name (or (alist-get 'title comm)
-                             (alist-get 'name comm))))
-              (message "community %s followed!" name)
-            (message "something went wrong."))))
+        (lem-ui-subscribe-to-community id))
     :number))
 
 (defun lem-ui-unsubscribe-from-community ()
@@ -1308,7 +1461,7 @@ profile page."
           'json community
           'byline-top t ; next/prev hack
           'id .community.id
-          'type 'community)))
+          'lem-type 'community)))
       ;; stats:
       (when stats
         (lem-ui-render-stats .counts.subscribers
@@ -1435,7 +1588,7 @@ Optionally only view UNREAD items."
   "Call BODY if ITEM-TYPE is at point and owned by the current user."
   (declare (debug t)
            (indent 1))
-  `(cond ((not (eq ,item-type (lem-ui--property 'type)))
+  `(cond ((not (eq ,item-type (lem-ui--property 'lem-type)))
           (message "No %s at point?" ,item-type))
          ((not (equal lem-user-id (lem-ui--property 'creator-id)))
           (message "You can only modify your own items"))
@@ -1484,7 +1637,7 @@ If RESTORE, restore the item instead."
   "Delete post or comment at point."
   (interactive)
   ;; TODO: check for deleted status first
-  (let ((type (lem-ui--property 'type)))
+  (let ((type (lem-ui--property 'lem-type)))
     (cond ((eq type 'post)
            (lem-ui-delete-post))
           ((eq type 'comment)
@@ -1606,7 +1759,7 @@ REPLY means it is a comment-reply object."
        'post-id .comment.post_id
        'community-id .post.community_id
        'creator-id .creator.id
-       'type (if reply 'comment-reply 'comment)
+       'lem-type (if reply 'comment-reply 'comment)
        'line-prefix indent-str))))
 
 ;; TODO: refactor format funs? will let-alist dot notation work?
@@ -1637,7 +1790,7 @@ REPLY means it is a comment-reply object."
        'json private-message
        'id .private_message.id
        'creator-id .creator.id
-       'type 'private-message
+       'lem-type 'private-message
        'line-prefix indent-str))))
 
 (defun lem-ui-render-post-comments (post-id &optional sort limit)
@@ -1766,7 +1919,7 @@ RENDER-FUN is the name of a function to render them."
 TYPE should be either :unlike, :dislike, or nil to like."
   (interactive)
   (lem-ui-with-item
-      (let* ((item (lem-ui--property 'type))
+      (let* ((item (lem-ui--property 'lem-type))
              (fun (if (eq item 'post)
                       #'lem-like-post
                     #'lem-like-comment))
@@ -1857,7 +2010,7 @@ TYPE should be either :unlike, :dislike, or nil to like."
        "\n")
       'json json
       'id .person.id
-      'type (caar json)))))
+      'lem-type (caar json)))))
 
 (defun lem-ui-render-user-subscriptions (json)
   "Render subscribed communities from JSON data."
@@ -1935,7 +2088,8 @@ CURRENT-USER means we are displaying the current user's profile."
 It's a cheap hack, alas."
   (save-excursion
     (goto-char (point-min))
-    (let (match)
+    (let (match
+          (url-user-agent lem-user-agent))
       (while (setq match (text-property-search-forward 'image-url))
         (goto-char (prop-match-beginning match))
         ;; (re-search-forward "\*" nil :no-error) ; * is just for no alt-text

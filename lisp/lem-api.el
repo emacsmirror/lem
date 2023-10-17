@@ -140,6 +140,11 @@
 (defvar lem-instance-url)
 (defvar lem-api-version)
 
+(defvar lem-user-agent
+  (nth (random (length fedi-user-agents))
+       fedi-user-agents)
+  "User-Agent to use for requests.")
+
 ;;;###autoload
 (defvar lem-auth-token nil
   "A user auth token for a lemmy instance.
@@ -361,6 +366,7 @@ discussion_languages, default_post_language."
 ;; (lem-get-community 96200 nil)
 ;; (lem-get-community "96200" nil)
 ;; (lem-get-community nil "revanced@lemmy.world")
+;; (lem-get-community nil "drevanced@lemmy.world")
 
 (lem-def-request "get" "list-communities" "community/list"
   (&optional type- sort limit page)

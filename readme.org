@@ -81,7 +81,7 @@ I don't have a tech worker's income, so even a small tip would help out.
 | Binding   | Command                                | Description                                                        |
 |-----------+----------------------------------------+--------------------------------------------------------------------|
 |           | lem                                    | Open lem, a Lemmy client.                                          |
-| C-M-q     | lem-kill-all-buffers                   | Kill all lem.el buffers                                            |
+| C-M-q     | lem-kill-all-buffers                   | Kill all lem.el buffers.                                           |
 |           | lem-login-set-token                    | Login and set current user details.                                |
 |           | lem-mode                               | Major mode for Lemmy, the federated link-aggregator and forum.     |
 | n         | lem-next-item                          | Move to next item.                                                 |
@@ -125,6 +125,7 @@ I don't have a tech worker's income, so even a small tip would help out.
 | a         | lem-ui-save-item-toggle                | Toggle saved status of item at point.                              |
 | SPC       | lem-ui-scroll-up-command               | Call `scroll-up-command', loading more toots if necessary.         |
 | h         | lem-ui-search                          | Do a search for one of the types in `lem-search-types'.            |
+|           | lem-ui-subscribe-to-community          | Subscribe to a community, using ID or prompt for a handle.         |
 | S         | lem-ui-subscribe-to-community-at-point | Subscribe to community at point.                                   |
 |           | lem-ui-unlike-item                     | Unlike item at point.                                              |
 |           | lem-ui-unsave-item                     | Unsave item at point.                                              |
@@ -132,8 +133,10 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-url-lookup                      | Perform a webfinger lookup on URL and load the result in `lem.el'. |
 |           | lem-ui-view-comment-post               | View post of comment at point.                                     |
 | C         | lem-ui-view-communities                | View Lemmy communities.                                            |
+|           | lem-ui-view-communities-tl             | View Lemmy communities in a tabulated list.                        |
 |           | lem-ui-view-community-at-point         | View community at point.                                           |
 | I         | lem-ui-view-instance                   | View posts of current user's home instance.                        |
+|           | lem-ui-view-instance-full              | View full instance details.                                        |
 | c         | lem-ui-view-item-community             | View community of item at point.                                   |
 | u         | lem-ui-view-item-user                  | View user of item at point.                                        |
 |           | lem-ui-view-mentions                   | View reply comments to the current user.                           |
@@ -145,3 +148,5 @@ I don't have a tech worker's income, so even a small tip would help out.
 | A         | lem-ui-view-saved-items                | View saved items of the current user, or of user with ID.          |
 | RET       | lem-ui-view-thing-at-point             | View post, community or user at point.                             |
 | P         | lem-ui-view-user-at-point              | View user at point.                                                |
+|           | lem-vtable-revert-command              | Re-query data and regenerate the table under point.                |
+|           | lem-vtable-sort-by-current-column      | Sort the table under point by the column under point.              |
