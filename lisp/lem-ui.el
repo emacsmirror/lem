@@ -229,22 +229,33 @@ Inserts images and sets relative timestamp timers."
 
 ;;; MACROS
 
-(defmacro lem-ui-with-buffer (buffer mode-fun other-window &rest body)
+(defmacro lem-ui-with-buffer (buffer mode-fun other-window no-bindings &rest body)
   "Evaluate BODY in a new or existing buffer called BUFFER.
 MODE-FUN is called to set the major mode.
 OTHER-WINDOW means call `switch-to-buffer-other-window' rather
-than `switch-to-buffer'."
+than `switch-to-buffer'.
+NO-BINDINGS means suppress the cycle keybindings message."
   (declare (debug t)
-           (indent 3))
+           (indent 4))
   `(with-current-buffer (get-buffer-create ,buffer)
-     (let ((inhibit-read-only t))
+     (let* ((inhibit-read-only t)
+            (sort-str "\\[lem-ui-cycle-sort]: cycle sort")
+            (msg-str (unless (eq ,no-bindings :no-bindings)
+                       (if (eq ,no-bindings :sort-only)
+                           sort-str
+                         (concat
+                          "\\[lem-ui-cycle-listing-type]: cycle listing\n"
+                          sort-str)))))
        (erase-buffer)
        (funcall ,mode-fun)
        (if ,other-window
            (switch-to-buffer-other-window ,buffer)
          (switch-to-buffer ,buffer))
        ,@body
-       (goto-char (point-min)))))
+       (goto-char (point-min))
+       (unless (eq ,no-bindings :no-bindings)
+         (message
+          (substitute-command-keys msg-str))))))
 
 (defmacro lem-ui-with-item (body &optional number)
   "Call BODY after fetching ID of thing (at point).
@@ -343,8 +354,8 @@ LIMIT is the amount of results to return."
          (posts (lem-get-posts type sort limit page))
          (posts (alist-get 'posts posts))
          (sort (or sort lem-default-sort-type))
-         (buf (get-buffer-create "*lem-instance*")))
-    (lem-ui-with-buffer buf 'lem-mode nil
+         (buf "*lem-instance*"))
+    (lem-ui-with-buffer buf 'lem-mode nil nil
       (lem-ui-render-instance instance :stats sidebar)
       (lem-ui-render-posts-instance posts)
       (lem-ui--init-view)
@@ -588,8 +599,7 @@ LIMIT is the max results to return."
          ;; (sort (lem-ui-read-type "Sort by: " lem-sort-types))
          (query (read-string "Query: "))
          (type-fun (intern (concat "lem-ui-render-" type)))
-         (buf-name (format "*lem-search-%s*" type))
-         (buf (get-buffer-create buf-name))
+         (buf (format "*lem-search-%s*" type))
          ;; TODO: handle all search args: community, page, limit
          (response (lem-search query (capitalize type) nil nil ; listing-type sort
                                (or limit lem-ui-comments-limit)))
@@ -601,7 +611,7 @@ LIMIT is the max results to return."
     ;; "Communities" DONE
     ;; "Users" DONE
     ;; "Url") TODO
-    (lem-ui-with-buffer buf 'lem-mode nil
+    (lem-ui-with-buffer buf 'lem-mode nil nil
       ;; and say a prayer to the function signature gods:
       (funcall type-fun data))))
 
@@ -680,7 +690,7 @@ LIMIT."
          (community-id (alist-get 'community_id
                                   (alist-get 'post post)))
          (sort (or sort lem-default-comment-sort-type)))
-    (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
+    (lem-ui-with-buffer "*lem-post*" 'lem-mode nil :sort-only
       (lem-ui--set-mods community-id)
       (lem-ui-render-post post :community)
       (lem-ui-render-post-comments id sort limit)
@@ -1135,8 +1145,8 @@ SORT. LIMIT. PAGE."
                       sort (or limit lem-ui-comments-limit) page))
          (posts (alist-get 'posts saved-only))
          (comments (alist-get 'comments saved-only))
-         (buffer (format "*lem-saved-items*")))
-    (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode nil
+         (buf "*lem-saved-items*"))
+    (lem-ui-with-buffer buf 'lem-mode nil nil
       (lem-ui-insert-heading "SAVED POSTS")
       (lem-ui-render-posts posts)
       (lem-ui-insert-heading "SAVED COMMENTS")
@@ -1153,8 +1163,8 @@ LIMIT is the max results to return."
   (interactive)
   (let* ((json (lem-list-communities type sort limit))
          (list (alist-get 'communities json))
-         (buffer (format "*lem-communities*")))
-    (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode nil
+         (buf "*lem-communities*"))
+    (lem-ui-with-buffer buf 'lem-mode nil nil
       (cl-loop for c in list
                for id = (alist-get 'id (alist-get 'community c))
                for view = (lem-get-community id nil)
@@ -1271,8 +1281,8 @@ LIMIT is the max results to return."
                                      (or sort "TopAll")
                                      (or limit "50")))
          ;; (list (alist-get 'communities json))
-         (buffer (format "*lem-communities*")))
-    (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode nil
+         (buf "*lem-communities*"))
+    (lem-ui-with-buffer buf 'lem-mode nil nil
       (lem-ui-render-instance (lem-get-instance) :stats nil)
       (make-vtable
        :use-header-line nil
@@ -1384,7 +1394,7 @@ LIMIT is the amount of results to return.
 PAGE is the page number of items to display, a string."
   (let* ((community (lem-get-community id))
          ;; (view (alist-get 'community_view community))
-         (buf (get-buffer-create "*lem-community*"))
+         (buf "*lem-community*")
          ;; in case we set community posts, then switch to comments:
          (sort (if (eq item 'comments)
                    (unless (lem-comment-sort-type-p sort)
@@ -1397,7 +1407,7 @@ PAGE is the page number of items to display, a string."
                   (alist-get 'posts
                              (lem-api-get-community-posts-by-id
                               id nil sort limit page))))) ; no sorting
-    (lem-ui-with-buffer buf 'lem-mode nil
+    (lem-ui-with-buffer buf 'lem-mode nil nil
       (lem-ui-render-community community :stats :view)
       (if (eq item 'comments)
           (progn
@@ -1528,8 +1538,8 @@ Optionally only view UNREAD items."
   (interactive)
   (let* ((replies (lem-get-replies (if unread "true" nil)))
          (list (alist-get 'replies replies))
-         (buf (get-buffer-create "*lem-replies*")))
-    (lem-ui-with-buffer buf 'lem-mode nil
+         (buf "*lem-replies*"))
+    (lem-ui-with-buffer buf 'lem-mode nil :no-bindings
       (lem-ui-render-replies list)
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil nil #'lem-ui-view-replies
@@ -1557,8 +1567,8 @@ Optionally only view UNREAD items."
   (interactive)
   (let* ((mentions (lem-get-mentions (if unread "true" nil)))
          (list (alist-get 'mentions mentions))
-         (buf (get-buffer-create "*lem-mentions*")))
-    (lem-ui-with-buffer buf 'lem-mode nil
+         (buf "*lem-mentions*"))
+    (lem-ui-with-buffer buf 'lem-mode nil :no-bindings
       (lem-ui-render-mentions list)
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil nil #'lem-ui-view-mentions
@@ -1578,8 +1588,8 @@ Optionally only view UNREAD items."
   (interactive)
   (let* ((private-messages (lem-get-private-messages (if unread "true" nil)))
          (list (alist-get 'private_messages private-messages))
-         (buf (get-buffer-create "*lem-private-messages*")))
-    (lem-ui-with-buffer buf 'lem-mode nil
+         (buf "*lem-private-messages*"))
+    (lem-ui-with-buffer buf 'lem-mode nil :no-bindings
       ;; (lem-ui-render-private-messages list))))
       (lem-ui-render-private-messages list)
       (lem-ui--init-view)
@@ -2058,8 +2068,8 @@ LIMIT is max items to show.
 CURRENT-USER means we are displaying the current user's profile."
   (let ((user-json (lem-api-get-person-by-id id sort limit))
         (sort (or sort lem-default-sort-type))
-        (buf (get-buffer-create "*lem-user*")))
-    (lem-ui-with-buffer buf 'lem-mode nil
+        (buf "*lem-user*"))
+    (lem-ui-with-buffer buf 'lem-mode nil nil
       (when current-user
         (let-alist current-user
           (lem-ui-render-user .local_user_view)
