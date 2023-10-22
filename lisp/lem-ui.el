@@ -49,8 +49,7 @@
 (defvar lem-user-id)
 
 (defvar-local lem-ui-post-community-mods-ids nil
-  "A list of ids of the moderators of the community of the current
-post view.")
+  "A list of ids of the moderators of the community of the current post.")
 
 (autoload 'lem-mode "lem.el")
 (autoload 'lem-comment-sort-type-p "lem.el")
@@ -230,22 +229,33 @@ Inserts images and sets relative timestamp timers."
 
 ;;; MACROS
 
-(defmacro lem-ui-with-buffer (buffer mode-fun other-window &rest body)
+(defmacro lem-ui-with-buffer (buffer mode-fun other-window no-bindings &rest body)
   "Evaluate BODY in a new or existing buffer called BUFFER.
 MODE-FUN is called to set the major mode.
 OTHER-WINDOW means call `switch-to-buffer-other-window' rather
-than `switch-to-buffer'."
+than `switch-to-buffer'.
+NO-BINDINGS means suppress the cycle keybindings message."
   (declare (debug t)
-           (indent 3))
+           (indent 4))
   `(with-current-buffer (get-buffer-create ,buffer)
-     (let ((inhibit-read-only t))
+     (let* ((inhibit-read-only t)
+            (sort-str "\\[lem-ui-cycle-sort]: cycle sort")
+            (msg-str (unless (eq ,no-bindings :no-bindings)
+                       (if (eq ,no-bindings :sort-only)
+                           sort-str
+                         (concat
+                          "\\[lem-ui-cycle-listing-type]: cycle listing\n"
+                          sort-str)))))
        (erase-buffer)
        (funcall ,mode-fun)
        (if ,other-window
            (switch-to-buffer-other-window ,buffer)
          (switch-to-buffer ,buffer))
        ,@body
-       (goto-char (point-min)))))
+       (goto-char (point-min))
+       (unless (eq ,no-bindings :no-bindings)
+         (message
+          (substitute-command-keys msg-str))))))
 
 (defmacro lem-ui-with-item (body &optional number)
   "Call BODY after fetching ID of thing (at point).
@@ -344,8 +354,8 @@ LIMIT is the amount of results to return."
          (posts (lem-get-posts type sort limit page))
          (posts (alist-get 'posts posts))
          (sort (or sort lem-default-sort-type))
-         (buf (get-buffer-create "*lem-instance*")))
-    (lem-ui-with-buffer buf 'lem-mode nil
+         (buf "*lem-instance*"))
+    (lem-ui-with-buffer buf 'lem-mode nil nil
       (lem-ui-render-instance instance :stats sidebar)
       (lem-ui-render-posts-instance posts)
       (lem-ui--init-view)
@@ -376,7 +386,8 @@ STR is the preceding string to insert."
       (lem-ui--propertize-link (cl-first x)
                                (cl-second x)
                                'user
-                               (cl-third x)))
+                               (cl-third x)
+                               'warning))
     list " | ")))
 
 (defun lem-ui-render-instance (instance &optional stats sidebar)
@@ -588,8 +599,7 @@ LIMIT is the max results to return."
          ;; (sort (lem-ui-read-type "Sort by: " lem-sort-types))
          (query (read-string "Query: "))
          (type-fun (intern (concat "lem-ui-render-" type)))
-         (buf-name (format "*lem-search-%s*" type))
-         (buf (get-buffer-create buf-name))
+         (buf (format "*lem-search-%s*" type))
          ;; TODO: handle all search args: community, page, limit
          (response (lem-search query (capitalize type) nil nil ; listing-type sort
                                (or limit lem-ui-comments-limit)))
@@ -601,7 +611,7 @@ LIMIT is the max results to return."
     ;; "Communities" DONE
     ;; "Users" DONE
     ;; "Url") TODO
-    (lem-ui-with-buffer buf 'lem-mode nil
+    (lem-ui-with-buffer buf 'lem-mode nil nil
       ;; and say a prayer to the function signature gods:
       (funcall type-fun data))))
 
@@ -680,7 +690,7 @@ LIMIT."
          (community-id (alist-get 'community_id
                                   (alist-get 'post post)))
          (sort (or sort lem-default-comment-sort-type)))
-    (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
+    (lem-ui-with-buffer "*lem-post*" 'lem-mode nil :sort-only
       (lem-ui--set-mods community-id)
       (lem-ui-render-post post :community)
       (lem-ui-render-post-comments id sort limit)
@@ -726,9 +736,11 @@ etc.")
                 (lem-ui--property 'title))
            (lem-ui-view-post-at-point)))))
 
-(defun lem-ui--propertize-link (item id type &optional url)
+(defun lem-ui--propertize-link (item id type &optional url face help-echo)
   "Propertize a link ITEM with ID and TYPE.
-Optionally provide URL for shr-url."
+Optionally provide URL for shr-url.
+FACE is a face to use.
+HELP-ECHO is a help-echo string."
   (propertize item
               'shr-url url
               'keymap lem-ui--link-map
@@ -738,7 +750,8 @@ Optionally provide URL for shr-url."
               'mouse-face 'highlight
               'id id
               'lem-tab-stop type
-              'face 'underline))
+              'face `(:inherit ,face :underline t)
+              'help-echo help-echo))
 
 (defun lem-ui--find-property-range (property start-point
                                              &optional search-backwards)
@@ -803,13 +816,14 @@ START and END are the boundaries of the link in the post body."
 
 (defun lem-ui-top-byline (title url username _score timestamp
                                 &optional community _community-url
-                                featured-p op-p admin-p mod-p del-p)
+                                featured-p op-p admin-p mod-p del-p handle)
   "Format a top byline for post with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
 COMMUNITY and COMMUNITY-URL are those of the community the item belongs to.
 FEATURED-P means the item is pinned.
 OP-P is a flag, meaning we add a boxed OP string to the byline.
 ADMIN-P means we add same for admins, MOD-P means add same for moderators.
-DEL-P means add icon for deleted item."
+DEL-P means add icon for deleted item.
+HANDLE is a user handle as a string."
   (let ((url (lem-ui-render-url url))
         (parsed-time (date-to-time timestamp)))
     (propertize
@@ -821,7 +835,7 @@ DEL-P means add icon for deleted item."
       (if url
           (concat url "\n")
         "")
-      (lem-ui--propertize-link username nil 'user)
+      (lem-ui--propertize-link username nil 'user nil 'warning handle)
       (when op-p
         (concat " "
                 (lem-ui-propertize-box "OP")))
@@ -838,7 +852,7 @@ DEL-P means add icon for deleted item."
         (concat
          (propertize " to "
                      'face font-lock-comment-face)
-         (lem-ui--propertize-link community nil 'community)))
+         (lem-ui--propertize-link community nil 'community nil 'success)))
       (propertize
        (concat
         " | "
@@ -1012,6 +1026,7 @@ SORT must be a member of `lem-sort-types'."
     (let* (;(url (lem-ui-render-url .post.url))
            (body (when .post.body
                    (lem-ui-render-body .post.body (alist-get 'post post))))
+           (handle (lem-ui--handle-from-user-url .creator.actor_id))
            (admin-p (eq t .creator.admin))
            (mod-p (cl-member .creator.id lem-ui-post-community-mods-ids))
            (del-p (eq t .post.deleted)))
@@ -1026,7 +1041,7 @@ SORT must be a member of `lem-sort-types'."
                             (when community .community.name)
                             (when community .community.actor_id)
                             .post.featured_local
-                            nil admin-p mod-p del-p)
+                            nil admin-p mod-p del-p handle)
          "\n"
          (if .post.body
              (if trim
@@ -1130,8 +1145,8 @@ SORT. LIMIT. PAGE."
                       sort (or limit lem-ui-comments-limit) page))
          (posts (alist-get 'posts saved-only))
          (comments (alist-get 'comments saved-only))
-         (buffer (format "*lem-saved-items*")))
-    (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode nil
+         (buf "*lem-saved-items*"))
+    (lem-ui-with-buffer buf 'lem-mode nil nil
       (lem-ui-insert-heading "SAVED POSTS")
       (lem-ui-render-posts posts)
       (lem-ui-insert-heading "SAVED COMMENTS")
@@ -1148,8 +1163,8 @@ LIMIT is the max results to return."
   (interactive)
   (let* ((json (lem-list-communities type sort limit))
          (list (alist-get 'communities json))
-         (buffer (format "*lem-communities*")))
-    (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode nil
+         (buf "*lem-communities*"))
+    (lem-ui-with-buffer buf 'lem-mode nil nil
       (cl-loop for c in list
                for id = (alist-get 'id (alist-get 'community c))
                for view = (lem-get-community id nil)
@@ -1266,8 +1281,8 @@ LIMIT is the max results to return."
                                      (or sort "TopAll")
                                      (or limit "50")))
          ;; (list (alist-get 'communities json))
-         (buffer (format "*lem-communities*")))
-    (lem-ui-with-buffer (get-buffer-create buffer) 'lem-mode nil
+         (buf "*lem-communities*"))
+    (lem-ui-with-buffer buf 'lem-mode nil nil
       (lem-ui-render-instance (lem-get-instance) :stats nil)
       (make-vtable
        :use-header-line nil
@@ -1379,7 +1394,7 @@ LIMIT is the amount of results to return.
 PAGE is the page number of items to display, a string."
   (let* ((community (lem-get-community id))
          ;; (view (alist-get 'community_view community))
-         (buf (get-buffer-create "*lem-community*"))
+         (buf "*lem-community*")
          ;; in case we set community posts, then switch to comments:
          (sort (if (eq item 'comments)
                    (unless (lem-comment-sort-type-p sort)
@@ -1392,7 +1407,7 @@ PAGE is the page number of items to display, a string."
                   (alist-get 'posts
                              (lem-api-get-community-posts-by-id
                               id nil sort limit page))))) ; no sorting
-    (lem-ui-with-buffer buf 'lem-mode nil
+    (lem-ui-with-buffer buf 'lem-mode nil nil
       (lem-ui-render-community community :stats :view)
       (if (eq item 'comments)
           (progn
@@ -1503,7 +1518,11 @@ And optionally for instance COMMUNITIES."
   "View community of item at point."
   (interactive)
   (lem-ui-with-item
-      (let ((id (lem-ui--property 'community-id)))
+      (let ((id (or (lem-ui--property 'community-id)
+                    ;; community header has id, not community-id, but is there
+                    ;; anything else that doesn't have community-id that this
+                    ;; might catch?
+                    (lem-ui--property 'id))))
         (lem-ui-view-community id))))
 
 ;;; REPLIES
@@ -1519,8 +1538,8 @@ Optionally only view UNREAD items."
   (interactive)
   (let* ((replies (lem-get-replies (if unread "true" nil)))
          (list (alist-get 'replies replies))
-         (buf (get-buffer-create "*lem-replies*")))
-    (lem-ui-with-buffer buf 'lem-mode nil
+         (buf "*lem-replies*"))
+    (lem-ui-with-buffer buf 'lem-mode nil :no-bindings
       (lem-ui-render-replies list)
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil nil #'lem-ui-view-replies
@@ -1548,8 +1567,8 @@ Optionally only view UNREAD items."
   (interactive)
   (let* ((mentions (lem-get-mentions (if unread "true" nil)))
          (list (alist-get 'mentions mentions))
-         (buf (get-buffer-create "*lem-mentions*")))
-    (lem-ui-with-buffer buf 'lem-mode nil
+         (buf "*lem-mentions*"))
+    (lem-ui-with-buffer buf 'lem-mode nil :no-bindings
       (lem-ui-render-mentions list)
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil nil #'lem-ui-view-mentions
@@ -1569,8 +1588,8 @@ Optionally only view UNREAD items."
   (interactive)
   (let* ((private-messages (lem-get-private-messages (if unread "true" nil)))
          (list (alist-get 'private_messages private-messages))
-         (buf (get-buffer-create "*lem-private-messages*")))
-    (lem-ui-with-buffer buf 'lem-mode nil
+         (buf "*lem-private-messages*"))
+    (lem-ui-with-buffer buf 'lem-mode nil :no-bindings
       ;; (lem-ui-render-private-messages list))))
       (lem-ui-render-private-messages list)
       (lem-ui--init-view)
@@ -1732,6 +1751,20 @@ Parent-fun for `hierarchy-add-tree'."
                                   comment
                                   #'lem-ui--parentfun)))
 
+(defun lem-ui--handle-from-user-url (url)
+  "Return a formatted user handle from user URL."
+  (let* ((parsed (url-generic-parse-url url))
+         (host (url-host parsed))
+         (file (url-filename parsed)))
+    (save-match-data
+      ;; TODO: add further legit urls:
+      (when (string-match "^/u/[_[:alnum:]]+$" file)
+        (let ((split (split-string file "/" t)))
+          (propertize
+           (concat (cadr split) "@" host)
+           ;; props
+           ))))))
+
 (defun lem-ui-format-comment (comment &optional indent reply)
   "Format COMMENT, optionally with INDENT amount of indent bars.
 REPLY means it is a comment-reply object."
@@ -1744,6 +1777,7 @@ REPLY means it is a comment-reply object."
           (indent-str (when indent
                         (make-string indent (string-to-char
                                              (lem-ui-symbol 'reply-bar)))))
+          (handle (lem-ui--handle-from-user-url .creator.actor_id))
           (admin-p (eq t .creator.admin))
           (mod-p (cl-member .creator.id lem-ui-post-community-mods-ids))
           (op-p (eq .comment.creator_id .post.creator_id)))
@@ -1755,7 +1789,7 @@ REPLY means it is a comment-reply object."
                            .counts.score
                            .comment.published
                            nil nil nil
-                           op-p admin-p mod-p)
+                           op-p admin-p mod-p nil handle)
         "\n"
         (or content "")
         "\n"
@@ -2034,8 +2068,8 @@ LIMIT is max items to show.
 CURRENT-USER means we are displaying the current user's profile."
   (let ((user-json (lem-api-get-person-by-id id sort limit))
         (sort (or sort lem-default-sort-type))
-        (buf (get-buffer-create "*lem-user*")))
-    (lem-ui-with-buffer buf 'lem-mode nil
+        (buf "*lem-user*"))
+    (lem-ui-with-buffer buf 'lem-mode nil nil
       (when current-user
         (let-alist current-user
           (lem-ui-render-user .local_user_view)
