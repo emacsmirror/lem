@@ -2,7 +2,6 @@
 
 ;; Copyright (C) 2023  martian hiatus
 ;; Author: martian hiatus <martianhiatus [a t] riseup [d o t] net>
-;; Version: 0.1
 ;; URL: https://codeberg.org/martianh/lem.el
 ;; Keywords: multimedia, comm, web, fediverse
 
@@ -1736,6 +1735,7 @@ Parent-fun for `hierarchy-add-tree'."
 (defun lem-ui-format-comment (comment &optional indent reply)
   "Format COMMENT, optionally with INDENT amount of indent bars.
 REPLY means it is a comment-reply object."
+  ;; NB: no stray requests in here.
   (let-alist comment
     (let ((content (when .comment.content
                      (lem-ui-render-body .comment.content
