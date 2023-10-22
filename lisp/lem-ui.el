@@ -49,6 +49,10 @@
 (defvar lem-search-types)
 (defvar lem-user-id)
 
+(defvar-local lem-ui-post-community-mods-ids nil
+  "A list of ids of the moderators of the community of the current
+post view.")
+
 (autoload 'lem-mode "lem.el")
 (autoload 'lem-comment-sort-type-p "lem.el")
 
@@ -674,8 +678,11 @@ SORT must be a member of `lem-comment-sort-types.'
 LIMIT."
   (let* ((post-view (lem-get-post id))
          (post (alist-get 'post_view post-view))
+         (community-id (alist-get 'community_id
+                                  (alist-get 'post post)))
          (sort (or sort lem-default-comment-sort-type)))
     (lem-ui-with-buffer (get-buffer-create "*lem-post*") 'lem-mode nil
+      (lem-ui--set-mods community-id)
       (lem-ui-render-post post :community)
       (lem-ui-render-post-comments id sort limit)
       (lem-ui--init-view)
@@ -984,14 +991,16 @@ INDENT is a number, the level of indent for the item."
         (kill-buffer buf)))             ; our md
     str))
 
-(defun lem-ui--mod-p (id community-id)
-  "Non-nil if user with ID is a moderator for community with COMMUNITY-ID."
+(defun lem-ui--set-mods (community-id)
+  "Set `lem-ui-post-community-mods-ids'.
+The variable contains the list of community moderator ids for the
+community of the current post, with COMMUNITY-ID."
   (let* ((community-json (lem-get-community community-id))
          (mods (alist-get 'moderators community-json))
          (mods-ids (cl-loop for mod in mods
                             collect (alist-get 'id
                                                (alist-get 'moderator mod)))))
-    (cl-member id mods-ids)))
+    (setq lem-ui-post-community-mods-ids mods-ids)))
 
 (defun lem-ui-render-post (post &optional community trim)
   ;; NB trim in instance, community, and user views
@@ -1005,7 +1014,7 @@ SORT must be a member of `lem-sort-types'."
            (body (when .post.body
                    (lem-ui-render-body .post.body (alist-get 'post post))))
            (admin-p (eq t .creator.admin))
-           (mod-p (lem-ui--mod-p .creator.id .community.id))
+           (mod-p (cl-member .creator.id lem-ui-post-community-mods-ids))
            (del-p (eq t .post.deleted)))
       (insert
        (propertize
@@ -1727,6 +1736,7 @@ Parent-fun for `hierarchy-add-tree'."
 (defun lem-ui-format-comment (comment &optional indent reply)
   "Format COMMENT, optionally with INDENT amount of indent bars.
 REPLY means it is a comment-reply object."
+  ;; NB: no stray requests in here.
   (let-alist comment
     (let ((content (when .comment.content
                      (lem-ui-render-body .comment.content
@@ -1736,7 +1746,7 @@ REPLY means it is a comment-reply object."
                         (make-string indent (string-to-char
                                              (lem-ui-symbol 'reply-bar)))))
           (admin-p (eq t .creator.admin))
-          (mod-p (lem-ui--mod-p .creator.id .community.id))
+          (mod-p (cl-member .creator.id lem-ui-post-community-mods-ids))
           (op-p (eq .comment.creator_id .post.creator_id)))
       (push .comment.id lem-ui-current-items) ; pagination
       (propertize
