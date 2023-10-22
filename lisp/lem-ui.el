@@ -727,7 +727,7 @@ etc.")
                 (lem-ui--property 'title))
            (lem-ui-view-post-at-point)))))
 
-(defun lem-ui--propertize-link (item id type &optional url face)
+(defun lem-ui--propertize-link (item id type &optional url face help-echo)
   "Propertize a link ITEM with ID and TYPE.
 Optionally provide URL for shr-url."
   (propertize item
@@ -739,7 +739,8 @@ Optionally provide URL for shr-url."
               'mouse-face 'highlight
               'id id
               'lem-tab-stop type
-              'face `(t :inherit ,face :underline t)))
+              'face `(t :inherit ,face :underline t)
+              'help-echo help-echo))
 
 (defun lem-ui--find-property-range (property start-point
                                              &optional search-backwards)
@@ -804,7 +805,7 @@ START and END are the boundaries of the link in the post body."
 
 (defun lem-ui-top-byline (title url username _score timestamp
                                 &optional community _community-url
-                                featured-p op-p admin-p mod-p del-p)
+                                featured-p op-p admin-p mod-p del-p handle)
   "Format a top byline for post with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
 COMMUNITY and COMMUNITY-URL are those of the community the item belongs to.
 FEATURED-P means the item is pinned.
@@ -822,7 +823,7 @@ DEL-P means add icon for deleted item."
       (if url
           (concat url "\n")
         "")
-      (lem-ui--propertize-link username nil 'user nil 'warning)
+      (lem-ui--propertize-link username nil 'user nil 'warning handle)
       (when op-p
         (concat " "
                 (lem-ui-propertize-box "OP")))
@@ -1013,6 +1014,7 @@ SORT must be a member of `lem-sort-types'."
     (let* (;(url (lem-ui-render-url .post.url))
            (body (when .post.body
                    (lem-ui-render-body .post.body (alist-get 'post post))))
+           (handle (lem-ui--handle-from-user-url .creator.actor_id))
            (admin-p (eq t .creator.admin))
            (mod-p (cl-member .creator.id lem-ui-post-community-mods-ids))
            (del-p (eq t .post.deleted)))
@@ -1027,7 +1029,7 @@ SORT must be a member of `lem-sort-types'."
                             (when community .community.name)
                             (when community .community.actor_id)
                             .post.featured_local
-                            nil admin-p mod-p del-p)
+                            nil admin-p mod-p del-p handle)
          "\n"
          (if .post.body
              (if trim
@@ -1737,6 +1739,20 @@ Parent-fun for `hierarchy-add-tree'."
                                   comment
                                   #'lem-ui--parentfun)))
 
+(defun lem-ui--handle-from-user-url (url)
+  "Return a formatted user handle from user URL."
+  (let* ((parsed (url-generic-parse-url url))
+         (host (url-host parsed))
+         (file (url-filename parsed)))
+    (save-match-data
+      ;; TODO: add further legit urls:
+      (when (string-match "^/u/[_[:alnum:]]+$" file)
+        (let ((split (split-string file "/" t)))
+          (propertize
+           (concat (cadr split) "@" host)
+           ;; props
+           ))))))
+
 (defun lem-ui-format-comment (comment &optional indent reply)
   "Format COMMENT, optionally with INDENT amount of indent bars.
 REPLY means it is a comment-reply object."
@@ -1749,6 +1765,7 @@ REPLY means it is a comment-reply object."
           (indent-str (when indent
                         (make-string indent (string-to-char
                                              (lem-ui-symbol 'reply-bar)))))
+          (handle (lem-ui--handle-from-user-url .creator.actor_id))
           (admin-p (eq t .creator.admin))
           (mod-p (cl-member .creator.id lem-ui-post-community-mods-ids))
           (op-p (eq .comment.creator_id .post.creator_id)))
@@ -1760,7 +1777,7 @@ REPLY means it is a comment-reply object."
                            .counts.score
                            .comment.published
                            nil nil nil
-                           op-p admin-p mod-p)
+                           op-p admin-p mod-p nil handle)
         "\n"
         (or content "")
         "\n"
