@@ -49,8 +49,7 @@
 (defvar lem-user-id)
 
 (defvar-local lem-ui-post-community-mods-ids nil
-  "A list of ids of the moderators of the community of the current
-post view.")
+  "A list of ids of the moderators of the community of the current post.")
 
 (autoload 'lem-mode "lem.el")
 (autoload 'lem-comment-sort-type-p "lem.el")
@@ -729,7 +728,9 @@ etc.")
 
 (defun lem-ui--propertize-link (item id type &optional url face help-echo)
   "Propertize a link ITEM with ID and TYPE.
-Optionally provide URL for shr-url."
+Optionally provide URL for shr-url.
+FACE is a face to use.
+HELP-ECHO is a help-echo string."
   (propertize item
               'shr-url url
               'keymap lem-ui--link-map
@@ -811,7 +812,8 @@ COMMUNITY and COMMUNITY-URL are those of the community the item belongs to.
 FEATURED-P means the item is pinned.
 OP-P is a flag, meaning we add a boxed OP string to the byline.
 ADMIN-P means we add same for admins, MOD-P means add same for moderators.
-DEL-P means add icon for deleted item."
+DEL-P means add icon for deleted item.
+HANDLE is a user handle as a string."
   (let ((url (lem-ui-render-url url))
         (parsed-time (date-to-time timestamp)))
     (propertize
