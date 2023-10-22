@@ -1,9 +1,8 @@
-;;; lem-request.el --- Request macro for lem.el      -*- lexical-binding: t; -*-
+;;; lem-request.el --- Request macro for lem.el  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2023  martian hiatus
 ;; Copyright (C) 2023  martian hiatus
 ;; Author: martian hiatus <martianhiatus [a t] riseup [d o t] net>
-;; Version: 0.1
 ;; URL: https://codeberg.org/martianh/lem.el
 ;; Keywords: multimedia
 
