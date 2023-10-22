@@ -376,7 +376,8 @@ STR is the preceding string to insert."
       (lem-ui--propertize-link (cl-first x)
                                (cl-second x)
                                'user
-                               (cl-third x)))
+                               (cl-third x)
+                               'warning))
     list " | ")))
 
 (defun lem-ui-render-instance (instance &optional stats sidebar)
@@ -726,7 +727,7 @@ etc.")
                 (lem-ui--property 'title))
            (lem-ui-view-post-at-point)))))
 
-(defun lem-ui--propertize-link (item id type &optional url)
+(defun lem-ui--propertize-link (item id type &optional url face)
   "Propertize a link ITEM with ID and TYPE.
 Optionally provide URL for shr-url."
   (propertize item
@@ -738,7 +739,7 @@ Optionally provide URL for shr-url."
               'mouse-face 'highlight
               'id id
               'lem-tab-stop type
-              'face 'underline))
+              'face `(t :inherit ,face :underline t)))
 
 (defun lem-ui--find-property-range (property start-point
                                              &optional search-backwards)
@@ -821,7 +822,7 @@ DEL-P means add icon for deleted item."
       (if url
           (concat url "\n")
         "")
-      (lem-ui--propertize-link username nil 'user)
+      (lem-ui--propertize-link username nil 'user nil 'warning)
       (when op-p
         (concat " "
                 (lem-ui-propertize-box "OP")))
@@ -838,7 +839,7 @@ DEL-P means add icon for deleted item."
         (concat
          (propertize " to "
                      'face font-lock-comment-face)
-         (lem-ui--propertize-link community nil 'community)))
+         (lem-ui--propertize-link community nil 'community nil 'success)))
       (propertize
        (concat
         " | "
