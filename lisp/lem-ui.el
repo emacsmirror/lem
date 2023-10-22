@@ -739,7 +739,7 @@ Optionally provide URL for shr-url."
               'mouse-face 'highlight
               'id id
               'lem-tab-stop type
-              'face `(t :inherit ,face :underline t)
+              'face `(:inherit ,face :underline t)
               'help-echo help-echo))
 
 (defun lem-ui--find-property-range (property start-point
