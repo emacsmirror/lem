@@ -1524,12 +1524,12 @@ And optionally for instance COMMUNITIES."
   "View community of item at point."
   (interactive)
   (lem-ui-with-item
-      (let ((id (or (lem-ui--property 'community-id)
-                    ;; community header has id, not community-id, but is there
-                    ;; anything else that doesn't have community-id that this
-                    ;; might catch?
-                    (lem-ui--property 'id))))
-        (lem-ui-view-community id))))
+      (let ((type (lem-ui--property 'lem-type))
+            (id (or (lem-ui--property 'community-id)
+                    (lem-ui--property 'id)))) ; community header
+        (if (eq type 'instance)
+            (user-error "Item has no community.")
+          (lem-ui-view-community id)))))
 
 ;;; REPLIES
 
