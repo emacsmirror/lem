@@ -619,8 +619,12 @@ LIMIT is the max results to return."
   "Call FUN on ID of item of TYPE, from DATA.
 STRING means ID should be a string."
   (let* ((thing (alist-get type data))
-         (id (lem-ui--id-from-json thing type string)))
-    (funcall fun id)))
+         (id (lem-ui--id-from-json thing type string))
+         (post-id (when (eq type 'comment)
+                    (number-to-string
+                     (alist-get 'post_id
+                                (alist-get 'comment thing))))))
+    (funcall fun (or post-id id))))
 
 (defun lem-fedilike-url-p (query)
   "Check if QUERY resembles a fediverse URL."
@@ -1945,13 +1949,14 @@ RENDER-FUN is the name of a function to render them."
       (lem-ui--init-view)
       (message "Loading more items... [done]"))))
 
-(defun lem-ui-view-comment-post ()
-  "View post of comment at point."
+(defun lem-ui-view-comment-post (&optional post-id)
+  "View post of comment at point, or of POST-ID."
   (interactive)
-  (if (not (or (eq (lem-ui--item-type) 'comment)
+  (if (not (or post-id
+               (eq (lem-ui--item-type) 'comment)
                (eq (lem-ui--item-type) 'comment-reply)))
       (message "Not at a comment?")
-    (let* ((post (lem-ui--property 'post-id)))
+    (let* ((post (or post-id (lem-ui--property 'post-id))))
       (lem-ui-view-post post))))
 
 ;;; LIKES / VOTES
