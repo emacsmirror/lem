@@ -624,7 +624,9 @@ STRING means ID should be a string."
                     (number-to-string
                      (alist-get 'post_id
                                 (alist-get 'comment thing))))))
-    (funcall fun (or post-id id))))
+    (if (eq type 'comment)
+        (funcall fun post-id id)
+      (funcall fun id))))
 
 (defun lem-fedilike-url-p (query)
   "Check if QUERY resembles a fediverse URL."
@@ -668,7 +670,7 @@ Lemmy supports lookups for users, posts, comments and communities."
               ((equal 'person (caar response))
                (lem-ui-lookup-call 'person response 'lem-ui-view-user :str))
               ((equal 'comment (caar response))
-               (lem-ui-lookup-call 'comment response 'lem-ui-view-comment-post :str))
+               (lem-ui-lookup-call 'comment response 'lem-ui-view-comment-post))
               ((equal 'post (caar response))
                (lem-ui-lookup-call 'post response 'lem-ui-view-post :str))
               ((equal 'community (caar response))
@@ -1949,15 +1951,24 @@ RENDER-FUN is the name of a function to render them."
       (lem-ui--init-view)
       (message "Loading more items... [done]"))))
 
-(defun lem-ui-view-comment-post (&optional post-id)
-  "View post of comment at point, or of POST-ID."
+(defun lem-ui-post-goto-comment (comment-id)
+  "Move point to comment with COMMENT-ID, a number, if possible."
+  ;; TODO: implement forward-search/pagination
+  (with-current-buffer "*lem-post*"
+    (when-let ((match (text-property-search-forward 'id comment-id t)))
+      (goto-char (prop-match-beginning match)))))
+
+(defun lem-ui-view-comment-post (&optional post-id comment-id)
+  "View post of comment at point, or of POST-ID.
+If COMMENT-ID is provided, move point to that comment."
   (interactive)
   (if (not (or post-id
                (eq (lem-ui--item-type) 'comment)
                (eq (lem-ui--item-type) 'comment-reply)))
       (message "Not at a comment?")
     (let* ((post (or post-id (lem-ui--property 'post-id))))
-      (lem-ui-view-post post))))
+      (lem-ui-view-post post)
+      (lem-ui-post-goto-comment comment-id))))
 
 ;;; LIKES / VOTES
 
