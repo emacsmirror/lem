@@ -256,6 +256,12 @@ are for `lem-search'."
   (username-or-email password)
   nil nil :unauthed)
 
+(lem-def-request "get" "validate-auth" "user/validate_auth"
+  ()
+  "Return an error if session not currectly authenticated.")
+
+;; (lem-validate-auth)
+
 ;;; USERS / PERSON
 (lem-def-request "get" "get-person" "user"
   (&optional username person-id sort limit page community-id saved-only)
