@@ -212,7 +212,11 @@ Load current user's instance posts."
       ;; else check site is a site:
       (when (lem-check-site)
         ;; then login manually, store token, and set var:
-        (let* ((password (read-passwd "Password: "))
+        (let* ((password (read-passwd
+                          (format "Password [%s on %s]: "
+                                  name (url-host
+                                        (url-generic-parse-url
+                                         lem-instance-url)))))
                (login-response (lem-login name password))
                (token (alist-get 'jwt login-response)))
           (lem-auth-store-token name token)
