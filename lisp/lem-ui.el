@@ -2001,7 +2001,7 @@ TYPE should be either :unlike, :dislike, or nil to like."
                      (i (alist-get obj vote))
                      (saved (alist-get 'saved i))
                      (my-vote (alist-get 'my_vote i)))
-                (when my-vote
+                (when i ; no my_vote if we unliked in 0.19-rc5?
                   (lem-ui--update-item-json i)
                   (lem-ui-update-bt-byline-from-json my-vote saved)
                   (message "%s %s %s!" item id like-str))))))
