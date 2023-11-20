@@ -1041,7 +1041,7 @@ SORT must be a member of `lem-sort-types'."
         (concat
          (lem-ui-top-byline .post.name
                             .post.url
-                            .creator.name
+                            (or .creator.display_name .creator.name)
                             .counts.score
                             .post.published
                             (when community .community.name)
@@ -1793,7 +1793,7 @@ REPLY means it is a comment-reply object."
       (propertize
        (concat
         (lem-ui-top-byline nil nil
-                           .creator.name
+                           (or .creator.display_name .creator.name)
                            .counts.score
                            .comment.published
                            nil nil nil
@@ -1829,7 +1829,7 @@ REPLY means it is a comment-reply object."
       (propertize
        (concat
         (lem-ui-top-byline nil nil
-                           .creator.name
+                           (or .creator.display_name .creator.name)
                            nil ;.counts.score
                            .private_message.published)
         "\n"
