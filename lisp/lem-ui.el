@@ -1483,7 +1483,8 @@ profile page."
            (propertize .community.title
                        'face '(:weight bold))
            " | "
-           (lem-ui-font-lock-comment .community.name)
+           (lem-ui-font-lock-comment
+            (concat "!" .community.name))
            "\n"
            (lem-ui-font-lock-comment .community.actor_id)
            (unless brief (concat "\n" desc "\n"
