@@ -346,8 +346,7 @@ If we hit `point-max', call `lem-ui-more' then `scroll-up-command'."
 
 ;;; INSTANCE
 
-;; TODO: toggle posts or comments (ITEM arg)
-(defun lem-ui-view-instance (&optional type sort limit page sidebar item)
+(defun lem-ui-view-instance (&optional type sort limit page item sidebar)
   "View posts of current user's home instance.
 SORT must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
@@ -379,7 +378,7 @@ ITEM must be a member of `lem-view-types'."
   ;; TODO: full instance info: sidebar, full desc,
   ;; trending communities, stats, admins
   (interactive)
-  (lem-ui-view-instance nil nil nil nil :sidebar))
+  (lem-ui-view-instance nil nil nil nil nil :sidebar))
 
 (defun lem-ui-view-modlog (_args)
   "Docstring."
