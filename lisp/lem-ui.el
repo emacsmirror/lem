@@ -354,11 +354,11 @@ TYPE must be member of `lem-listing-types'.
 ITEM must be a member of `lem-view-types'."
   (interactive)
   (let* ((instance (lem-get-instance))
-         (items (if (eq item 'comments)
+         (items (if (equal item "comments")
                     ;;FIXME: sort arg breaks the request:
                     (lem-get-comments nil nil type nil limit page) ;sort limit page)
                   (lem-get-posts type sort limit page)))
-         (items (if (eq item 'comments)
+         (items (if (equal item "comments")
                     (alist-get 'comments items)
                   (alist-get 'posts items)))
          (sort (or sort lem-default-sort-type))
@@ -367,7 +367,7 @@ ITEM must be a member of `lem-view-types'."
     (lem-ui-with-buffer buf 'lem-mode nil bindings
       (lem-ui-render-instance instance :stats sidebar)
       (lem-ui-insert-heading (if (eq nil item) "posts" item))
-      (if (eq item 'comments)
+      (if (equal item "comments")
           (lem-ui-render-comments items)
         (lem-ui-render-posts-instance items))
       (lem-ui--init-view)
