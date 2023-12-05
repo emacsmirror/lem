@@ -229,23 +229,24 @@ Inserts images and sets relative timestamp timers."
 
 ;;; MACROS
 
-(defmacro lem-ui-with-buffer (buffer mode-fun other-window no-bindings &rest body)
+(defmacro lem-ui-with-buffer (buffer mode-fun other-window bindings &rest body)
   "Evaluate BODY in a new or existing buffer called BUFFER.
 MODE-FUN is called to set the major mode.
 OTHER-WINDOW means call `switch-to-buffer-other-window' rather
 than `switch-to-buffer'.
-NO-BINDINGS means suppress the cycle keybindings message."
+BINDINGS is a list of variables for which to display bidings."
   (declare (debug t)
            (indent 4))
   `(with-current-buffer (get-buffer-create ,buffer)
      (let* ((inhibit-read-only t)
-            (sort-str "\\[lem-ui-cycle-sort]: cycle sort")
-            (msg-str (unless (eq ,no-bindings :no-bindings)
-                       (if (eq ,no-bindings :sort-only)
-                           sort-str
-                         (concat
-                          "\\[lem-ui-cycle-listing-type]: cycle listing\n"
-                          sort-str)))))
+            (sort-str (when (member 'lem-sort-types ,bindings)
+                        "\\[lem-ui-cycle-sort]: cycle sort"))
+            (listing-str (when (member 'lem-listing-types ,bindings)
+                           "\\[lem-ui-cycle-listing-type]: cycle listing\n"))
+            (view-str (when (or (member 'lem-view-types ,bindings)
+                                (member 'lem-user-view-types ,bindings))
+                        "\\[lem-ui-toggle-posts-comments]: toggle posts/comments"))
+            (msg-str (concat listing-str "\n" sort-str "\n" view-str)))
        (erase-buffer)
        (funcall ,mode-fun)
        (if ,other-window
@@ -253,7 +254,9 @@ NO-BINDINGS means suppress the cycle keybindings message."
          (switch-to-buffer ,buffer))
        ,@body
        (goto-char (point-min))
-       (unless (eq ,no-bindings :no-bindings)
+       ;; FIXME: this needs to come after media messages:
+       (when ,bindings
+         (sleep-for 1)
          (message
           (substitute-command-keys msg-str))))))
 
