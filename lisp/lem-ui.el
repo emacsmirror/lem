@@ -475,9 +475,9 @@ Works on instance, community, and user views."
                (funcall view-fun id "comments" sort)
              (funcall view-fun id "posts" sort)))
           (user-p
-           (cond ((equal type "overview")
+           (cond ((equal item "overview")
                   (lem-ui-toggle-funcall view-fun id "posts" sort))
-                 ((equal type "posts")
+                 ((equal item "posts")
                   (lem-ui-toggle-funcall view-fun id "comments" sort))
                  (t ; comments or nil
                   (lem-ui-toggle-funcall view-fun id "overview" sort))))
