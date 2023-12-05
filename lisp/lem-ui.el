@@ -347,23 +347,32 @@ If we hit `point-max', call `lem-ui-more' then `scroll-up-command'."
 ;;; INSTANCE
 
 ;; TODO: toggle posts or comments (ITEM arg)
-(defun lem-ui-view-instance (&optional type sort limit page sidebar)
+(defun lem-ui-view-instance (&optional type sort limit page sidebar item)
   "View posts of current user's home instance.
 SORT must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
 ITEM is a symbol, either posts or comments."
   (interactive)
   (let* ((instance (lem-get-instance))
-         (posts (lem-get-posts type sort limit page))
-         (posts (alist-get 'posts posts))
+         (items (if (eq item 'comments)
+                    ;;FIXME: sort arg breaks the request:
+                    (lem-get-comments nil nil type nil limit page) ;sort limit page)
+                  (lem-get-posts type sort limit page)))
+         (items (if (eq item 'comments)
+                    (alist-get 'comments items)
+                  (alist-get 'posts items)))
          (sort (or sort lem-default-sort-type))
-         (buf "*lem-instance*"))
-    (lem-ui-with-buffer buf 'lem-mode nil nil
+         (buf "*lem-instance*")
+         (bindings (lem-ui-view-options 'instance)))
+    (lem-ui-with-buffer buf 'lem-mode nil bindings
       (lem-ui-render-instance instance :stats sidebar)
-      (lem-ui-render-posts-instance posts)
+      (lem-ui-insert-heading (if (eq nil item) "posts" (symbol-name item)))
+      (if (eq item 'comments)
+          (lem-ui-render-comments items)
+        (lem-ui-render-posts-instance items))
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec
-       type sort #'lem-ui-view-instance 'instance page))))
+       type sort #'lem-ui-view-instance item page))))
 
 (defun lem-ui-view-instance-full ()
   "View full instance details."
