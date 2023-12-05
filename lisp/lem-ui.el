@@ -461,7 +461,7 @@ Returns a list of the variables containing the specific options."
   "Switch between displaying posts or comments.
 Works on instance, community, and user views."
   (interactive)
-  (let* ((item-type (lem-ui-get-buffer-spec :item))
+  (let* ((item (lem-ui-get-buffer-spec :item))
          (view-fun (lem-ui-get-buffer-spec :view-fun))
          (sort (lem-ui-get-buffer-spec :sort))
          (type (lem-ui-get-buffer-spec :listing-type))
@@ -471,7 +471,7 @@ Works on instance, community, and user views."
          (instance-p (or (eq view-fun #'lem-ui-view-instance)
                          (eq view-fun #'lem-ui-view-instance-full))))
     (cond (community-p
-           (if (not (equal item-type "comments"))
+           (if (not (equal item "comments"))
                (funcall view-fun id "comments" sort)
              (funcall view-fun id "posts" sort)))
           (user-p
@@ -482,9 +482,9 @@ Works on instance, community, and user views."
                  (t ; comments or nil
                   (lem-ui-toggle-funcall view-fun id "overview" sort))))
           (instance-p
-           (if (not (eq item-type 'comments))
-               (funcall view-fun nil sort nil nil nil "comments")
-             (funcall view-fun nil sort nil nil nil "posts")))
+           (if (not (equal item "comments"))
+               (funcall view-fun nil sort nil nil "comments")
+             (funcall view-fun nil sort nil nil "posts")))
           (t
            (user-error "Posts/Comments toggle not available in this view")))))
 
