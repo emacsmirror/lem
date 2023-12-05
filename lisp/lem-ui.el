@@ -2136,9 +2136,9 @@ TYPE should be either :unlike, :dislike, or nil to like."
   (cl-loop for community in json
            do (lem-ui-render-community community nil nil :subscription)))
 
-(defun lem-ui-view-user (id &optional view-type sort limit current-user)
+(defun lem-ui-view-user (id &optional item sort limit current-user)
   "View user with ID.
-VIEW-TYPE must be a member of `lem-user-view-types'.
+ITEM must be a member of `lem-user-view-types'.
 SORT must be a member of `lem-sort-types'.
 LIMIT is max items to show.
 CURRENT-USER means we are displaying the current user's profile."
@@ -2155,10 +2155,10 @@ CURRENT-USER means we are displaying the current user's profile."
       (let-alist user-json
         (unless current-user
           (lem-ui-render-user .person_view))
-        (cond ((equal view-type "posts")
+        (cond ((equal item "posts")
                (lem-ui-insert-heading "posts")
                (lem-ui-render-posts .posts :community :trim))
-              ((equal view-type "comments")
+              ((equal item "comments")
                (lem-ui-insert-heading "comments")
                (lem-ui-render-comments .comments))
               (t ; no arg: overview
@@ -2167,9 +2167,9 @@ CURRENT-USER means we are displaying the current user's profile."
                (lem-ui-render-comments .comments)
                (lem-ui-render-posts .posts :community :trim)))
         (lem-ui--init-view)
-        ;; FIXME: don't confuse view-type and listing-type (& fix cycling):
         (lem-ui-set-buffer-spec
-         view-type sort #'lem-ui-view-user view-type)))))
+         nil ; no listing type for users
+         sort #'lem-ui-view-user item)))))
 
 (defun lem-ui-view-own-profile ()
   "View profile of the current user."
