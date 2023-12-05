@@ -763,8 +763,9 @@ LIMIT."
          (post (alist-get 'post_view post-view))
          (community-id (alist-get 'community_id
                                   (alist-get 'post post)))
-         (sort (or sort lem-default-comment-sort-type)))
-    (lem-ui-with-buffer "*lem-post*" 'lem-mode nil :sort-only
+         (sort (or sort lem-default-comment-sort-type))
+         (bindings (lem-ui-view-options 'post)))
+    (lem-ui-with-buffer "*lem-post*" 'lem-mode nil bindings
       (lem-ui--set-mods community-id)
       (lem-ui-render-post post :community)
       (lem-ui-render-post-comments id sort limit)
@@ -1481,8 +1482,9 @@ PAGE is the page number of items to display, a string."
                                 id nil sort limit page))
                   (alist-get 'posts
                              (lem-api-get-community-posts-by-id
-                              id nil sort limit page))))) ; no sorting
-    (lem-ui-with-buffer buf 'lem-mode nil nil
+                              id nil sort limit page)))) ; no sorting
+         (bindings (lem-ui-view-options 'community)))
+    (lem-ui-with-buffer buf 'lem-mode nil bindings
       (lem-ui-render-community community :stats :view)
       (if (eq item 'comments)
           (progn
@@ -2154,8 +2156,9 @@ LIMIT is max items to show.
 CURRENT-USER means we are displaying the current user's profile."
   (let ((user-json (lem-api-get-person-by-id id sort limit))
         (sort (or sort lem-default-sort-type))
-        (buf "*lem-user*"))
-    (lem-ui-with-buffer buf 'lem-mode nil nil
+        (buf "*lem-user*")
+        (bindings (lem-ui-view-options 'user)))
+    (lem-ui-with-buffer buf 'lem-mode nil bindings
       (when current-user
         (let-alist current-user
           (lem-ui-render-user .local_user_view)
