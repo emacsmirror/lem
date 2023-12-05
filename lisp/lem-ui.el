@@ -527,7 +527,7 @@ POST-P means we are cycling a post view (which has no type)."
   (let* ((type (lem-ui-get-buffer-spec :listing-type))
          (sort (lem-ui-get-buffer-spec :sort))
          (view-fun (lem-ui-get-buffer-spec :view-fun))
-         (id (lem-ui-get-view-id))
+         ;; (id (lem-ui-get-view-id))
          (user-p (eq view-fun #'lem-ui-view-user))
          (post-p (eq view-fun #'lem-ui-view-post))
          (community-p (eq view-fun #'lem-ui-view-community)))
@@ -1600,7 +1600,7 @@ And optionally for instance COMMUNITIES."
             (id (or (lem-ui--property 'community-id)
                     (lem-ui--property 'id)))) ; community header
         (if (eq type 'instance)
-            (user-error "Item has no community.")
+            (user-error "Item has no community")
           (lem-ui-view-community id)))))
 
 ;;; REPLIES
