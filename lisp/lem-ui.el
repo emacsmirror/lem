@@ -1472,11 +1472,11 @@ PAGE is the page number of items to display, a string."
          (bindings (lem-ui-view-options 'community)))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
       (lem-ui-render-community community :stats :view)
-      (if (eq item 'comments)
+      (if (equal item "comments")
           (progn
             (lem-ui-insert-heading "comments")
             (lem-ui-render-comments items)) ; no type
-        (lem-ui-insert-heading item)
+        (lem-ui-insert-heading (or item "posts"))
         (if (equal item "comments")
             (lem-ui-render-comments items)
           (lem-ui-render-posts items nil :trim))) ; no children
