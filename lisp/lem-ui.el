@@ -435,6 +435,20 @@ SIDEBAR."
 
 ;;; VIEWS SORTING AND TYPES
 
+(defun lem-ui-view-options (view)
+  "Return the various sorting and other options for VIEW.
+Returns a list of the variables containing the specific options."
+  (cond ((eq view 'post)
+         '(lem-comment-sort-types))
+        ((eq view 'instance)
+         '(lem-view-types lem-sort-types lem-listing-types))
+        ((eq view 'search)
+         '(lem-listing-types lem-sort-types lem-search-types))
+        ((eq view 'user)
+         '(lem-user-view-types lem-sort-types))
+        ((eq view 'community)
+         '(lem-view-types lem-sort-types))))
+
 (defun lem-ui-toggle-posts-comments ()
   "Switch between displaying posts or comments.
 Works on instance, community, and user views."
