@@ -133,6 +133,7 @@ Uses `cursor-face-highlight-mode'."
     ;; nav/sort:
     (define-key map (kbd "C-c C-c") #'lem-ui-cycle-listing-type)
     (define-key map (kbd "C-c C-s") #'lem-ui-cycle-sort)
+    (define-key map (kbd "o") #'lem-ui-choose-sort)
     (define-key map (kbd "n") #'lem-next-item)
     (define-key map (kbd "p") #'lem-prev-item)
     (define-key map (kbd "SPC") #'lem-ui-scroll-up-command)

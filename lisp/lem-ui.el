@@ -343,12 +343,12 @@ If we hit `point-max', call `lem-ui-more' then `scroll-up-command'."
 
 ;;; INSTANCE
 
-;; TODO: toggle posts or comments
+;; TODO: toggle posts or comments (ITEM arg)
 (defun lem-ui-view-instance (&optional type sort limit page sidebar)
   "View posts of current user's home instance.
 SORT must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
-LIMIT is the amount of results to return."
+ITEM is a symbol, either posts or comments."
   (interactive)
   (let* ((instance (lem-get-instance))
          (posts (lem-get-posts type sort limit page))
@@ -432,6 +432,41 @@ SIDEBAR."
 
 ;;; VIEWS SORTING AND TYPES
 
+(defun lem-ui-toggle-posts-comments ()
+  "Switch between displaying posts or comments.
+Works on instance, community, and user views."
+  (interactive)
+  (let* ((item-type (lem-ui-get-buffer-spec :item))
+         (view-fun (lem-ui-get-buffer-spec :view-fun))
+         (sort (lem-ui-get-buffer-spec :sort))
+         (type (lem-ui-get-buffer-spec :listing-type))
+         (id (lem-ui-get-view-id))
+         (user-p (eq view-fun #'lem-ui-view-user))
+         (community-p (eq view-fun #'lem-ui-view-community))
+         (instance-p (or (eq view-fun #'lem-ui-view-instance)
+                         (eq view-fun #'lem-ui-view-instance-full))))
+    (cond (community-p
+           (if (not (eq item-type 'comments))
+               (funcall view-fun id 'comments sort)
+             (funcall view-fun id 'posts sort)))
+          (user-p
+           (cond ((equal type "overview")
+                  ;; refactor to avoid cycle-funcall, as it implies our
+                  ;; toggling here is the "listing" type.
+                  (lem-ui-cycle-funcall view-fun
+                                        "posts" sort 'listing id))
+                 ((equal type "posts")
+                  (lem-ui-cycle-funcall view-fun
+                                        "comments" sort 'listing id))
+                 (t ; comments or nil
+                  (lem-ui-cycle-funcall view-fun
+                                        "overview" sort 'listing id))))
+          (instance-p
+           (message "not yet implemented")) ; TODO: posts/comments for intance
+          ;; (lem-ui-cycle-funcall view-fun ))
+          (t
+           (user-error "Posts/Comments toggle not available in this view")))))
+
 (defun lem-ui-get-view-id ()
   "Get id of the view item, a post or user."
   (save-excursion
@@ -453,13 +488,14 @@ POST-P means we are cycling a post view (which has no type)."
       (message "%s: %s" call-type str))))
 
 (defun lem-ui-cycle-listing-type ()
-  "Cycle view between `lem-listing-types'.
-For a user view, cycle between overview, posts and comments.
-For a community view, cycle between posts and comments."
+  "Cycle view between `lem-listing-types'."
+  ;; For a user view, cycle between overview, posts and comments."
+  ;; For a community view, cycle between posts and comments."
   ;; FIXME: remove posts/comments from this logic/binding
+  ;; but if user/community/post don't cycle, what does cycle? instance + ?
+  ;; in which case, lets pull it out and leave the others!
   (interactive)
   (let* ((type (lem-ui-get-buffer-spec :listing-type))
-         (item-type (lem-ui-get-buffer-spec :item))
          (sort (lem-ui-get-buffer-spec :sort))
          (view-fun (lem-ui-get-buffer-spec :view-fun))
          (id (lem-ui-get-view-id))
@@ -468,19 +504,21 @@ For a community view, cycle between posts and comments."
          (community-p (eq view-fun #'lem-ui-view-community)))
     ;; TODO: refactor
     (cond (user-p
-           (cond ((equal type "overview")
-                  (lem-ui-cycle-funcall view-fun
-                                        "posts" sort 'listing id))
-                 ((equal type "posts")
-                  (lem-ui-cycle-funcall view-fun
-                                        "comments" sort 'listing id))
-                 (t ; comments or nil
-                  (lem-ui-cycle-funcall view-fun
-                                        "overview" sort 'listing id))))
+           (message "User views don't have listing type."))
+          ;; (cond ((equal type "overview")
+          ;;        (lem-ui-cycle-funcall view-fun
+          ;;                              "posts" sort 'listing id))
+          ;;       ((equal type "posts")
+          ;;        (lem-ui-cycle-funcall view-fun
+          ;;                              "comments" sort 'listing id))
+          ;;       (t ; comments or nil
+          ;;        (lem-ui-cycle-funcall view-fun
+          ;;                              "overview" sort 'listing id))))
           (community-p
-           (if (not (eq item-type 'comments))
-               (lem-ui-cycle-funcall view-fun 'comments sort 'listing id)
-             (lem-ui-cycle-funcall view-fun 'posts sort 'listing id)))
+           (message "Community views don't have listing type."))
+          ;;  (if (not (eq item-type 'comments))
+          ;;      (lem-ui-cycle-funcall view-fun 'comments sort 'listing id)
+          ;;    (lem-ui-cycle-funcall view-fun 'posts sort 'listing id)))
           (post-p
            (message "Post views don't have listing type."))
           (t
@@ -489,7 +527,8 @@ For a community view, cycle between posts and comments."
                (lem-ui-cycle-funcall
                 view-fun (car lem-listing-types) sort 'listing)
              (lem-ui-cycle-funcall
-              view-fun (cadr (member type lem-listing-types)) sort 'listing))))))
+              view-fun (cadr (member type lem-listing-types))
+              sort 'listing))))))
 
 (defun lem-ui-cycle-sort ()
   "Cycle view between some `lem-sort-types'.
@@ -587,7 +626,7 @@ SORT-OR-TYPE is either sort or type."
                    types-list nil :match))
 
 (defun lem-ui-search (&optional limit)
-  "Do a search for one of the types in `lem-search-types'.
+  "Do a search for objects of one of the types in `lem-search-types'.
 LIMIT is the max results to return."
   (interactive)
   (let* ((types ; remove not-yet-implemented search types:
