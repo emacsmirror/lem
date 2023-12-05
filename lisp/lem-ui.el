@@ -1446,7 +1446,7 @@ LIMIT is the max results to return."
   (lem-ui-do-subscribed-completing
    "Jump to community: "
    (lambda (id _choice)
-     (lem-ui-view-community id 'posts))))
+     (lem-ui-view-community id nil 'posts))))
 
 (defun lem-ui-view-community (id &optional item sort limit page)
   "View community with ID.
