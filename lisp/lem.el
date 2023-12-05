@@ -54,6 +54,8 @@
   "The name of the current user.")
 
 ;;; TYPES
+;; FIXME: make these all lists of symbols, so checks are faster and easier
+
 (defconst lem-listing-types
   '("All" ; "Community" removed?
     "Local" "Subscribed"))
@@ -91,7 +93,7 @@
   '("overview" "posts" "comments"))
 
 (defun lem-user-view-type-p (str)
-  "Return t if STR is in `lem-user-view-types'."
+  "Non-nil if STR is in `lem-user-view-types'."
   (cl-member str lem-user-view-types :test 'equal))
 
 ;;; CUSTOMIZE
