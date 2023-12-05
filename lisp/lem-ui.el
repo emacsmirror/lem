@@ -1605,7 +1605,7 @@ Optionally only view UNREAD items."
   (let* ((replies (lem-get-replies (if unread "true" nil)))
          (list (alist-get 'replies replies))
          (buf "*lem-replies*"))
-    (lem-ui-with-buffer buf 'lem-mode nil :no-bindings
+    (lem-ui-with-buffer buf 'lem-mode nil nil
       (lem-ui-render-replies list)
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil nil #'lem-ui-view-replies
@@ -1634,7 +1634,7 @@ Optionally only view UNREAD items."
   (let* ((mentions (lem-get-mentions (if unread "true" nil)))
          (list (alist-get 'mentions mentions))
          (buf "*lem-mentions*"))
-    (lem-ui-with-buffer buf 'lem-mode nil :no-bindings
+    (lem-ui-with-buffer buf 'lem-mode nil nil
       (lem-ui-render-mentions list)
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil nil #'lem-ui-view-mentions
@@ -1655,7 +1655,7 @@ Optionally only view UNREAD items."
   (let* ((private-messages (lem-get-private-messages (if unread "true" nil)))
          (list (alist-get 'private_messages private-messages))
          (buf "*lem-private-messages*"))
-    (lem-ui-with-buffer buf 'lem-mode nil :no-bindings
+    (lem-ui-with-buffer buf 'lem-mode nil nil
       ;; (lem-ui-render-private-messages list))))
       (lem-ui-render-private-messages list)
       (lem-ui--init-view)
