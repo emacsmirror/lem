@@ -468,21 +468,24 @@ Works on instance, community, and user views."
              (funcall view-fun id 'posts sort)))
           (user-p
            (cond ((equal type "overview")
-                  ;; refactor to avoid cycle-funcall, as it implies our
-                  ;; toggling here is the "listing" type.
-                  (lem-ui-cycle-funcall view-fun
-                                        "posts" sort 'listing id))
+                  (lem-ui-toggle-funcall view-fun id "posts" sort))
                  ((equal type "posts")
-                  (lem-ui-cycle-funcall view-fun
-                                        "comments" sort 'listing id))
+                  (lem-ui-toggle-funcall view-fun id "comments" sort))
                  (t ; comments or nil
-                  (lem-ui-cycle-funcall view-fun
-                                        "overview" sort 'listing id))))
+                  (lem-ui-toggle-funcall view-fun id "overview" sort))))
           (instance-p
-           (message "not yet implemented")) ; TODO: posts/comments for intance
-          ;; (lem-ui-cycle-funcall view-fun ))
+           (if (not (eq item-type 'comments))
+               (funcall view-fun nil sort nil nil nil 'comments)
+             (funcall view-fun nil sort nil nil nil 'posts)))
           (t
            (user-error "Posts/Comments toggle not available in this view")))))
+
+(defun lem-ui-toggle-funcall (fun id view-type sort)
+  "Call FUN with ID VIEW-TYPE and SORT as args.
+Then message VIEW-TYPE."
+  ;; users have `lem-user-view-types', community/instance `lem-view-types'
+  (funcall fun id view-type sort)
+  (message "Viewing: %s" view-type))
 
 (defun lem-ui-get-view-id ()
   "Get id of the view item, a post or user."
