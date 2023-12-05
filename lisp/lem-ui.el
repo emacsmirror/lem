@@ -351,7 +351,7 @@ If we hit `point-max', call `lem-ui-more' then `scroll-up-command'."
   "View posts of current user's home instance.
 SORT must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
-ITEM is a symbol, either posts or comments."
+ITEM must be a member of `lem-view-types'."
   (interactive)
   (let* ((instance (lem-get-instance))
          (items (if (eq item 'comments)
@@ -366,13 +366,13 @@ ITEM is a symbol, either posts or comments."
          (bindings (lem-ui-view-options 'instance)))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
       (lem-ui-render-instance instance :stats sidebar)
-      (lem-ui-insert-heading (if (eq nil item) "posts" (symbol-name item)))
+      (lem-ui-insert-heading (if (eq nil item) "posts" item))
       (if (eq item 'comments)
           (lem-ui-render-comments items)
         (lem-ui-render-posts-instance items))
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec
-       type sort #'lem-ui-view-instance item page))))
+       type sort #'lem-ui-view-instance (or item "posts") page))))
 
 (defun lem-ui-view-instance-full ()
   "View full instance details."
@@ -472,9 +472,9 @@ Works on instance, community, and user views."
          (instance-p (or (eq view-fun #'lem-ui-view-instance)
                          (eq view-fun #'lem-ui-view-instance-full))))
     (cond (community-p
-           (if (not (eq item-type 'comments))
-               (funcall view-fun id 'comments sort)
-             (funcall view-fun id 'posts sort)))
+           (if (not (equal item-type "comments"))
+               (funcall view-fun id "comments" sort)
+             (funcall view-fun id "posts" sort)))
           (user-p
            (cond ((equal type "overview")
                   (lem-ui-toggle-funcall view-fun id "posts" sort))
@@ -484,8 +484,8 @@ Works on instance, community, and user views."
                   (lem-ui-toggle-funcall view-fun id "overview" sort))))
           (instance-p
            (if (not (eq item-type 'comments))
-               (funcall view-fun nil sort nil nil nil 'comments)
-             (funcall view-fun nil sort nil nil nil 'posts)))
+               (funcall view-fun nil sort nil nil nil "comments")
+             (funcall view-fun nil sort nil nil nil "posts")))
           (t
            (user-error "Posts/Comments toggle not available in this view")))))
 
@@ -1464,7 +1464,7 @@ LIMIT is the max results to return."
 
 (defun lem-ui-view-community (id &optional item sort limit page)
   "View community with ID.
-ITEM is a symbol, either posts or comments.
+ITEM must be a member of `lem-view-types'.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return.
 PAGE is the page number of items to display, a string."
@@ -1472,11 +1472,11 @@ PAGE is the page number of items to display, a string."
          ;; (view (alist-get 'community_view community))
          (buf "*lem-community*")
          ;; in case we set community posts, then switch to comments:
-         (sort (if (eq item 'comments)
+         (sort (if (equal item "comments")
                    (unless (lem-comment-sort-type-p sort)
                      lem-default-comment-sort-type)
                  (or sort lem-default-sort-type)))
-         (items (if (eq item 'comments)
+         (items (if (equal item "comments")
                     (alist-get 'comments
                                (lem-api-get-community-comments
                                 id nil sort limit page))
@@ -1490,11 +1490,13 @@ PAGE is the page number of items to display, a string."
           (progn
             (lem-ui-insert-heading "comments")
             (lem-ui-render-comments items)) ; no type
-        (lem-ui-insert-heading "posts")
-        (lem-ui-render-posts items nil :trim)) ; no children
+        (lem-ui-insert-heading item)
+        (if (equal item "comments")
+            (lem-ui-render-comments items)
+          (lem-ui-render-posts items nil :trim))) ; no children
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-community
-                              (or item 'posts) page))))
+                              (or item "posts") page))))
 
 (defun lem-ui-get-community-id (community &optional string)
   "Return ID of COMMUNITY.
