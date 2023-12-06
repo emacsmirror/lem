@@ -1268,15 +1268,13 @@ LIMIT is the max results to return."
               (if (equal "Subscribed" .subscribed)
                   "*"
                 "")
-              .community.actor_id
-              ;; .community.description
-              )
-             collect (propertize
-                      (if (numberp i)
-                          (number-to-string i)
-                        i)
-                      'id .community.id
-                      'lem-type 'community))))
+              .community.actor_id)
+             ;; don't try to propertize numbers:
+             collect (if (stringp i)
+                         (propertize i
+                                     'id .community.id
+                                     'lem-type 'community)
+                       i))))
 
 (defun lem-ui-view-communities-tl (&optional type sort limit)
   "View Lemmy communities in a tabulated list.
