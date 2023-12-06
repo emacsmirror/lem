@@ -446,6 +446,24 @@ SIDEBAR."
 
 ;;; VIEWS SORTING AND TYPES
 
+(defun lem-ui-view-type ()
+  "."
+  ;; TODO: user / post / community / instance / search / minor ones
+  (let ((view-fun (lem-ui-get-buffer-spec :view-fun)))
+    (cond ((eq view-fun lem-ui-view-post)
+           'post)
+          ((eq view-fun lem-ui-view-community)
+           'community)
+          ((or (eq view-fun lem-ui-communities)
+               (eq view-fun lem-ui-communities-tl))
+           'communities)
+          ((eq view-fun lem-ui-view-user)
+           'user)
+          ((eq view-fun lem-ui-view-instance)
+           'instance)
+          ((eq view-fun lem-ui-search)
+           'search))))
+
 (defun lem-ui-view-options (view)
   "Return the various sorting and other options for VIEW.
 Returns a list of the variables containing the specific options."
@@ -512,11 +530,6 @@ Then message VIEW-TYPE."
   (save-excursion
     (goto-char (point-min))
     (lem-ui--id-from-prop :string)))
-
-(defun lem-ui-view-type ()
-  "."
-  ;; TODO: user / post / community / instance / search / minor ones
-  (cond ))
 
 (defun lem-ui-next-listing-type (type)
   "Return next listing type after TYPE in `lem-listing-types'."
