@@ -1447,7 +1447,7 @@ LIMIT is the max results to return."
   (lem-ui-do-subscribed-completing
    "Jump to community: "
    (lambda (id _choice)
-     (lem-ui-view-community id nil 'posts))))
+     (lem-ui-view-community id "posts"))))
 
 (defun lem-ui-view-community (id &optional item sort limit page)
   "View community with ID.
@@ -1942,7 +1942,7 @@ ITEMS should be an alist of the form '\=(plural-name ((items-list)))'."
          (lem-ui-more-items 'comment 'lem-api-get-post-comments
                             'lem-ui--build-and-render-comments-hierarchy))
         ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-community)
-         (if (eq (lem-ui-get-buffer-spec :item) 'posts)
+         (if (equal (lem-ui-get-buffer-spec :item) "posts")
              (lem-ui-more-items 'post 'lem-api-get-community-posts-by-id
                                 'lem-ui-render-posts)
            (lem-ui-more-items 'comment 'lem-api-get-community-comments-by-id
@@ -2188,13 +2188,13 @@ CURRENT-USER means we are displaying the current user's profile."
   (interactive)
   (lem-ui-with-item
       (let ((user (lem-ui--property 'creator-id)))
-        (lem-ui-view-user user 'overview))))
+        (lem-ui-view-user user "overview"))))
 
 (defun lem-ui-view-user-at-point ()
   "View user at point."
   (interactive)
   (lem-ui-with-item
-      (lem-ui-view-user id 'overview)))
+      (lem-ui-view-user id "overview")))
 
 (defun lem-ui-message-user-at-point ()
   "Send private message to user at point."
