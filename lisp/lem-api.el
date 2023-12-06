@@ -550,7 +550,7 @@ Returns a comment_view, recipient_ids, and form_id."
 (lem-def-request "get" "get-comments" "comment/list"
   (&optional post-id parent-id type- sort limit page
              community-id community-name saved-only)
-  "SORT must be a member of `lem-sort-types'.
+  "SORT must be a member of `lem-comment-sort-types'.
 LISTING-TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return.
 COMMUNITY-ID and COMMUNITY-NAME are the community to get posts from.
@@ -560,7 +560,8 @@ Without any id or name, get instance comments."
   (when saved-only
     '(("saved_only" . "true"))))
 
-;; (lem-get-comments "1694468")
+;; (lem-get-comments "1694468" nil nil "Hot")
+;; (lem-get-comments nil nil nil "Hot")
 
 (defun lem-api-get-community-comments (community-id
                                        &optional type sort limit page)

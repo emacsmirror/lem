@@ -348,14 +348,14 @@ If we hit `point-max', call `lem-ui-more' then `scroll-up-command'."
 
 (defun lem-ui-view-instance (&optional type sort limit page item sidebar)
   "View posts of current user's home instance.
-SORT must be a member of `lem-sort-types'.
+SORT must be a member of `lem-comment-sort-types' if item is
+\"comments\", otherwise it must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
 ITEM must be a member of `lem-view-types'."
   (interactive)
   (let* ((instance (lem-get-instance))
          (items (if (equal item "comments")
-                    ;;FIXME: sort arg breaks the request:
-                    (lem-get-comments nil nil type nil limit page) ;sort limit page)
+                    (lem-get-comments nil nil type sort limit page)
                   (lem-get-posts type sort limit page)))
          (items (if (equal item "comments")
                     (alist-get 'comments items)
@@ -546,13 +546,14 @@ ITEM is a member of `lem-view-types' or `lem-user-view-types'."
   ;; community: (id &optional item sort limit page)
   ;; post: no item
   ;; user:
+  ;; instance: (&optional type sort limit page item sidebar)
   (if id
       (progn
         (if post-p
             (funcall fun id sort) ; post
-          (funcall fun id item sort)) ; community
+          (funcall fun id item sort)) ; community / ?
         (message "Sort: %s" sort))
-    (funcall fun type sort)
+    (funcall fun type sort nil nil item) ; instance / ?
     (message "Sort: %s" sort)))
 
 (defun lem-ui-cycle-sort ()

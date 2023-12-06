@@ -73,7 +73,7 @@
   (cl-member str lem-sort-types :test 'equal))
 
 (defconst lem-comment-sort-types
-  '("Hot" "Top" "New" "Old"))
+  '("Hot" "Top" "New" "Old" "Controversial"))
 
 (defun lem-comment-sort-type-p (str)
   "Non-nil if STR is in `lem-comment-sort-types'."
