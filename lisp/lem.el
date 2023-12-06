@@ -65,8 +65,7 @@
   (cl-member str lem-listing-types :test 'equal))
 
 (defconst lem-sort-types
-  '("Active" "Hot" "New" "Old" "TopDay" "TopWeek" "TopMonth" "TopYear" "TopAll"
-    "MostComments" "NewComments" "TopHour" "TopSixHour" "TopTwelveHour"))
+  '("Active" "Hot" "New" "Old" "Controversial" "Scaled" "TopDay" "TopWeek" "TopMonth" "TopYear" "TopAll" "MostComments" "NewComments" "TopHour" "TopSixHour" "TopTwelveHour" "TopThreeMonths" "TopSixMonths" "TopNineMonths"))
 
 (defun lem-sort-type-p (str)
   "Non-nil if STR is in `lem-sort-types'."
