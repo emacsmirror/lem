@@ -466,7 +466,16 @@ Works on instance, community, and user views."
   (interactive)
   (let* ((item (lem-ui-get-buffer-spec :item))
          (view-fun (lem-ui-get-buffer-spec :view-fun))
-         (sort (lem-ui-get-buffer-spec :sort))
+         (sort-last (lem-ui-get-buffer-spec :sort))
+         ;; sort value must be valid for the item we toggle to:
+         ;; TODO: handle overview
+         (sort (if (equal item "posts")
+                   (if (member sort-last lem-comment-sort-types)
+                       sort-last
+                     (car lem-comment-sort-types))
+                 (if (member sort-last lem-sort-types)
+                     sort-last
+                   (car lem-sort-types))))
          (type (lem-ui-get-buffer-spec :listing-type))
          (id (lem-ui-get-view-id))
          (user-p (eq view-fun #'lem-ui-view-user))
@@ -590,14 +599,19 @@ For post view or other comments view, use
            (lem-ui-sort-funcall
             view-fun type sort-next nil nil item)))))
 
+;; TODO: separate sort and type again, this is a mess when we need to preserve
+;; item view as well:
 (defun lem-ui-sort-or-type (sort-or-type view-fun &optional id)
   "Reload current view, setting SORT-OR-TYPE, with VIEW-FUN.
 ID is the main view item's id."
   (let* ((type (lem-ui-get-buffer-spec :listing-type))
          (sort (lem-ui-get-buffer-spec :sort))
+         (item (lem-ui-get-buffer-spec :item))
          (post-p (eq view-fun #'lem-ui-view-post))
          (user-p (eq view-fun #'lem-ui-view-user))
-         (sort-list (if post-p lem-comment-sort-types
+         (sort-list (if (or post-p
+                            (equal item "comments"))
+                        lem-comment-sort-types
                       lem-sort-types))
          (type-list (if user-p
                         lem-user-view-types
@@ -611,12 +625,14 @@ ID is the main view item's id."
         (cond ((eq sort-or-type 'lem-type)
                (funcall view-fun id choice sort))
               (post-p
-               (funcall view-fun id choice))
+               (funcall view-fun id choice)) ; no item
               (t
-               (funcall view-fun id type choice)))
+               (funcall view-fun id item ; added item
+                        choice)))
       (if (eq sort-or-type 'lem-type)
-          (funcall view-fun choice sort)
-        (funcall view-fun type choice)))))
+          (funcall view-fun choice sort nil nil item)
+        (funcall view-fun type choice nil nil item))))) ; instance
+;;(&optional type sort limit page item sidebar)
 
 (defun lem-ui-call-sort-or-type (sort-or-type)
   "Call `lem-ui-call-or-type', with id arg if needed.
