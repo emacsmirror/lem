@@ -370,7 +370,7 @@ ITEM must be a member of `lem-view-types'."
       (lem-ui-render-instance instance :stats sidebar)
       (lem-ui-insert-heading (if (eq nil item) "posts" item))
       (if (equal item "comments")
-          (lem-ui-render-comments items)
+          (lem-ui-render-comments items :details)
         (lem-ui-render-posts-instance items))
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec
@@ -884,14 +884,19 @@ START and END are the boundaries of the link in the post body."
 
 (defun lem-ui-top-byline (title url username _score timestamp
                                 &optional community _community-url
-                                featured-p op-p admin-p mod-p del-p handle)
-  "Format a top byline for post with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
-COMMUNITY and COMMUNITY-URL are those of the community the item belongs to.
+                                featured-p op-p admin-p mod-p del-p handle
+                                post-title)
+  "Format a top byline for post with TITLE, URL, USERNAME, SCORE and
+TIMESTAMP.
+COMMUNITY and COMMUNITY-URL are those of the community the item
+belongs to.
 FEATURED-P means the item is pinned.
 OP-P is a flag, meaning we add a boxed OP string to the byline.
 ADMIN-P means we add same for admins, MOD-P means add same for moderators.
 DEL-P means add icon for deleted item.
-HANDLE is a user handle as a string."
+HANDLE is a user handle as a string.
+POST-TITLE is the name of the parent post, used for details
+comment display."
   (let ((url (lem-ui-render-url url))
         (parsed-time (date-to-time timestamp)))
     (propertize
@@ -933,7 +938,11 @@ HANDLE is a user handle as a string."
             (concat " | "
                     (lem-ui-symbol 'pinned))
           ""))
-       'face font-lock-comment-face))
+       'face font-lock-comment-face)
+      (when post-title
+        (concat "\n"
+                (propertize post-title
+                            'face '(:weight bold)))))
      'byline-top t)))
 
 (defun lem-ui-prop-score (my-vote score)
@@ -1746,21 +1755,21 @@ If RESTORE, restore the item instead."
 
 ;;; COMMENTS
 
-(defun lem-ui-render-comment (comment &optional reply)
+(defun lem-ui-render-comment (comment &optional reply details)
   "Render single COMMENT.
 REPLY means it is a comment-reply object."
   ;; SORT must be a member of `lem-comment-sort-types'."
   (insert
-   (lem-ui-format-comment comment nil reply)
+   (lem-ui-format-comment comment nil reply details)
    "\n"))
 
-(defun lem-ui-render-comments (comments)
+(defun lem-ui-render-comments (comments &optional details)
   "Render COMMENTS, a list of comment objects.
 ;; TYPE
 ;; SORT.
 For viewing a plain list of comments, not a hierarchy."
   (cl-loop for x in comments
-           do (lem-ui-render-comment x)))
+           do (lem-ui-render-comment x nil details)))
 
 ;;; THREADED COMMENTS:
 ;; Path: "The path / tree location of a comment, separated by dots, ending
@@ -1839,7 +1848,7 @@ Parent-fun for `hierarchy-add-tree'."
            ;; props
            ))))))
 
-(defun lem-ui-format-comment (comment &optional indent reply)
+(defun lem-ui-format-comment (comment &optional indent reply details)
   "Format COMMENT, optionally with INDENT amount of indent bars.
 REPLY means it is a comment-reply object."
   ;; NB: no stray requests in here.
@@ -1852,6 +1861,9 @@ REPLY means it is a comment-reply object."
                         (make-string indent (string-to-char
                                              (lem-ui-symbol 'reply-bar)))))
           (handle (lem-ui--handle-from-user-url .creator.actor_id))
+          (post-title (when details .post.name))
+          (community-name (when details (or .community.title
+                                            .community.name)))
           (admin-p (eq t .creator.admin))
           (mod-p (cl-member .creator.id lem-ui-post-community-mods-ids))
           (op-p (eq .comment.creator_id .post.creator_id)))
@@ -1862,8 +1874,9 @@ REPLY means it is a comment-reply object."
                            (or .creator.display_name .creator.name)
                            .counts.score
                            .comment.published
-                           nil nil nil
-                           op-p admin-p mod-p nil handle)
+                           community-name nil nil
+                           op-p admin-p mod-p nil handle
+                           post-title)
         "\n"
         (or content "")
         "\n"
