@@ -795,11 +795,11 @@ etc.")
            (lem-ui-view-community community-id))
           ((and (eq item-type 'user)
                 creator-id)
-           (lem-ui-view-user creator-id))
+           (lem-ui-view-user creator-id "overview"))
           ;; admin display in instance header:
           ;; (type user, but id not creator-id)
           ((eq item-type 'user)
-           (lem-ui-view-user id))
+           (lem-ui-view-user id "overview"))
           ((and (eq (lem-ui--property 'lem-type) 'post)
                 (lem-ui--property 'title))
            (lem-ui-view-post-at-point)))))
@@ -2201,7 +2201,7 @@ CURRENT-USER means we are displaying the current user's profile."
         (lem-ui--init-view)
         (lem-ui-set-buffer-spec
          nil ; no listing type for users
-         sort #'lem-ui-view-user item)))))
+         sort #'lem-ui-view-user (or item "overview"))))))
 
 (defun lem-ui-view-own-profile ()
   "View profile of the current user."
