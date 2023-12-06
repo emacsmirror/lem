@@ -355,7 +355,10 @@ ITEM must be a member of `lem-view-types'."
   (interactive)
   (let* ((instance (lem-get-instance))
          (items (if (equal item "comments")
-                    (lem-get-comments nil nil type sort limit page)
+                    (progn
+                      (unless (lem-comment-sort-type-p sort)
+                        (setq sort (car lem-comment-sort-types)))
+                      (lem-get-comments nil nil type sort limit page))
                   (lem-get-posts type sort limit page)))
          (items (if (equal item "comments")
                     (alist-get 'comments items)
@@ -558,7 +561,8 @@ ITEM is a member of `lem-view-types' or `lem-user-view-types'."
 
 (defun lem-ui-cycle-sort ()
   "Cycle view between some `lem-sort-types'.
-For post view, use `lem-comment-sort-types'."
+For post view or other comments view, use
+`lem-comment-sort-types'."
   (interactive)
   (let* ((type (lem-ui-get-buffer-spec :listing-type))
          (sort (lem-ui-get-buffer-spec :sort))
@@ -568,7 +572,9 @@ For post view, use `lem-comment-sort-types'."
          (post-p (eq view-fun #'lem-ui-view-post))
          (user-p (eq view-fun #'lem-ui-view-user))
          (community-p (eq view-fun #'lem-ui-view-community))
-         (sort-types (if post-p lem-comment-sort-types lem-sort-types))
+         (sort-types (if (or post-p (equal item "comments"))
+                         lem-comment-sort-types
+                       lem-sort-types))
          (sort-rest (member sort sort-types))
          (sort-next (if (or (equal sort (car (last sort-types)))
                             (null sort))
@@ -1460,7 +1466,8 @@ PAGE is the page number of items to display, a string."
          (buf "*lem-community*")
          ;; in case we set community posts, then switch to comments:
          (sort (if (equal item "comments")
-                   (unless (lem-comment-sort-type-p sort)
+                   (if (lem-comment-sort-type-p sort)
+                       sort
                      lem-default-comment-sort-type)
                  (or sort lem-default-sort-type)))
          (items (if (equal item "comments")
@@ -2140,13 +2147,24 @@ TYPE should be either :unlike, :dislike, or nil to like."
 (defun lem-ui-view-user (id &optional item sort limit current-user)
   "View user with ID.
 ITEM must be a member of `lem-user-view-types'.
-SORT must be a member of `lem-sort-types'.
+SORT must be a member of `lem-sort-types' or if item is
+\"comments\", then a member of `lem-comment-sort-types'.
 LIMIT is max items to show.
 CURRENT-USER means we are displaying the current user's profile."
-  (let ((user-json (lem-api-get-person-by-id id sort limit))
-        (sort (or sort lem-default-sort-type))
-        (buf "*lem-user*")
-        (bindings (lem-ui-view-options 'user)))
+  (let* (; sort must be non-comment sort for user request:
+         (person-sort (if (lem-sort-type-p sort)
+                          sort
+                        lem-default-sort-type))
+         (user-json (lem-api-get-person-by-id id person-sort limit))
+         (sort (cond ((equal item "comments")
+                      (if (lem-comment-sort-type-p sort)
+                          sort
+                        lem-default-comment-sort-type))
+                     (t
+                      (or sort
+                          lem-default-sort-type))))
+         (buf "*lem-user*")
+         (bindings (lem-ui-view-options 'user)))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
       (when current-user
         (let-alist current-user
