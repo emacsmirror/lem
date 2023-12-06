@@ -475,7 +475,8 @@ Returns a list of the variables containing the specific options."
          '(lem-listing-types lem-sort-types lem-search-types))
         ((eq view 'user)
          '(lem-user-view-types lem-sort-types))
-        ((eq view 'community)
+        ((or (eq view 'community)
+             (eq view 'communities))
          '(lem-view-types lem-sort-types))))
 
 (defun lem-ui-toggle-posts-comments ()
