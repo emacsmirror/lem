@@ -44,8 +44,8 @@
 (defvar lem-default-comment-sort-type)
 (defvar lem-sort-types)
 (defvar lem-default-sort-type)
-(defvar lem-user-view-types)
-(defvar lem-view-types)
+(defvar lem-user-items-types)
+(defvar lem-items-types)
 (defvar lem-search-types)
 (defvar lem-user-id)
 
@@ -245,8 +245,8 @@ BINDINGS is a list of variables for which to display bidings."
                         "\\[lem-ui-cycle-sort]: cycle sort"))
             (listing-str (when (member 'lem-listing-types ,bindings)
                            "\\[lem-ui-cycle-listing-type]: cycle listing\n"))
-            (view-str (when (or (member 'lem-view-types ,bindings)
-                                (member 'lem-user-view-types ,bindings))
+            (view-str (when (or (member 'lem-items-types ,bindings)
+                                (member 'lem-user-items-types ,bindings))
                         "\\[lem-ui-toggle-posts-comments]: toggle posts/comments"))
             (msg-str (concat listing-str "\n" sort-str "\n" view-str)))
        (erase-buffer)
@@ -353,7 +353,7 @@ If we hit `point-max', call `lem-ui-more' then `scroll-up-command'."
 SORT must be a member of `lem-comment-sort-types' if item is
 \"comments\", otherwise it must be a member of `lem-sort-types'.
 TYPE must be member of `lem-listing-types'.
-ITEM must be a member of `lem-view-types'."
+ITEM must be a member of `lem-items-types'."
   (interactive)
   (let* ((instance (lem-get-instance))
          (items (if (equal item "comments")
@@ -472,13 +472,13 @@ Returns a list of the variables containing the specific options."
   (cond ((eq view 'post)
          '(lem-comment-sort-types))
         ((eq view 'instance)
-         '(lem-view-types lem-sort-types lem-listing-types))
+         '(lem-items-types lem-sort-types lem-listing-types))
         ((eq view 'search)
          '(lem-listing-types lem-sort-types lem-search-types))
         ((eq view 'user)
-         '(lem-user-view-types lem-sort-types))
+         '(lem-user-items-types lem-sort-types))
         ((eq view 'community)
-         '(lem-view-types lem-sort-types))
+         '(lem-items-types lem-sort-types))
         ((eq view 'communities)
          '(lem-listing-types lem-sort-types))))
 
@@ -499,7 +499,7 @@ Works on instance, community, and user views, which also have an overview."
                  (car sort-types)))
          (type (lem-ui-get-buffer-spec :listing-type))
          (id (lem-ui-get-view-id))
-         (item-types (if (eq view 'user) lem-user-view-types lem-view-types))
+         (item-types (if (eq view 'user) lem-user-items-types lem-items-types))
          (item-next (lem-ui-next-type item item-types)))
     (cond ((eq view 'community)
            (lem-ui-view-community id item-next sort)
@@ -1427,7 +1427,7 @@ LIMIT is the max results to return."
 
 (defun lem-ui-view-community (id &optional item sort limit page)
   "View community with ID.
-ITEM must be a member of `lem-view-types'.
+ITEM must be a member of `lem-items-types'.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return.
 PAGE is the page number of items to display, a string."
@@ -2122,7 +2122,7 @@ TYPE should be either :unlike, :dislike, or nil to like."
 
 (defun lem-ui-view-user (id &optional item sort limit current-user)
   "View user with ID.
-ITEM must be a member of `lem-user-view-types'.
+ITEM must be a member of `lem-user-items-types'.
 SORT must be a member of `lem-sort-types' or if item is
 \"comments\", then a member of `lem-comment-sort-types'.
 LIMIT is max items to show.
