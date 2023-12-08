@@ -1190,7 +1190,7 @@ SORT. LIMIT. PAGE."
       (lem-ui-insert-heading "SAVED POSTS")
       (lem-ui-render-posts posts)
       (lem-ui-insert-heading "SAVED COMMENTS")
-      (lem-ui-render-comments comments)
+      (lem-ui-render-comments comments :details)
       (lem-ui--init-view))))
 
 ;;; COMMUNITIES
@@ -1453,10 +1453,10 @@ PAGE is the page number of items to display, a string."
       (if (equal item "comments")
           (progn
             (lem-ui-insert-heading "comments")
-            (lem-ui-render-comments items)) ; no type
+            (lem-ui-render-comments items :details)) ; no type
         (lem-ui-insert-heading (or item "posts"))
         (if (equal item "comments")
-            (lem-ui-render-comments items)
+            (lem-ui-render-comments items :details)
           (lem-ui-render-posts items nil :trim))) ; no children
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-community
@@ -2155,11 +2155,11 @@ CURRENT-USER means we are displaying the current user's profile."
                (lem-ui-render-posts .posts :community :trim))
               ((equal item "comments")
                (lem-ui-insert-heading "comments")
-               (lem-ui-render-comments .comments))
+               (lem-ui-render-comments .comments :details))
               (t ; no arg: overview
                (lem-ui-insert-heading "overview")
                ;; web app just does comments then posts for "overview"?:
-               (lem-ui-render-comments .comments)
+               (lem-ui-render-comments .comments :details)
                (lem-ui-render-posts .posts :community :trim)))
         (lem-ui--init-view)
         (lem-ui-set-buffer-spec
