@@ -456,8 +456,8 @@ SIDEBAR."
            'post)
           ((eq view-fun 'lem-ui-view-community)
            'community)
-          ((or (eq view-fun 'lem-ui-communities)
-               (eq view-fun 'lem-ui-communities-tl))
+          ((or (eq view-fun 'lem-ui-view-communities)
+               (eq view-fun 'lem-ui-view-communities-tl))
            'communities)
           ((eq view-fun 'lem-ui-view-user)
            'user)
@@ -597,6 +597,8 @@ Optionally, use SORT."
            (lem-ui-view-instance type sort-next nil nil item))
           ((eq view 'saved-items)
            (lem-ui-view-saved-items nil sort-next))
+          ((eq view 'communities)
+           (lem-ui-view-communities-tl type sort-next))
           (t
            ;; TODO: communities / search
            (message "Not implemented yet.")))))
@@ -1309,13 +1311,15 @@ LIMIT is the max results to return."
              (list
               (propertize .community.title
                           'id .community.id
-                          'type 'lem-tl-button)
+                          'type 'lem-tl-button
+                          'help-echo .community.title)
               .counts.subscribers
               .counts.users_active_month .counts.posts
               (if (equal "Subscribed" .subscribed)
                   "*"
                 "")
-              .community.actor_id)
+              (propertize .community.actor_id
+                          'help-echo .community.actor_id))
              ;; don't try to propertize numbers:
              collect (if (stringp i)
                          (propertize i
@@ -1338,8 +1342,10 @@ LIMIT is the max results to return."
       (lem-ui-render-instance (lem-get-instance) :stats nil)
       (make-vtable
        :use-header-line nil
-       :columns '("Name" "Members" "Monthly users" "Posts"
-                  (:name "Sub" :min-width 4) "URL") ; "Description")
+       :columns '((:name "Name" :max-width 25)
+                  "Members" "Monthly users" "Posts"
+                  (:name "Sub" :min-width 4)
+                  (:name "URL" :max-width 30))
        :objects-function
        (lambda ()
          (cl-loop for c in (alist-get 'communities json)
