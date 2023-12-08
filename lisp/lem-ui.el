@@ -45,6 +45,7 @@
 (defvar lem-sort-types)
 (defvar lem-default-sort-type)
 (defvar lem-user-view-types)
+(defvar lem-view-types)
 (defvar lem-search-types)
 (defvar lem-user-id)
 
@@ -53,6 +54,7 @@
 
 (autoload 'lem-mode "lem.el")
 (autoload 'lem-comment-sort-type-p "lem.el")
+(autoload 'lem-sort-type-p "lem.el")
 
 ;;; HIERARCHY PATCHES
 
@@ -617,7 +619,8 @@ LIMIT is the max results to return."
           (remove "Url"
                   (remove "All" lem-search-types)))
          (type (downcase (lem-ui-read-type "Search type: " types)))
-         ;; FIXME: LISTING/SORT doesn't make sense for all search types, eg users!:
+         ;; LISTING/SORT doesn't make sense for all search types, eg users,
+         ;; lets just cycle in results:
          ;; (listing-type (lem-ui-read-type "Listing type: " lem-listing-types))
          ;; (sort (lem-ui-read-type "Sort by: " lem-sort-types))
          (query (read-string "Query: "))
@@ -848,8 +851,7 @@ START and END are the boundaries of the link in the post body."
                                 &optional community _community-url
                                 featured-p op-p admin-p mod-p del-p handle
                                 post-title)
-  "Format a top byline for post with TITLE, URL, USERNAME, SCORE and
-TIMESTAMP.
+  "Format a top byline with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
 COMMUNITY and COMMUNITY-URL are those of the community the item
 belongs to.
 FEATURED-P means the item is pinned.
@@ -1103,7 +1105,6 @@ SORT must be a member of `lem-sort-types'."
 (defun lem-ui-insert-post-image-maybe (post) ; &optional alt)
   "Render URL of POST as an image if it resembles one."
   (let-alist post
-    ;; (setq image-url .post.url)
     (when .post.url
       (let* ((parsed (url-generic-parse-url .post.url))
              (filename (url-filename parsed))
@@ -1138,8 +1139,7 @@ Saved items can be viewed in your profile, like bookmarks.
 If UNSAVE, unsave the item instead."
   (interactive)
   (lem-ui-with-item
-      (let* ( ;(id (lem-ui--id-from-prop))
-             (type (lem-ui--item-type))
+      (let* ((type (lem-ui--item-type))
              (s-str (if unsave "unsaved" "saved"))
              (s-bool (if unsave :json-false t))
              (json (lem-ui--property 'json))
@@ -1393,12 +1393,13 @@ LIMIT is the max results to return."
   "Return an alist of name/description and ID from COMMUNITIES."
   (cl-loop for item in communities
            collect (let-alist item
-                     (list (format "%s@%s"
-                                   .community.name
-                                   (url-domain
-                                    (url-generic-parse-url .community.actor_id)))
-                           .community.description
-                           .community.id))))
+                     (list
+                      (format "%s@%s"
+                              .community.name
+                              (url-domain
+                               (url-generic-parse-url .community.actor_id)))
+                      .community.description
+                      .community.id))))
 
 (defun lem-ui-do-subscribed-completing (prompt-str action-fun)
   "Read a subscribed community with PROMPT-STR and call ACTION-FUN on it."
@@ -1555,7 +1556,8 @@ And optionally for instance COMMUNITIES."
         (ties (if communities (number-to-string communities) ""))
         (ties-sym (if communities (lem-ui-symbol 'community) "")))
     (insert
-     (format "%s %s | %s %s | %s %s | %s %s\n" s-sym s p-sym p c-sym c ties-sym ties))))
+     (format "%s %s | %s %s | %s %s | %s %s\n"
+             s-sym s p-sym p c-sym c ties-sym ties))))
 
 (defun lem-ui-view-item-community ()
   "View community of item at point."
@@ -1633,7 +1635,6 @@ Optionally only view UNREAD items."
          (list (alist-get 'private_messages private-messages))
          (buf "*lem-private-messages*"))
     (lem-ui-with-buffer buf 'lem-mode nil nil
-      ;; (lem-ui-render-private-messages list))))
       (lem-ui-render-private-messages list)
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil nil #'lem-ui-view-private-messages
@@ -1717,8 +1718,8 @@ If RESTORE, restore the item instead."
 
 (defun lem-ui-render-comment (comment &optional reply details)
   "Render single COMMENT.
-REPLY means it is a comment-reply object."
-  ;; SORT must be a member of `lem-comment-sort-types'."
+REPLY means it is a comment-reply object.
+DETAILS means display what community and post the comment is linked to."
   (insert
    (lem-ui-format-comment comment nil reply details)
    "\n"))
@@ -1727,7 +1728,8 @@ REPLY means it is a comment-reply object."
   "Render COMMENTS, a list of comment objects.
 ;; TYPE
 ;; SORT.
-For viewing a plain list of comments, not a hierarchy."
+For viewing a plain list of comments, not a hierarchy.
+DETAILS means display what community and post the comment is linked to."
   (cl-loop for x in comments
            do (lem-ui-render-comment x nil details)))
 
@@ -1810,7 +1812,8 @@ Parent-fun for `hierarchy-add-tree'."
 
 (defun lem-ui-format-comment (comment &optional indent reply details)
   "Format COMMENT, optionally with INDENT amount of indent bars.
-REPLY means it is a comment-reply object."
+REPLY means it is a comment-reply object.
+DETAILS means display what community and post the comment is linked to."
   ;; NB: no stray requests in here.
   (let-alist comment
     (let ((content (when .comment.content
