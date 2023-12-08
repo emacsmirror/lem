@@ -444,24 +444,24 @@ SIDEBAR."
       (insert "\n" lem-ui-horiz-bar "\n"))
     (insert "\n")))
 
-;;; VIEWS SORTING AND TYPES
+;;; CYCLE SORT, LISTING, and ITEMS TYPE
 
 (defun lem-ui-view-type ()
-  "."
-  ;; TODO: user / post / community / instance / search / minor ones
+  "Return the current view, based on `lem-ui-buffer-spec'."
+  ;; TODO: minor ones
   (let ((view-fun (lem-ui-get-buffer-spec :view-fun)))
-    (cond ((eq view-fun lem-ui-view-post)
+    (cond ((eq view-fun 'lem-ui-view-post)
            'post)
-          ((eq view-fun lem-ui-view-community)
+          ((eq view-fun 'lem-ui-view-community)
            'community)
-          ((or (eq view-fun lem-ui-communities)
-               (eq view-fun lem-ui-communities-tl))
+          ((or (eq view-fun 'lem-ui-communities)
+               (eq view-fun 'lem-ui-communities-tl))
            'communities)
-          ((eq view-fun lem-ui-view-user)
+          ((eq view-fun 'lem-ui-view-user)
            'user)
-          ((eq view-fun lem-ui-view-instance)
+          ((eq view-fun 'lem-ui-view-instance)
            'instance)
-          ((eq view-fun lem-ui-search)
+          ((eq view-fun 'lem-ui-search)
            'search))))
 
 (defun lem-ui-view-options (view)
