@@ -464,7 +464,9 @@ SIDEBAR."
           ((eq view-fun 'lem-ui-view-instance)
            'instance)
           ((eq view-fun 'lem-ui-search)
-           'search))))
+           'search)
+          ((eq view-fun 'lem-ui-view-saved-items)
+           'saved-items))))
 
 (defun lem-ui-view-options (view)
   "Return the various sorting and other options for VIEW.
@@ -590,7 +592,9 @@ Optionally, use SORT."
           ((eq view 'post)
            (lem-ui-view-post id sort-next))
           ((eq view 'instance)
-           (lem-ui-view-instance type sort nil nil item))
+           (lem-ui-view-instance type sort-next nil nil item))
+          ((eq view 'saved-items)
+           (lem-ui-view-saved-items nil sort-next))
           (t
            ;; TODO: communities / search
            (message "Not implemented yet.")))))
@@ -1191,7 +1195,9 @@ SORT. LIMIT. PAGE."
       (lem-ui-render-posts posts)
       (lem-ui-insert-heading "SAVED COMMENTS")
       (lem-ui-render-comments comments :details)
-      (lem-ui--init-view))))
+      (lem-ui--init-view)
+      (lem-ui-set-buffer-spec nil (or sort "Active")
+                              #'lem-ui-view-saved-items))))
 
 ;;; COMMUNITIES
 
