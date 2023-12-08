@@ -2220,7 +2220,28 @@ CURRENT-USER means we are displaying the current user's profile."
       (let ((message (read-string "Private message: ")))
         (lem-send-private-message message id))))
 
+(defun lem-ui-block-user (&optional unblock)
+  "Block author of item at point."
+  (interactive)
+  (lem-ui-with-item
+      (let* ((id (lem-ui--property 'creator-id))
+             (json (lem-ui--property 'json))
+             (name (alist-get 'name
+                              (alist-get 'creator json)))
+             (b-str (if unblock "unblocked" "blocked")))
+        (if unblock
+            (lem-block-user id :json-false)
+          (when (y-or-n-p (format "Block %s?" name))
+            (lem-block-user id t)))
+        (message "User %s %s!" name b-str))))
+
+(defun lem-ui-unblock-user ()
+  ""
+  ;; TODO: completing-read blocks!
+  (lem-ui-block-user :unblock))
+
 ;;; IMAGES
+
 (defun lem-ui-insert-images ()
   "Insert any image-url images in the buffer with `shr-insert-image'.
 It's a cheap hack, alas."
