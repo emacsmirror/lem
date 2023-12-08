@@ -482,50 +482,34 @@ Returns a list of the variables containing the specific options."
 
 (defun lem-ui-toggle-posts-comments ()
   "Switch between displaying posts or comments.
-Works on instance, community, and user views."
+Works on instance, community, and user views, which also have an overview."
   (interactive)
   (let* ((item (lem-ui-get-buffer-spec :item))
-         (view-fun (lem-ui-get-buffer-spec :view-fun))
+         (view (lem-ui-view-type))
          (sort-last (lem-ui-get-buffer-spec :sort))
+         (sort-types (if (equal item "posts")
+                         lem-comment-sort-types
+                       lem-sort-types))
          ;; sort value must be valid for the item we toggle to:
          ;; TODO: handle overview
-         (sort (if (equal item "posts")
-                   (if (member sort-last lem-comment-sort-types)
-                       sort-last
-                     (car lem-comment-sort-types))
-                 (if (member sort-last lem-sort-types)
-                     sort-last
-                   (car lem-sort-types))))
+         (sort (if (member sort-last sort-types)
+                   sort-last
+                 (car sort-types)))
          (type (lem-ui-get-buffer-spec :listing-type))
          (id (lem-ui-get-view-id))
-         (user-p (eq view-fun #'lem-ui-view-user))
-         (community-p (eq view-fun #'lem-ui-view-community))
-         (instance-p (or (eq view-fun #'lem-ui-view-instance)
-                         (eq view-fun #'lem-ui-view-instance-full))))
-    (cond (community-p
-           (if (not (equal item "comments"))
-               (funcall view-fun id "comments" sort)
-             (funcall view-fun id "posts" sort)))
-          (user-p
-           (cond ((equal item "overview")
-                  (lem-ui-toggle-funcall view-fun id "posts" sort))
-                 ((equal item "posts")
-                  (lem-ui-toggle-funcall view-fun id "comments" sort))
-                 (t ; comments or nil
-                  (lem-ui-toggle-funcall view-fun id "overview" sort))))
-          (instance-p
-           (if (not (equal item "comments"))
-               (funcall view-fun nil sort nil nil "comments")
-             (funcall view-fun nil sort nil nil "posts")))
+         (item-types (if (eq view 'user) lem-user-view-types lem-view-types))
+         (item-next (lem-ui-next-type item item-types)))
+    (cond ((eq view 'community)
+           (lem-ui-view-community id item-next sort)
+           (message "Viewing: %s" item-next))
+          ((eq view 'user)
+           (lem-ui-view-user id item-next sort)
+           (message "Viewing: %s" item-next))
+          ((eq view 'instance)
+           (lem-ui-view-instance type sort nil nil item-next)
+           (message "Viewing: %s" item-next))
           (t
            (user-error "Posts/Comments toggle not available in this view")))))
-
-(defun lem-ui-toggle-funcall (fun id view-type sort)
-  "Call FUN with ID VIEW-TYPE and SORT as args.
-Then message VIEW-TYPE."
-  ;; users have `lem-user-view-types', community/instance `lem-view-types'
-  (funcall fun id view-type sort)
-  (message "Viewing: %s" view-type))
 
 (defun lem-ui-get-view-id ()
   "Get id of the view item, a post or user."
@@ -535,143 +519,90 @@ Then message VIEW-TYPE."
 
 (defun lem-ui-next-listing-type (type)
   "Return next listing type after TYPE in `lem-listing-types'."
-  (if (or (equal type (car (last lem-listing-types)))
-          (null type))
-      (car lem-listing-types)
-    (cadr (member type lem-listing-types))))
+  (lem-ui-next-type type 'lem-listing-types))
 
-(defun lem-ui-cycle-listing-type ()
+(defun lem-ui-next-type (type list)
+  "Return next listing type after TYPE in LIST."
+  (if (or (equal type (car (last list)))
+          (null type))
+      (car list)
+    (cadr (member type list))))
+
+(defun lem-ui-cycle-listing-type (&optional type)
   "Cycle view between `lem-listing-types'.
-Works in instance and search views."
+Works in instance and search views.
+If TYPE is given, load that listing-type.
+It must be a member of the same list."
   (interactive)
-  (let* ((type (lem-ui-get-buffer-spec :listing-type))
+  (let* ((type-last (lem-ui-get-buffer-spec :listing-type))
          (sort (lem-ui-get-buffer-spec :sort))
          (view-fun (lem-ui-get-buffer-spec :view-fun))
+         (view (lem-ui-view-type))
          (item (lem-ui-get-buffer-spec :item))
-         (user-p (eq view-fun #'lem-ui-view-user))
-         (post-p (eq view-fun #'lem-ui-view-post))
-         (community-p (eq view-fun #'lem-ui-view-community))
-         (instance-p (eq view-fun #'lem-ui-view-instance))
-         (listing-type (lem-ui-next-listing-type type)))
-    (cond (user-p
-           (message "User views don't have listing type."))
-          (community-p
-           (message "Community views don't have listing type."))
-          (post-p
-           (message "Post views don't have listing type."))
-          (instance-p
+         (listing-type (or type (lem-ui-next-listing-type type-last))))
+    (cond ((or (eq view 'user)
+               (eq view 'community)
+               (eq view 'post))
+           (message "%s views don't have listing type."
+                    view))
+          ((eq view 'instance)
            (funcall view-fun listing-type sort nil nil item)
            (message "%s: %s" "listing" listing-type))
-          (t ; search?
+          (t ;; TODO: search / communities
            (message "Not implemented yet")))))
 
-(defun lem-ui-sort-funcall (fun type sort
-                                &optional id post-p item)
-  "Call FUN with args TYPE SORT, ID and ITEM.
-POST-P means we are cycling a post view (which has no type).
-ITEM is a member of `lem-view-types' or `lem-user-view-types'."
-  ;; community: (id &optional item sort limit page)
-  ;; post: no item
-  ;; user:
-  ;; instance: (&optional type sort limit page item sidebar)
-  (if id
-      (progn
-        (if post-p
-            (funcall fun id sort) ; post
-          (funcall fun id item sort)) ; community / ?
-        (message "Sort: %s" sort))
-    (funcall fun type sort nil nil item) ; instance / ?
-    (message "Sort: %s" sort)))
+(defun lem-ui-choose-listing-type ()
+  "Prompt for a listing type, and use it to reload current view."
+  (interactive)
+  (let ((choice (completing-read "Listing type:"
+                                 lem-listing-types nil :match)))
+    (lem-ui-cycle-listing-type choice)))
 
-(defun lem-ui-cycle-sort ()
+(defun lem-ui-get-sort-types (view item)
+  "Return `lem-comment-sort-types' or `lem-sort-types'.
+If VIEW is `eq' to post, or ITEM to \"comments\", return the former."
+  (if (or (eq view 'post)
+          (equal item "comments"))
+      lem-comment-sort-types
+    lem-sort-types))
+
+(defun lem-ui-cycle-sort (&optional sort)
   "Cycle view between some `lem-sort-types'.
 For post view or other comments view, use
-`lem-comment-sort-types'."
+`lem-comment-sort-types'.
+Optionally, use SORT."
   (interactive)
   (let* ((type (lem-ui-get-buffer-spec :listing-type))
-         (sort (lem-ui-get-buffer-spec :sort))
-         (view-fun (lem-ui-get-buffer-spec :view-fun))
+         (sort-last (lem-ui-get-buffer-spec :sort))
+         (view (lem-ui-view-type))
          (item (lem-ui-get-buffer-spec :item))
          (id (lem-ui-get-view-id))
-         (post-p (eq view-fun #'lem-ui-view-post))
-         (user-p (eq view-fun #'lem-ui-view-user))
-         (community-p (eq view-fun #'lem-ui-view-community))
-         (sort-types (if (or post-p (equal item "comments"))
-                         lem-comment-sort-types
-                       lem-sort-types))
-         (sort-rest (member sort sort-types))
-         (sort-next (if (or (equal sort (car (last sort-types)))
-                            (null sort))
-                        (car sort-types)
-                      (cadr sort-rest))))
-    (cond ((or user-p community-p)
-           (lem-ui-sort-funcall
-            view-fun type sort-next id nil item))
-          (post-p ; no item handling
-           (lem-ui-sort-funcall
-            view-fun type sort-next id :post))
+         (sort-types (unless sort
+                       (lem-ui-get-sort-types view item)))
+         (sort-next (or sort
+                        (lem-ui-next-type sort-last sort-types))))
+    (cond ((eq view 'user)
+           (lem-ui-view-user id item sort-next))
+          ((eq view 'community)
+           (lem-ui-view-community id item sort-next))
+          ((eq view 'post)
+           (lem-ui-view-post id sort-next))
+          ((eq view 'instance)
+           (lem-ui-view-instance type sort nil nil item))
           (t
-           (lem-ui-sort-funcall
-            view-fun type sort-next nil nil item)))))
-
-;; TODO: separate sort and type again, this is a mess when we need to preserve
-;; item view as well:
-(defun lem-ui-sort-or-type (sort-or-type view-fun &optional id)
-  "Reload current view, setting SORT-OR-TYPE, with VIEW-FUN.
-ID is the main view item's id."
-  (let* ((type (lem-ui-get-buffer-spec :listing-type))
-         (sort (lem-ui-get-buffer-spec :sort))
-         (item (lem-ui-get-buffer-spec :item))
-         (post-p (eq view-fun #'lem-ui-view-post))
-         (user-p (eq view-fun #'lem-ui-view-user))
-         (sort-list (if (or post-p
-                            (equal item "comments"))
-                        lem-comment-sort-types
-                      lem-sort-types))
-         (type-list (if user-p
-                        lem-user-view-types
-                      lem-listing-types))
-         (list (if (eq sort-or-type 'lem-type)
-                   type-list
-                 sort-list))
-         (choice (completing-read (format "View by %s" sort-or-type)
-                                  list nil :match)))
-    (if id
-        (cond ((eq sort-or-type 'lem-type)
-               (funcall view-fun id choice sort))
-              (post-p
-               (funcall view-fun id choice)) ; no item
-              (t
-               (funcall view-fun id item ; added item
-                        choice)))
-      (if (eq sort-or-type 'lem-type)
-          (funcall view-fun choice sort nil nil item)
-        (funcall view-fun type choice nil nil item))))) ; instance
-;;(&optional type sort limit page item sidebar)
-
-(defun lem-ui-call-sort-or-type (sort-or-type)
-  "Call `lem-ui-call-or-type', with id arg if needed.
-SORT-OR-TYPE is either sort or type."
-  (let ((view-fun (lem-ui-get-buffer-spec :view-fun))
-        (id (lem-ui-get-view-id)))
-    (if (and (eq view-fun #'lem-ui-view-post)
-             (eq sort-or-type 'lem-type))
-        (message "Post views don't have listing type.")
-      (if (or (eq view-fun #'lem-ui-view-post)
-              (eq view-fun #'lem-ui-view-user)
-              (eq view-fun #'lem-ui-view-community))
-          (lem-ui-sort-or-type sort-or-type view-fun id)
-        (lem-ui-sort-or-type sort-or-type view-fun)))))
-
-(defun lem-ui-choose-type ()
-  "Read a listing type and load it."
-  (interactive)
-  (lem-ui-call-sort-or-type 'lem-type))
+           ;; TODO: communities / search
+           (message "Not implemented yet.")))))
 
 (defun lem-ui-choose-sort ()
-  "Read a sort type and load it."
+  "Prompt for a sort type, and use it to reload the current view."
   (interactive)
-  (lem-ui-call-sort-or-type 'sort))
+  (let* ((view (lem-ui-view-type))
+         (item (lem-ui-get-buffer-spec :item))
+         (sort-list (lem-ui-get-sort-types view item))
+         (choice (completing-read "Sort by:" sort-list nil :match)))
+    (lem-ui-cycle-sort choice)))
+
+;;; SEARCH
 
 (defun lem-ui-read-type (prompt types-list)
   "Read a choice from TYPES-LIST using PROMPT."
