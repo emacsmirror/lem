@@ -1345,10 +1345,13 @@ LIMIT is the max results to return."
       (lem-ui-render-instance (lem-get-instance) :stats nil)
       (make-vtable
        :use-header-line nil
-       :columns '((:name "Name" :max-width 30)
-                  "Members" "Monthly users" "Posts"
-                  (:name "Sub" :min-width 4)
-                  (:name "URL" :max-width 30))
+       :columns '((:name "Name" :max-width 30 :width "30%")
+                  (:name "Members" :width "7%")
+                  (:name "Monthly users" :width "7%")
+                  (:name "Posts" :width "7%")
+                  (:name "Sub"; :min-width 4
+                         :width "5%")
+                  (:name "URL" :max-width 30 :width "30%"))
        :objects-function
        (lambda ()
          (cl-loop for c in (alist-get 'communities json)
