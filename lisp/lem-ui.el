@@ -1597,6 +1597,19 @@ And optionally for instance COMMUNITIES."
             (user-error "Item has no community")
           (lem-ui-view-community id)))))
 
+(defun lem-ui-delete-community ()
+  "Delete community at point."
+  (interactive)
+  (let* ((id (lem-ui--property 'id))
+         (community (alist-get 'community
+                               (lem-ui--property 'json)))
+         (name (alist-get 'name community)))
+    (if (not (eq 'community (lem-ui--property 'lem-type)))
+        (message "No community at point")
+      (when (y-or-n-p (format "Delete community %s?" name))
+        (lem-delete-community id t)
+        (message "Community %s deleted!" name)))))
+
 ;;; REPLIES
 
 (defun lem-ui-view-replies-unread ()
