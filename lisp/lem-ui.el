@@ -525,7 +525,7 @@ Works on instance, community, and user views, which also have an overview."
 
 (defun lem-ui-next-listing-type (type)
   "Return next listing type after TYPE in `lem-listing-types'."
-  (lem-ui-next-type type 'lem-listing-types))
+  (lem-ui-next-type type lem-listing-types))
 
 (defun lem-ui-next-type (type list)
   "Return next listing type after TYPE in LIST."
@@ -553,7 +553,10 @@ It must be a member of the same list."
                     view))
           ((eq view 'instance)
            (funcall view-fun listing-type sort nil nil item)
-           (message "%s: %s" "listing" listing-type))
+           (message "listing: %s" listing-type))
+          ((eq view 'communities)
+           (lem-ui-view-communities-tl listing-type sort)
+           (message "listing: %s" listing-type))
           (t ;; TODO: search / communities
            (message "Not implemented yet")))))
 
@@ -1342,7 +1345,7 @@ LIMIT is the max results to return."
       (lem-ui-render-instance (lem-get-instance) :stats nil)
       (make-vtable
        :use-header-line nil
-       :columns '((:name "Name" :max-width 25)
+       :columns '((:name "Name" :max-width 30)
                   "Members" "Monthly users" "Posts"
                   (:name "Sub" :min-width 4)
                   (:name "URL" :max-width 30))
