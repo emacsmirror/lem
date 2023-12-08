@@ -461,6 +461,8 @@ SIDEBAR."
            'communities)
           ((eq view-fun 'lem-ui-view-user)
            'user)
+          ((eq view-fun 'lem-ui-view-own-profile)
+           'current-user)
           ((eq view-fun 'lem-ui-view-instance)
            'instance)
           ((eq view-fun 'lem-ui-search)
@@ -2182,7 +2184,10 @@ CURRENT-USER means we are displaying the current user's profile."
         (lem-ui--init-view)
         (lem-ui-set-buffer-spec
          nil ; no listing type for users
-         sort #'lem-ui-view-user (or item "overview"))))))
+         sort (if (eq id lem-user-id)
+                  #'lem-ui-view-own-profile
+                #'lem-ui-view-user)
+         (or item "overview"))))))
 
 (defun lem-ui-view-own-profile ()
   "View profile of the current user."
