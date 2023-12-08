@@ -256,9 +256,10 @@ BINDINGS is a list of variables for which to display bidings."
          (switch-to-buffer ,buffer))
        ,@body
        (goto-char (point-min))
-       ;; FIXME: this needs to come after media messages:
        (when ,bindings
-         (sleep-for 1)
+         ;; this needs to come after media messages:
+         ;; but this also kills any view-type messages
+         ;; (sleep-for 1)
          (message
           (substitute-command-keys msg-str))))))
 
