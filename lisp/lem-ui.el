@@ -837,10 +837,15 @@ START and END are the boundaries of the link in the post body."
 
 ;;; BYLINES
 
-(defun lem-ui-propertize-box (str)
+(defun lem-ui-propertize-box (str color obj)
   "Propertize STR with box and `font-lock-keyword-face'."
   (propertize str
-              'face '(:inherit font-lock-keyword-face :box t)))
+              'face `(:foreground ,color :box t)
+              'help-echo obj))
+
+(defun lem-ui-propertize-admin-box ()
+  "Return a propertized admin box."
+  (lem-ui-propertize-box "A" "red3" "instance admin"))
 
 (defun lem-ui-propertize-title (title-str)
   "Propertize TITLE-STR as a post title."
@@ -879,13 +884,13 @@ comment display."
       (lem-ui--propertize-link username nil 'user nil 'warning handle)
       (when op-p
         (concat " "
-                (lem-ui-propertize-box "OP")))
+                (lem-ui-propertize-box "OP" "green3" "original poster")))
       (when admin-p
         (concat " "
-                (lem-ui-propertize-box "ADM")))
+                (lem-ui-propertize-admin-box)))
       (when mod-p
         (concat " "
-                (lem-ui-propertize-box "MOD")))
+                (lem-ui-propertize-box "M" "blue3" "community moderator")))
       (when del-p
         (concat " "
                 (lem-ui-symbol 'deleted)))
@@ -1072,8 +1077,9 @@ SORT must be a member of `lem-sort-types'."
            (body (when .post.body
                    (lem-ui-render-body .post.body (alist-get 'post post))))
            (handle (lem-ui--handle-from-user-url .creator.actor_id))
-           (admin-p (eq t .creator.admin))
-           (mod-p (cl-member .creator.id lem-ui-post-community-mods-ids))
+           (admin-p (eq t .creator_is_admin))
+           (mod-p (or (eq t .creator_is_moderator)
+                      (cl-member .creator.id lem-ui-post-community-mods-ids)))
            (del-p (eq t .post.deleted)))
       (insert
        (propertize
@@ -1833,8 +1839,9 @@ DETAILS means display what community and post the comment is linked to."
           (post-title (when details .post.name))
           (community-name (when details (or .community.title
                                             .community.name)))
-          (admin-p (eq t .creator.admin))
-          (mod-p (cl-member .creator.id lem-ui-post-community-mods-ids))
+          (admin-p (eq t .creator_is_admin))
+          (mod-p (or (cl-member .creator.id lem-ui-post-community-mods-ids)
+                     (eq t .creator_is_moderator)))
           (op-p (eq .comment.creator_id .post.creator_id)))
       (push .comment.id lem-ui-current-items) ; pagination
       (propertize
@@ -2103,17 +2110,22 @@ TYPE should be either :unlike, :dislike, or nil to like."
     (insert
      (propertize
       (concat
-       (propertize .person.name
+       (propertize (or .person.display_name
+                       .person.name)
                    'face '(:weight bold))
        " "
-       .person.actor_id
+       (when (eq t .is_admin)
+         (lem-ui-propertize-admin-box))
+       ;; .person.actor_id
        "\n"
        (lem-ui-symbol 'direct) " " ; FIXME: we need a post symbol
        (number-to-string .counts.post_count) " | "
        (lem-ui-symbol 'reply) " "
        (number-to-string .counts.comment_count)
        " | "
-       "joined: " .person.published
+       "joined: "
+       (fedi--relative-time-description
+        (date-to-time .person.published))
        "\n"
        lem-ui-horiz-bar
        "\n")
