@@ -173,9 +173,14 @@ person_blocks, and discussion_languages."
 (defun lem-api-get-subscribed-communities ()
   "Return the data of the current user's subscribed communities.
 Returns follows data, from under my_user, from the site endpoint."
-  (let* ((current-user (lem-api-get-current-user))
-         (fols (alist-get 'follows current-user)))
-    fols))
+  (let* ((current-user (lem-api-get-current-user)))
+    (alist-get 'follows current-user)))
+
+(defun lem-api-get-moderated-communities ()
+  "Return the data of the current user's subscribed communities.
+Returns follows data, from under my_user, from the site endpoint."
+  (let* ((current-user (lem-api-get-current-user)))
+    (alist-get 'moderates current-user)))
 
 ;; no auth: because we call this before sending the instance our creds:
 (lem-def-request "get" "get-site" "site")
