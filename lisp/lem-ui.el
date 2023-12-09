@@ -1412,12 +1412,13 @@ LIMIT is the max results to return."
 (defun lem-ui-unsubscribe-from-community ()
   "Prompt for a subscribed community and unsubscribe from it."
   (interactive)
-  (lem-ui-do-subscribed-completing
+  (lem-ui-do-community-completing
    "Unsubscribe from community: "
    (lambda (id choice)
      (when (and (y-or-n-p (format "Unsubscribe from %s?" choice))
                 (lem-follow-community id :json-false))
-       (message "Community %s unsubscribed!" choice)))))
+       (message "Community %s unsubscribed!" choice)))
+   #'lem-api-get-subscribed-communities))
 
 (defun lem-ui-view-community-at-point ()
   "View community at point."
@@ -1437,9 +1438,9 @@ LIMIT is the max results to return."
                       .community.description
                       .community.id))))
 
-(defun lem-ui-do-subscribed-completing (prompt-str action-fun)
+(defun lem-ui-do-community-completing (prompt-str action-fun communities-fun)
   "Read a subscribed community with PROMPT-STR and call ACTION-FUN on it."
-  (let* ((communities (lem-api-get-subscribed-communities))
+  (let* ((communities (funcall communities-fun))
          (subs (lem-ui--communities-alist communities))
          (completion-extra-properties
           (list :annotation-function
@@ -1456,10 +1457,20 @@ LIMIT is the max results to return."
 (defun lem-ui-jump-to-subscribed ()
   "Prompt for a subscribed community and view it."
   (interactive)
-  (lem-ui-do-subscribed-completing
+  (lem-ui-do-community-completing
    "Jump to community: "
    (lambda (id _choice)
-     (lem-ui-view-community id "posts"))))
+     (lem-ui-view-community id "posts"))
+   #'lem-api-get-subscribed-communities))
+
+(defun lem-ui-jump-to-moderated ()
+  "Prompt for a subscribed community and view it."
+  (interactive)
+  (lem-ui-do-community-completing
+   "Jump to moderated community: "
+   (lambda (id _choice)
+     (lem-ui-view-community id "posts"))
+   #'lem-api-get-moderated-communities))
 
 (defun lem-ui-view-community (id &optional item sort limit page)
   "View community with ID.
