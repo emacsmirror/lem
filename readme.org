@@ -112,6 +112,7 @@ I don't have a tech worker's income, so even a small tip would help out.
 | d         | lem-ui-delete-post-or-comment          | Delete post or comment at point.                                   |
 |           | lem-ui-dislike-item                    | Dislike (downvote) item at point.                                  |
 | e         | lem-ui-edit-comment                    | Edit comment at point if possible.                                 |
+|           | lem-ui-jump-to-moderated               | Prompt for a subscribed community and view it.                     |
 | s         | lem-ui-jump-to-subscribed              | Prompt for a subscribed community and view it.                     |
 |           | lem-ui-like-item                       | Like (upvote) item at point.                                       |
 | l         | lem-ui-like-item-toggle                | Toggle like status of item at point.                               |
@@ -121,7 +122,6 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-message-user-at-point           | Send private message to user at point.                             |
 |           | lem-ui-more                            | Append more items to the current view.                             |
 | TAB       | lem-ui-next-tab-item                   | Jump to next tab item.                                             |
-|           | lem-ui-own-moderated-communities       |                                                                    |
 | <backtab> | lem-ui-prev-tab-item                   | Jump to prev tab item.                                             |
 |           | lem-ui-restore-post                    | Restore deleted post at point.                                     |
 |           | lem-ui-save-item                       | Save item at point.                                                |
