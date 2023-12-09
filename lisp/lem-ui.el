@@ -1013,10 +1013,17 @@ NO-SHORTEN means display full URL, else only the domain is shown."
 (defun lem-ui-mdize-plain-urls ()
   "Markdown-ize any plain string URLs found in current buffer."
   ;; FIXME: this doesn't rly work with ```verbatim``` in md
+  ;; FIXME: this must not break any md, otherwise `markdown-standalone' may
+  ;; hang!
   (while (re-search-forward lem-ui-url-regex nil :no-error)
     (unless (save-excursion
               (goto-char (1- (point)))
-              (markdown-inside-link-p))
+              (or (markdown-inside-link-p)
+                  ;; breaks with [url=https://...]text[/url] (seen in spam)
+                  (let ((regex (concat "\\[url=" markdown-regex-uri "\\/\\]"
+                                       ".*" ; description
+                                       "\\[\\/url\\]")))
+                    (thing-at-point-looking-at regex))))
       (replace-match
        (concat "<" (match-string 0) ">")))))
 
