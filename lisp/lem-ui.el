@@ -471,7 +471,13 @@ SIDEBAR."
           ((eq view-fun 'lem-ui-search)
            'search)
           ((eq view-fun 'lem-ui-view-saved-items)
-           'saved-items))))
+           'saved-items)
+          ((eq view-fun 'lem-ui-view-replies)
+           'replies)
+          ((eq view-fun 'lem-ui-view-mentions)
+           'mentions)
+          ((eq view-fu 'lem-ui-view-private-messages)
+           'private-messages))))
 
 (defun lem-ui-view-options (view)
   "Return the various sorting and other options for VIEW.
