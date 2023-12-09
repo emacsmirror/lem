@@ -1,7 +1,7 @@
 * lem.el
 
 =lem.el= is an Emacs client library and interface for Lemmy, the federated
-link-aggregator. For information about Lemmy, see [[http://joinlemmy.org][joinlemmy.org]].
+link-aggregator. For information about Lemmy, see [[http://join-lemmy.org][join-lemmy.org]].
 
 =lem-api.el= is the API requests layer. All functions make requests and return
 JSON data pased into Elisp.
