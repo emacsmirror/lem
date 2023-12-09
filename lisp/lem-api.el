@@ -173,9 +173,14 @@ person_blocks, and discussion_languages."
 (defun lem-api-get-subscribed-communities ()
   "Return the data of the current user's subscribed communities.
 Returns follows data, from under my_user, from the site endpoint."
-  (let* ((current-user (lem-api-get-current-user))
-         (fols (alist-get 'follows current-user)))
-    fols))
+  (let* ((current-user (lem-api-get-current-user)))
+    (alist-get 'follows current-user)))
+
+(defun lem-api-get-moderated-communities ()
+  "Return the data of the current user's subscribed communities.
+Returns follows data, from under my_user, from the site endpoint."
+  (let* ((current-user (lem-api-get-current-user)))
+    (alist-get 'moderates current-user)))
 
 ;; no auth: because we call this before sending the instance our creds:
 (lem-def-request "get" "get-site" "site")
@@ -255,6 +260,12 @@ are for `lem-search'."
   "Log in to `lem-instance-url' with NAME and PASSWORD."
   (username-or-email password)
   nil nil :unauthed)
+
+(lem-def-request "get" "validate-auth" "user/validate_auth"
+  ()
+  "Return an error if session not currectly authenticated.")
+
+;; (lem-validate-auth)
 
 ;;; USERS / PERSON
 (lem-def-request "get" "get-person" "user"
@@ -544,7 +555,7 @@ Returns a comment_view, recipient_ids, and form_id."
 (lem-def-request "get" "get-comments" "comment/list"
   (&optional post-id parent-id type- sort limit page
              community-id community-name saved-only)
-  "SORT must be a member of `lem-sort-types'.
+  "SORT must be a member of `lem-comment-sort-types'.
 LISTING-TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return.
 COMMUNITY-ID and COMMUNITY-NAME are the community to get posts from.
@@ -554,7 +565,8 @@ Without any id or name, get instance comments."
   (when saved-only
     '(("saved_only" . "true"))))
 
-;; (lem-get-comments "1694468")
+;; (lem-get-comments "1694468" nil nil "Hot")
+;; (lem-get-comments nil nil nil "Hot")
 
 (defun lem-api-get-community-comments (community-id
                                        &optional type sort limit page)

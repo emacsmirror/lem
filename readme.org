@@ -100,12 +100,14 @@ I don't have a tech worker's income, so even a small tip would help out.
 | C-c C-n   | lem-post-toggle-nsfw                   | Toggle `fedi-post-content-nsfw'.                                   |
 | p         | lem-prev-item                          | Move to prev item.                                                 |
 |           | lem-ui--follow-link-at-point           | Follow link at point.                                              |
-|           | lem-ui-choose-sort                     | Read a sort type and load it.                                      |
-|           | lem-ui-choose-type                     | Read a listing type and load it.                                   |
+|           | lem-ui-block-user                      | Block author of item at point.                                     |
+|           | lem-ui-choose-listing-type             | Prompt for a listing type, and use it to reload current view.      |
+| o         | lem-ui-choose-sort                     | Prompt for a sort type, and use it to reload the current view.     |
 |           | lem-ui-copy-item-url                   | Copy the URL (ap_id) of the post or comment at point.              |
 | C-c C-c   | lem-ui-cycle-listing-type              | Cycle view between `lem-listing-types'.                            |
 | C-c C-s   | lem-ui-cycle-sort                      | Cycle view between some `lem-sort-types'.                          |
 |           | lem-ui-delete-comment                  | Delete comment at point.                                           |
+|           | lem-ui-delete-community                | Delete community at point.                                         |
 |           | lem-ui-delete-post                     | Delete post at point.                                              |
 | d         | lem-ui-delete-post-or-comment          | Delete post or comment at point.                                   |
 |           | lem-ui-dislike-item                    | Dislike (downvote) item at point.                                  |
@@ -119,19 +121,21 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-message-user-at-point           | Send private message to user at point.                             |
 |           | lem-ui-more                            | Append more items to the current view.                             |
 | TAB       | lem-ui-next-tab-item                   | Jump to next tab item.                                             |
+|           | lem-ui-own-moderated-communities       |                                                                    |
 | <backtab> | lem-ui-prev-tab-item                   | Jump to prev tab item.                                             |
 |           | lem-ui-restore-post                    | Restore deleted post at point.                                     |
 |           | lem-ui-save-item                       | Save item at point.                                                |
 | a         | lem-ui-save-item-toggle                | Toggle saved status of item at point.                              |
 | SPC       | lem-ui-scroll-up-command               | Call `scroll-up-command', loading more toots if necessary.         |
-| h         | lem-ui-search                          | Do a search for one of the types in `lem-search-types'.            |
+| h         | lem-ui-search                          | Do a search for objects of one of the types in `lem-search-types'. |
 |           | lem-ui-subscribe-to-community          | Subscribe to a community, using ID or prompt for a handle.         |
 | S         | lem-ui-subscribe-to-community-at-point | Subscribe to community at point.                                   |
+| C-c C-v   | lem-ui-toggle-posts-comments           | Switch between displaying posts or comments.                       |
 |           | lem-ui-unlike-item                     | Unlike item at point.                                              |
 |           | lem-ui-unsave-item                     | Unsave item at point.                                              |
 |           | lem-ui-unsubscribe-from-community      | Prompt for a subscribed community and unsubscribe from it.         |
 |           | lem-ui-url-lookup                      | Perform a webfinger lookup on URL and load the result in `lem.el'. |
-|           | lem-ui-view-comment-post               | View post of comment at point.                                     |
+|           | lem-ui-view-comment-post               | View post of comment at point, or of POST-ID.                      |
 | C         | lem-ui-view-communities                | View Lemmy communities.                                            |
 |           | lem-ui-view-communities-tl             | View Lemmy communities in a tabulated list.                        |
 |           | lem-ui-view-community-at-point         | View community at point.                                           |
