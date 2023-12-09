@@ -1018,14 +1018,15 @@ NO-SHORTEN means display full URL, else only the domain is shown."
   ;; FIXME: this must not break any md, otherwise `markdown-standalone' may
   ;; hang!
   (while (re-search-forward lem-ui-url-regex nil :no-error)
-    (unless (save-excursion
-              (goto-char (1- (point)))
-              (or (markdown-inside-link-p)
-                  ;; breaks with [url=https://...]text[/url] (seen in spam)
-                  (let ((regex (concat "\\[url=" markdown-regex-uri "\\/\\]"
-                                       ".*" ; description
-                                       "\\[\\/url\\]")))
-                    (thing-at-point-looking-at regex))))
+    (unless
+        (save-excursion
+          (goto-char (1- (point)))
+          (or (markdown-inside-link-p)
+              ;; bbcode (seen in spam, breaks markdown if url replaced):
+              (let ((regex (concat "\\[url=" markdown-regex-uri "\\/\\]"
+                                   ".*" ; description
+                                   "\\[\\/url\\]")))
+                (thing-at-point-looking-at regex))))
       (replace-match
        (concat "<" (match-string 0) ">")))))
 
@@ -1055,6 +1056,8 @@ INDENT is a number, the level of indent for the item."
       (let ((replaced (string-replace "@" "\\@" (buffer-string))))
         (erase-buffer)
         (insert replaced)
+        ;; if our replacements broke markdown, this may not return.
+        ;; ideally we would check for errors before this runs:
         (markdown-standalone buf))
       (with-current-buffer buf
         (let ((shr-width (when indent
