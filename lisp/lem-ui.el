@@ -1962,29 +1962,31 @@ ITEMS should be an alist of the form '\=(plural-name ((items-list)))'."
 (defun lem-ui-more ()
   "Append more items to the current view."
   (interactive)
-  (cond ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-post)
-         (lem-ui-more-items 'comment 'lem-api-get-post-comments
-                            'lem-ui--build-and-render-comments-hierarchy))
-        ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-community)
-         (if (equal (lem-ui-get-buffer-spec :item) "posts")
-             (lem-ui-more-items 'post 'lem-api-get-community-posts-by-id
-                                'lem-ui-render-posts)
-           (lem-ui-more-items 'comment 'lem-api-get-community-comments-by-id
-                              'lem-ui-render-comments)))
-        ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-instance)
-         (lem-ui-more-items 'post 'lem-api-get-instance-posts
-                            'lem-ui-render-posts-instance))
-        ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-user)
-         ;; TODO: user overview view type:
-         (if (equal (lem-ui-get-buffer-spec :item) "posts")
-             (lem-ui-more-items 'post 'lem-api-get-person-posts
-                                'lem-ui-render-posts)
-           (lem-ui-more-items 'comment 'lem-api-get-person-comments
-                              'lem-ui-render-comments)))
-        ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-communities)
-         (lem-ui-more-items 'community 'lem-list-communities
-                            'lem-ui-render-communities))
-        (t (message "More type not implemented yet"))))
+  (let ((item (lem-ui-get-buffer-spec :item))
+        (view-fun (lem-ui-get-buffer-spec :view-fun)))
+    (cond ((eq view-fun 'lem-ui-view-post)
+           (lem-ui-more-items 'comment 'lem-api-get-post-comments
+                              'lem-ui--build-and-render-comments-hierarchy))
+          ((eq view-fun 'lem-ui-view-community)
+           (if (equal item "posts")
+               (lem-ui-more-items 'post 'lem-api-get-community-posts-by-id
+                                  'lem-ui-render-posts)
+             (lem-ui-more-items 'comment 'lem-api-get-community-comments-by-id
+                                'lem-ui-render-comments)))
+          ((eq view-fun 'lem-ui-view-instance)
+           (lem-ui-more-items 'post 'lem-api-get-instance-posts
+                              'lem-ui-render-posts-instance))
+          ((eq view-fun 'lem-ui-view-user)
+           ;; TODO: user overview view type:
+           (if (equal item "posts")
+               (lem-ui-more-items 'post 'lem-api-get-person-posts
+                                  'lem-ui-render-posts)
+             (lem-ui-more-items 'comment 'lem-api-get-person-comments
+                                'lem-ui-render-comments)))
+          ((eq item 'lem-ui-view-communities)
+           (lem-ui-more-items 'community 'lem-list-communities
+                              'lem-ui-render-communities))
+          (t (message "More type not implemented yet")))))
 
 (defun lem-ui-more-items (type get-fun render-fun)
   "Add one more page of items of TYPE to the current view.
