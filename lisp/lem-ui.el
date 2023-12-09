@@ -415,25 +415,27 @@ SIDEBAR."
          (admins (lem-ui--names-list admins-list 'person))
          (inst (alist-get 'site_view instance)))
     (let-alist inst
-      (insert
-       (propertize
-        (concat
-         (propertize .site.name
-                     'face '(:weight bold))
-         " | "
-         (lem-ui-font-lock-comment .site.actor_id)
-         (lem-ui-font-lock-comment " created: " .site.published)
-         "\n"
-         .site.description "\n"
-         (if sidebar
-             (concat (lem-ui-render-body .site.sidebar)
-                     "\n")
-           "")
-         lem-ui-horiz-bar "\n")
-        'json instance
-        'byline-top t ; next/prev hack
-        'id .site.id
-        'lem-type 'instance)))
+      (let ((created (fedi--relative-time-description
+                      (date-to-time .site.published))))
+        (insert
+         (propertize
+          (concat
+           (propertize .site.name
+                       'face '(:weight bold))
+           " | "
+           (lem-ui-font-lock-comment .site.actor_id)
+           (lem-ui-font-lock-comment " created: " created);.site.published)
+           "\n"
+           .site.description "\n"
+           (if sidebar
+               (concat (lem-ui-render-body .site.sidebar)
+                       "\n")
+             "")
+           lem-ui-horiz-bar "\n")
+          'json instance
+          'byline-top t ; next/prev hack
+          'id .site.id
+          'lem-type 'instance))))
     ;; stats:
     (when stats
       (let-alist (alist-get 'counts inst)
