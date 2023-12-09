@@ -54,6 +54,8 @@
   "The name of the current user.")
 
 ;;; TYPES
+;; FIXME: make these all lists of symbols, so checks are faster and easier
+
 (defconst lem-listing-types
   '("All" ; "Community" removed?
     "Local" "Subscribed"))
@@ -63,15 +65,14 @@
   (cl-member str lem-listing-types :test 'equal))
 
 (defconst lem-sort-types
-  '("Active" "Hot" "New" "Old" "TopDay" "TopWeek" "TopMonth" "TopYear" "TopAll"
-    "MostComments" "NewComments" "TopHour" "TopSixHour" "TopTwelveHour"))
+  '("Active" "Hot" "New" "Old" "Controversial" "Scaled" "TopDay" "TopWeek" "TopMonth" "TopYear" "TopAll" "MostComments" "NewComments" "TopHour" "TopSixHour" "TopTwelveHour" "TopThreeMonths" "TopSixMonths" "TopNineMonths"))
 
 (defun lem-sort-type-p (str)
   "Non-nil if STR is in `lem-sort-types'."
   (cl-member str lem-sort-types :test 'equal))
 
 (defconst lem-comment-sort-types
-  '("Hot" "Top" "New" "Old"))
+  '("Hot" "Top" "New" "Old" "Controversial"))
 
 (defun lem-comment-sort-type-p (str)
   "Non-nil if STR is in `lem-comment-sort-types'."
@@ -84,12 +85,15 @@
   "Non-nil if STR is in `lem-search-types'."
   (cl-member str lem-search-types :test 'equal))
 
-(defconst lem-user-view-types
+(defconst lem-items-types ; instance/community no overview
+  '("posts" "comments"))
+
+(defconst lem-user-items-types ; users have overview
   '("overview" "posts" "comments"))
 
 (defun lem-user-view-type-p (str)
-  "Return t if STR is in `lem-user-view-types'."
-  (cl-member str lem-user-view-types :test 'equal))
+  "Non-nil if STR is in `lem-user-items-types'."
+  (cl-member str lem-user-items-types :test 'equal))
 
 ;;; CUSTOMIZE
 
@@ -133,6 +137,8 @@ Uses `cursor-face-highlight-mode'."
     ;; nav/sort:
     (define-key map (kbd "C-c C-c") #'lem-ui-cycle-listing-type)
     (define-key map (kbd "C-c C-s") #'lem-ui-cycle-sort)
+    (define-key map (kbd "C-c C-v") #'lem-ui-toggle-posts-comments)
+    (define-key map (kbd "o") #'lem-ui-choose-sort)
     (define-key map (kbd "n") #'lem-next-item)
     (define-key map (kbd "p") #'lem-prev-item)
     (define-key map (kbd "SPC") #'lem-ui-scroll-up-command)
