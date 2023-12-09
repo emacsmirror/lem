@@ -2219,14 +2219,14 @@ CURRENT-USER means we are displaying the current user's profile."
          (buf "*lem-user*")
          (bindings (lem-ui-view-options 'user)))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
-      (when current-user
-        (let-alist current-user
-          (lem-ui-render-user .local_user_view)
-          (insert "Subscribed communities:\n")
-          (lem-ui-render-user-subscriptions .follows)))
+      ;; we have this on the 's' binding now so no need:
+      ;; (when current-user
+      ;;   (let-alist current-user
+      ;;     (lem-ui-render-user .local_user_view)
+      ;;     (insert "Subscribed communities:\n")
+      ;;     (lem-ui-render-user-subscriptions .follows)))
       (let-alist user-json
-        (unless current-user
-          (lem-ui-render-user .person_view))
+        (lem-ui-render-user .person_view)
         (cond ((equal item "posts")
                (lem-ui-insert-heading "posts")
                (lem-ui-render-posts .posts :community :trim))
