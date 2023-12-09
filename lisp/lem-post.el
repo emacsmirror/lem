@@ -154,8 +154,9 @@ COMMENT means we are composing a comment."
   "Submit the post to lemmy."
   (interactive)
   (let ((buf (buffer-name)))
-    (if (and (string-suffix-p "-post*" buf)
-             (not (and lem-post-title lem-post-community-id)))
+    (if (and (string-suffix-p "post*" buf)
+             (not (and lem-post-title
+                       lem-post-community-id)))
         (message "You need to set at least a post name and community.")
       (let* ((body (fedi-post--remove-docs))
              (response (if lem-post-comment-post-id
