@@ -117,7 +117,8 @@
                                   (lambda (id choice)
                                     (setq lem-post-community-name choice)
                                     (setq lem-post-community-id id)
-                                    (message "Posting to %s" choice)))
+                                    (message "Posting to %s" choice))
+                                  #'lem-api-get-subscribed-communities)
   (fedi-post--update-status-fields))
 
 (defun lem-post-compose (&optional edit mode comment)
