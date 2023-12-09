@@ -97,6 +97,9 @@
   "Non-nil if STR is in `lem-user-items-types'."
   (cl-member str lem-user-items-types :test 'equal))
 
+(defconst lem-inbox-types
+  '(replies mentions private-messages))
+
 ;;; CUSTOMIZE
 
 (defgroup lem nil

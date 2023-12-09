@@ -112,24 +112,7 @@ Used for pagination.")
   '("png" "jpg" "jpeg" "webp")
   "Image formats that we may want to render for post URLs.")
 
-;;; UTILITIES
-
-(defvar lem-ui-horiz-bar
-  (if (char-displayable-p ?―)
-      (make-string 12 ?―)
-    (make-string 12 ?-)))
-
-(defun lem-ui-format-heading (name)
-  "Format a heading for NAME, a string."
-  (propertize
-   (concat " " lem-ui-horiz-bar "\n "
-           (upcase name)
-           "\n " lem-ui-horiz-bar "\n")
-   'face 'success))
-
-(defun lem-ui-insert-heading (name)
-  "Insert heading for NAME, a string."
-  (insert (lem-ui-format-heading name)))
+;;; CUSTOMS
 
 (defgroup lem nil
   "Lemmy client."
@@ -158,6 +141,40 @@ Used for pagination.")
 If a symbol does not look right (tofu), it means your
 font settings do not support it."
   :type '(alist :key-type symbol :value-type string))
+
+;;; UTILITIES
+
+(defun lem-ui-make-fun (prefix suffix)
+  "Make a function from PREFIX, a string, and SUFFIX, a symbol."
+  (string-to-symbol
+   (concat prefix
+           (symbol-name suffix))))
+
+(defun lem-ui-hyphen-to-underscore (symbol)
+  "Replace any - with _ in SYMBOL."
+  (string-to-symbol
+   (string-replace "-" "_"
+                   (symbol-name symbol))))
+
+(defvar lem-ui-horiz-bar
+  (if (char-displayable-p ?―)
+      (make-string 12 ?―)
+    (make-string 12 ?-)))
+
+(defun lem-ui-format-heading (name)
+  "Format a heading for NAME, a string."
+  (let ((name (if (symbolp name)
+                  (symbol-name name)
+                name)))
+    (propertize
+     (concat " " lem-ui-horiz-bar "\n "
+             (upcase name)
+             "\n " lem-ui-horiz-bar "\n")
+     'face 'success)))
+
+(defun lem-ui-insert-heading (name)
+  "Insert heading for NAME, a string."
+  (insert (lem-ui-format-heading name)))
 
 (defun lem-ui-symbol (name)
   "Return the unicode symbol (as a string) corresponding to NAME.
@@ -472,12 +489,14 @@ SIDEBAR."
            'search)
           ((eq view-fun 'lem-ui-view-saved-items)
            'saved-items)
-          ((eq view-fun 'lem-ui-view-replies)
-           'replies)
-          ((eq view-fun 'lem-ui-view-mentions)
-           'mentions)
-          ((eq view-fu 'lem-ui-view-private-messages)
-           'private-messages))))
+          ;; ((eq view-fun 'lem-ui-view-replies)
+          ;;  'replies)
+          ;; ((eq view-fun 'lem-ui-view-mentions)
+          ;;  'mentions)
+          ;; ((eq view-fun 'lem-ui-view-private-messages)
+          ;;  'private-messages)
+          ((eq view-fun 'lem-ui-view-inbox)
+           'inbox))))
 
 (defun lem-ui-view-options (view)
   "Return the various sorting and other options for VIEW.
@@ -493,7 +512,9 @@ Returns a list of the variables containing the specific options."
         ((eq view 'community)
          '(lem-items-types lem-sort-types))
         ((eq view 'communities)
-         '(lem-listing-types lem-sort-types))))
+         '(lem-listing-types lem-sort-types))
+        ((eq view 'inbox)
+         '(lem-comment-sort-types))))
 
 (defun lem-ui-toggle-posts-comments ()
   "Switch between displaying posts or comments.
@@ -1639,7 +1660,7 @@ And optionally for instance COMMUNITIES."
         (lem-delete-community id t)
         (message "Community %s deleted!" name)))))
 
-;;; REPLIES
+;;; INBOX / REPLIES / MENTIONS / PMS
 
 (defun lem-ui-view-replies-unread ()
   "View unread replies."
@@ -1650,14 +1671,7 @@ And optionally for instance COMMUNITIES."
   "View reply comments to the current user.
 Optionally only view UNREAD items."
   (interactive)
-  (let* ((replies (lem-get-replies (if unread "true" nil)))
-         (list (alist-get 'replies replies))
-         (buf "*lem-replies*"))
-    (lem-ui-with-buffer buf 'lem-mode nil nil
-      (lem-ui-render-replies list)
-      (lem-ui--init-view)
-      (lem-ui-set-buffer-spec nil nil #'lem-ui-view-replies
-                              'comment-reply nil unread))))
+  (lem-ui-view-inbox 'replies))
 
 (defun lem-ui-render-replies (replies)
   "Render REPLIES, reply comments to the current user."
@@ -1679,14 +1693,7 @@ Optionally only view UNREAD items."
   "View reply comments to the current user.
 Optionally only view UNREAD items."
   (interactive)
-  (let* ((mentions (lem-get-mentions (if unread "true" nil)))
-         (list (alist-get 'mentions mentions))
-         (buf "*lem-mentions*"))
-    (lem-ui-with-buffer buf 'lem-mode nil nil
-      (lem-ui-render-mentions list)
-      (lem-ui--init-view)
-      (lem-ui-set-buffer-spec nil nil #'lem-ui-view-mentions
-                              'mention nil unread))))
+  (lem-ui-view-inbox 'mentions))
 
 (defun lem-ui-render-mentions (mentions)
   "Render mentions MENTIONS."
@@ -1700,14 +1707,7 @@ Optionally only view UNREAD items."
   "View reply comments to the current user.
 Optionally only view UNREAD items."
   (interactive)
-  (let* ((private-messages (lem-get-private-messages (if unread "true" nil)))
-         (list (alist-get 'private_messages private-messages))
-         (buf "*lem-private-messages*"))
-    (lem-ui-with-buffer buf 'lem-mode nil nil
-      (lem-ui-render-private-messages list)
-      (lem-ui--init-view)
-      (lem-ui-set-buffer-spec nil nil #'lem-ui-view-private-messages
-                              'private-message nil unread))))
+  (lem-ui-view-inbox 'private-messages))
 
 (defun lem-ui-render-private-messages (private-messages)
   "Render private messages PRIVATE-MESSAGES."
@@ -1721,6 +1721,33 @@ Optionally only view UNREAD items."
   (interactive)
   (let ((id (lem-ui--property 'id)))
     (lem-mark-private-message-read id)))
+
+(defun lem-ui-view-inbox (&optional items unread)
+  "View user inbox, for replies, mentions, and PMs to the current user.
+Optionally only view UNREAD items.
+Optionally set ITEMS to view."
+  (interactive)
+  (let* ((items (or items 'replies))
+         (item-fun (lem-ui-make-fun "lem-get-" items))
+         (render-fun (lem-ui-make-fun "lem-ui-render-" items))
+         (items-data (funcall item-fun (if unread "true" nil)))
+         (list (alist-get (lem-ui-hyphen-to-underscore items) items-data))
+         (buf "*lem-inbox*"))
+    (lem-ui-with-buffer buf 'lem-mode nil nil
+      (lem-ui-insert-heading "inbox")
+      (lem-ui-insert-heading items)
+      (funcall render-fun list)
+      (lem-ui--init-view)
+      (lem-ui-set-buffer-spec nil nil #'lem-ui-view-inbox
+                              items nil unread)))) ;
+
+(defun lem-ui-cycle-inbox ()
+  "Cycle inbox to next item view in `lem-inbox-types'."
+  (interactive)
+  (let* ((last (lem-ui-get-buffer-spec :item))
+         (next (lem-ui-next-type last lem-inbox-types)))
+    ;; TODO: implement unread arg
+    (lem-ui-view-inbox next)))
 
 ;;; EDIT/DELETE POSTS/COMMENTS
 
