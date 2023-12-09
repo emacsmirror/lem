@@ -57,15 +57,17 @@
 ;; FIXME: make these all lists of symbols, so checks are faster and easier
 
 (defconst lem-listing-types
-  '("All" ; "Community" removed?
-    "Local" "Subscribed"))
+  '("All" "Local" "Subscribed" "ModeratorView"))
 
 (defun lem-listing-type-p (str)
   "Non-nil if STR is in `lem-listing-types'."
   (cl-member str lem-listing-types :test 'equal))
 
 (defconst lem-sort-types
-  '("Active" "Hot" "New" "Old" "Controversial" "Scaled" "TopDay" "TopWeek" "TopMonth" "TopYear" "TopAll" "MostComments" "NewComments" "TopHour" "TopSixHour" "TopTwelveHour" "TopThreeMonths" "TopSixMonths" "TopNineMonths"))
+  '("Active" "Hot" "New" "Old" "Controversial" "Scaled"
+    "TopDay" "TopWeek" "TopMonth" "TopYear" "TopAll"
+    "MostComments" "NewComments" "TopHour" "TopSixHour"
+    "TopTwelveHour" "TopThreeMonths" "TopSixMonths" "TopNineMonths"))
 
 (defun lem-sort-type-p (str)
   "Non-nil if STR is in `lem-sort-types'."
