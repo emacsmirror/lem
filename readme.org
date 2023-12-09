@@ -1,42 +1,79 @@
 * lem.el
 
-=lem.el= is an Emacs client library and interface for Lemmy, the federated link-aggregator. For information about Lemmy, see [[http://joinlemmy.org][joinlemmy.org]].
+=lem.el= is an Emacs client library and interface for Lemmy, the federated
+link-aggregator. For information about Lemmy, see [[http://joinlemmy.org][joinlemmy.org]].
 
-=lem-api.el= is the API requests layer. All functions make requests and return JSON data pased into Elisp.
+=lem-api.el= is the API requests layer. All functions make requests and return
+JSON data pased into Elisp.
 
-The idea is that it's then possible to write different frontends so users can read lemmy posts in whatever forms they like. Possibilities are notmuch, gnus, md4rd, elfeed, or a standalone rendering option more like =mastodon.el=.
+The idea is that it's then possible to write different frontends so users can
+read lemmy posts in whatever forms they like. Possibilities are notmuch, gnus,
+md4rd, elfeed, or a standalone rendering option more like =mastodon.el=.
 
-Currently, most of the basic endpoints are implemented, and most but not all parameters for each endpoint. There is an active todo list of endpoints in =lem-api.el=.
+Most endpoints are implemented, as are most parameters for each endpoint.
+There is an active todo list in =lem-api.el=.
 
 New endpoints are trivial to add with the =lem-def-request= macro.
 
-=lem-ui.el= is our own basic interface layer. It's new and a bit necro, but coming along fast. It takes some inspiration and code from =mastodon.el=, as that's what I know, and a lot of work has gone into it.
+=lem-ui.el= is our own interface layer. It takes inspiration and code from
+=mastodon.el=, as that's what I know, and a lot of work has gone into it.
+
+* install
+
+=lem.el= is on MELPA, so you can install it from there.
+
+Add =MELPA= to your archives:
+
+#+BEGIN_SRC emacs-lisp
+  (require 'package)
+  (add-to-list 'package-archives
+               '("melpa" . "http://melpa.org/packages/") t)
+#+END_SRC
+
+Update and install:
+
+=M-x package-refresh-contents RET=
+
+=M-x package-install RET lem RET=
+
+Otherwise you can pull from this repo, main or develop.
 
 * logging in
 
-Currently, you first need to set =lem-instance-url= to your lemmy instance.
+First set =lem-instance-url= to your lemmy instance.
 
-Then the first time you call =lem= you'll be asked for your username and password. Upon logging in, your authentication details will be saved in a plstore under your emacs directory. You "shouldn't" have to provide your password again. If you don't want to have to provide your username, add =(setq lem-current-user "yourusername")= to your init file.
+Then the first time you call =lem= you'll be asked for your username and
+password. Upon logging in, your authentication details will be saved in a
+plstore under your emacs directory. You "shouldn't" have to provide your
+password again (unless server-side updates require new login). If you don't
+want to have to provide your username, add =(setq lem-current-user
+"yourusername")= to your init file.
 
 * NB: API instability
 
-The Lemmy developers have clearly stated that the current API version, v3, is unstable and will likely be subject to breaking changes. This will mean =lem.el= will have to play catch-up as things change.
+The Lemmy developers have clearly stated that the current API version, v3, is
+unstable and will likely be subject to breaking changes. This will mean =lem.el=
+will have to play catch-up as things change.
 
 * dependencies
 
-=lem.el= depends on [[https://codeberg.org/martianh/fedi.el][fedi.el]], a library to make writing a library of API requests easier. It also depends on [[https://github.com/jrblevin/markdown-mode][markdown-mode]], and on =hierarchy.el=, which should be included in your emacs.
+=lem.el= depends on [[https://codeberg.org/martianh/fedi.el][fedi.el]], a library to make writing a library of API requests
+easier. It also depends on [[https://github.com/jrblevin/markdown-mode][markdown-mode]], and on =hierarchy.el=, which should be
+included in your emacs.
 
 * contributions
 
-Contributions are welcome. Open an issue to explain if you're working on something, and if you want to work on =lem-ui.el= make sure that what you're doing can't just be pulled in from =mastodon.el= to save work.
+Contributions are welcome. Open an issue to explain if you're working on
+something, and if you want to work on =lem-ui.el= make sure that what you're
+doing can't just be pulled in from =mastodon.el= to save work.
 
 Also feel free to get in touch if you want to use =lem-api.el= to build another frontend.
 
 * Supporting =lem.el=
 
-If you'd like to support continued development of =lem.el=, I accept
-donations via paypal: [[https://paypal.me/martianh][paypal.me/martianh]]. If you would prefer a different
-payment method, please write to me at <martianhiatus [at] riseup [dot] net> and I can
+If you'd like to support continued development of =lem.el=, I accept donations
+via paypal: [[https://paypal.me/martianh][paypal.me/martianh]]. If you would prefer a different payment
+method, please write to me at <martianhiatus [at] riseup [dot] net> and I can
 provide IBAN or other bank account details.
 
 I don't have a tech worker's income, so even a small tip would help out.
@@ -112,6 +149,7 @@ I don't have a tech worker's income, so even a small tip would help out.
 | d         | lem-ui-delete-post-or-comment          | Delete post or comment at point.                                   |
 |           | lem-ui-dislike-item                    | Dislike (downvote) item at point.                                  |
 | e         | lem-ui-edit-comment                    | Edit comment at point if possible.                                 |
+|           | lem-ui-jump-to-moderated               | Prompt for a subscribed community and view it.                     |
 | s         | lem-ui-jump-to-subscribed              | Prompt for a subscribed community and view it.                     |
 |           | lem-ui-like-item                       | Like (upvote) item at point.                                       |
 | l         | lem-ui-like-item-toggle                | Toggle like status of item at point.                               |
@@ -121,7 +159,6 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-message-user-at-point           | Send private message to user at point.                             |
 |           | lem-ui-more                            | Append more items to the current view.                             |
 | TAB       | lem-ui-next-tab-item                   | Jump to next tab item.                                             |
-|           | lem-ui-own-moderated-communities       |                                                                    |
 | <backtab> | lem-ui-prev-tab-item                   | Jump to prev tab item.                                             |
 |           | lem-ui-restore-post                    | Restore deleted post at point.                                     |
 |           | lem-ui-save-item                       | Save item at point.                                                |
