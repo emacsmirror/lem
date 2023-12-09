@@ -343,7 +343,7 @@ Optionally start from POS."
     (cond ((eq type 'post)
            (lem-ui-view-post-at-point))
           ((eq type 'community)
-           (lem-ui-view-community-at-point))
+           (lem-ui-view-item-community))
           ((or (eq type 'comment)
                (eq type 'comment-reply))
            (lem-ui-view-comment-post))
@@ -1415,7 +1415,7 @@ LIMIT is the max results to return."
 ;; so we have to reimplement these for tl:
 (defun lem-ui-view-community-at-point-tl (_)
   "View community at point, from tabulated list."
-  (lem-ui-view-community-at-point))
+  (lem-ui-view-item-community))
 
 (defun lem-ui-subscribe-to-community-at-point-tl (_)
   "Subscribe to community at point, from tabulated list."
@@ -1456,12 +1456,6 @@ LIMIT is the max results to return."
                 (lem-follow-community id :json-false))
        (message "Community %s unsubscribed!" choice)))
    #'lem-api-get-subscribed-communities))
-
-(defun lem-ui-view-community-at-point ()
-  "View community at point."
-  (interactive)
-  (lem-ui-with-item
-      (lem-ui-view-community id)))
 
 (defun lem-ui--communities-alist (communities)
   "Return an alist of name/description and ID from COMMUNITIES."
