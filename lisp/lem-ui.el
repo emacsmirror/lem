@@ -259,13 +259,18 @@ BINDINGS is a list of variables for which to display bidings."
   `(with-current-buffer (get-buffer-create ,buffer)
      (let* ((inhibit-read-only t)
             (sort-str (when (member 'lem-sort-types ,bindings)
-                        "\\[lem-ui-cycle-sort]: cycle sort"))
+                        "\\[lem-ui-cycle-sort]: cycle sort "))
             (listing-str (when (member 'lem-listing-types ,bindings)
-                           "\\[lem-ui-cycle-listing-type]: cycle listing\n"))
+                           "\\[lem-ui-cycle-listing-type]: cycle listing "))
             (view-str (when (or (member 'lem-items-types ,bindings)
                                 (member 'lem-user-items-types ,bindings))
-                        "\\[lem-ui-toggle-posts-comments]: toggle posts/comments"))
-            (msg-str (concat listing-str "\n" sort-str "\n" view-str)))
+                        "\\[lem-ui-toggle-posts-comments]: toggle posts/comments "))
+            (inbox-str (when (member 'lem-inbox-types ,bindings)
+                         "\\[lem-ui-cycle-listing-type]: cycle message type "))
+            (msg-str (concat listing-str
+                             sort-str
+                             view-str
+                             inbox-str)))
        (erase-buffer)
        (funcall ,mode-fun)
        (if ,other-window
@@ -514,7 +519,7 @@ Returns a list of the variables containing the specific options."
         ((eq view 'communities)
          '(lem-listing-types lem-sort-types))
         ((eq view 'inbox)
-         '(lem-comment-sort-types))))
+         '(lem-comment-sort-types lem-inbox-types))))
 
 (defun lem-ui-toggle-posts-comments ()
   "Switch between displaying posts or comments.
@@ -587,6 +592,8 @@ It must be a member of the same list."
           ((eq view 'communities)
            (lem-ui-view-communities-tl listing-type sort)
            (message "listing: %s" listing-type))
+          ((eq view 'inbox)
+           (lem-ui-cycle-inbox))
           (t ;; TODO: search / communities
            (message "Not implemented yet")))))
 
@@ -1732,14 +1739,15 @@ Optionally set ITEMS to view."
          (render-fun (lem-ui-make-fun "lem-ui-render-" items))
          (items-data (funcall item-fun (if unread "true" nil)))
          (list (alist-get (lem-ui-hyphen-to-underscore items) items-data))
-         (buf "*lem-inbox*"))
-    (lem-ui-with-buffer buf 'lem-mode nil nil
+         (buf "*lem-inbox*")
+         (bindings (lem-ui-view-options 'inbox)))
+    (lem-ui-with-buffer buf 'lem-mode nil bindings
       (lem-ui-insert-heading "inbox")
       (lem-ui-insert-heading items)
       (funcall render-fun list)
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil nil #'lem-ui-view-inbox
-                              items nil unread)))) ;
+                              items nil unread))))
 
 (defun lem-ui-cycle-inbox ()
   "Cycle inbox to next item view in `lem-inbox-types'."
