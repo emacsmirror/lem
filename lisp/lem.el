@@ -158,6 +158,7 @@ Uses `cursor-face-highlight-mode'."
     (define-key map (kbd "O") #'lem-ui-view-own-profile)
     (define-key map (kbd "A") #'lem-ui-view-saved-items)
     (define-key map (kbd "h") #'lem-ui-search)
+    (define-key map (kbd "B") #'lem-ui-view-inbox)
     ;; actions:
     (define-key map (kbd "S") #'lem-ui-subscribe-to-community-at-point)
     (define-key map (kbd "a") #'lem-ui-save-item-toggle)
