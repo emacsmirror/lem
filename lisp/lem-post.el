@@ -87,6 +87,10 @@
   '((t :inherit success))
   "Face used for community status field.")
 
+(defface lem-post-title-face
+  '((t :inherit font-lock-comment-face :weight bold))
+  "Face for post title in compose buffer")
+
 (defun lem-post-read-title ()
   "Read post title."
   (interactive)
@@ -132,7 +136,8 @@ COMMENT means we are composing a comment."
                              '((name . "title")
                                (no-label . t)
                                (prop . post-title)
-                               (item-var . lem-post-title))
+                               (item-var . lem-post-title)
+                               (face . lem-post-title-face))
                              '((name . "URL")
                                (no-label . t)
                                (prop . post-url)
