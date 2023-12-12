@@ -2318,12 +2318,28 @@ It's a cheap hack, alas."
     (let (match
           (url-user-agent lem-user-agent))
       (while (setq match (text-property-search-forward 'image-url))
-        (goto-char (prop-match-beginning match))
-        ;; (re-search-forward "\*" nil :no-error) ; * is just for no alt-text
-        ;; (backward-char 1)
-        (progn (shr-insert-image)
-               (delete-char 1))
-        (goto-char (prop-match-end match))))))
+        (let ((beg (prop-match-beginning match))
+              (end (prop-match-end match)))
+          (goto-char beg)
+          (lem-shr-insert-image beg end)
+          (goto-char end))))))
+
+(defun lem-shr-insert-image (start end)
+  "Insert the image under point into the buffer.
+START and END mark the region to replace"
+  ;; we don't assume we have a * to replace
+  (interactive)
+  (let ((url (get-text-property (point) 'image-url))
+        (shr-max-image-proportion 0.4 ))
+    (if (not url)
+	(message "No image under point")
+      ;; (message "Inserting %s..." url) ; shut up shr.el!
+      (url-retrieve url #'shr-image-fetched
+		    (list (current-buffer)
+                          start end) ; don't assume we have *
+                    ;; `(:width 40 :height 40))
+                    ;; (1- (point)) (point-marker))
+		    t))))
 
 (defun lem-ui-copy-item-url ()
   "Copy the URL (ap_id) of the post or comment at point."
