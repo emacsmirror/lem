@@ -47,6 +47,7 @@
 (defvar lem-user-items-types)
 (defvar lem-items-types)
 (defvar lem-search-types)
+(defvar lem-inbox-types)
 (defvar lem-user-id)
 
 (defvar-local lem-ui-post-community-mods-ids nil
@@ -146,13 +147,13 @@ font settings do not support it."
 
 (defun lem-ui-make-fun (prefix suffix)
   "Make a function from PREFIX, a string, and SUFFIX, a symbol."
-  (string-to-symbol
+  (intern
    (concat prefix
            (symbol-name suffix))))
 
 (defun lem-ui-hyphen-to-underscore (symbol)
   "Replace any - with _ in SYMBOL."
-  (string-to-symbol
+  (intern
    (string-replace "-" "_"
                    (symbol-name symbol))))
 
@@ -494,12 +495,6 @@ SIDEBAR."
            'search)
           ((eq view-fun 'lem-ui-view-saved-items)
            'saved-items)
-          ;; ((eq view-fun 'lem-ui-view-replies)
-          ;;  'replies)
-          ;; ((eq view-fun 'lem-ui-view-mentions)
-          ;;  'mentions)
-          ;; ((eq view-fun 'lem-ui-view-private-messages)
-          ;;  'private-messages)
           ((eq view-fun 'lem-ui-view-inbox)
            'inbox))))
 
@@ -882,7 +877,7 @@ START and END are the boundaries of the link in the post body."
 ;;; BYLINES
 
 (defun lem-ui-propertize-box (str color obj)
-  "Propertize STR with box and `font-lock-keyword-face'."
+  "Propertize STR with COLOR, box, `font-lock-keyword-face' and OBJ help-echo."
   (propertize str
               'face `(:foreground ,color :box t)
               'help-echo obj))
@@ -1090,8 +1085,6 @@ INDENT is a number, the level of indent for the item."
       (let ((replaced (string-replace "@" "\\@" (buffer-string))))
         (erase-buffer)
         (insert replaced)
-        ;; if our replacements broke markdown, this may not return.
-        ;; ideally we would check for errors before this runs:
         (markdown-standalone buf))
       (with-current-buffer buf
         (let ((shr-width (when indent
@@ -1386,7 +1379,6 @@ LIMIT is the max results to return."
   (let* ((json (lem-list-communities (or type "All")
                                      (or sort "TopAll")
                                      (or limit "50")))
-         ;; (list (alist-get 'communities json))
          (buf "*lem-communities*"))
     (lem-ui-with-buffer buf 'lem-mode nil nil
       (lem-ui-render-instance (lem-get-instance) :stats nil)
@@ -1470,7 +1462,7 @@ LIMIT is the max results to return."
                       .community.id))))
 
 (defun lem-ui-do-community-completing (prompt-str action-fun communities-fun)
-  "Read a subscribed community with PROMPT-STR and call ACTION-FUN on it."
+  "Fetch communities with COMMUNITIES-FUN and PROMPT-STR, then call ACTION-FUN."
   (let* ((communities (funcall communities-fun))
          (subs (lem-ui--communities-alist communities))
          (completion-extra-properties
@@ -1510,7 +1502,6 @@ SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return.
 PAGE is the page number of items to display, a string."
   (let* ((community (lem-get-community id))
-         ;; (view (alist-get 'community_view community))
          (buf "*lem-community*")
          ;; in case we set community posts, then switch to comments:
          (sort (if (equal item "comments")
@@ -1668,7 +1659,7 @@ And optionally for instance COMMUNITIES."
   (interactive)
   (lem-ui-view-replies :unread))
 
-(defun lem-ui-view-replies (&optional unread)
+(defun lem-ui-view-replies (&optional _unread)
   "View reply comments to the current user.
 Optionally only view UNREAD items."
   (interactive)
@@ -1690,7 +1681,7 @@ Optionally only view UNREAD items."
   (interactive)
   (lem-mark-all-read))
 
-(defun lem-ui-view-mentions (&optional unread)
+(defun lem-ui-view-mentions (&optional _unread)
   "View reply comments to the current user.
 Optionally only view UNREAD items."
   (interactive)
@@ -1704,7 +1695,7 @@ Optionally only view UNREAD items."
                (lem-ui-format-comment comment)
                "\n")))
 
-(defun lem-ui-view-private-messages (&optional unread)
+(defun lem-ui-view-private-messages (&optional _unread)
   "View reply comments to the current user.
 Optionally only view UNREAD items."
   (interactive)
@@ -1954,7 +1945,6 @@ DETAILS means display what community and post the comment is linked to."
        'lem-type (if reply 'comment-reply 'comment)
        'line-prefix indent-str))))
 
-;; TODO: refactor format funs? will let-alist dot notation work?
 (defun lem-ui-format-private-message (private-message &optional indent)
   "Format PRIVATE-MESSAGE, optionally with INDENT amount of indent bars."
   (let-alist private-message
@@ -1990,7 +1980,6 @@ DETAILS means display what community and post the comment is linked to."
 POST-ID is the post's id.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of items to return."
-  ;; TODO: TYPE_ default:
   (let* ((comments (lem-api-get-post-comments
                     post-id "All" sort (or limit lem-ui-comments-limit))))
     (if (eq 'string (type-of comments))
@@ -2229,7 +2218,7 @@ TYPE should be either :unlike, :dislike, or nil to like."
   (cl-loop for community in json
            do (lem-ui-render-community community nil nil :subscription)))
 
-(defun lem-ui-view-user (id &optional item sort limit current-user)
+(defun lem-ui-view-user (id &optional item sort limit)
   "View user with ID.
 ITEM must be a member of `lem-user-items-types'.
 SORT must be a member of `lem-sort-types' or if item is
@@ -2252,11 +2241,6 @@ CURRENT-USER means we are displaying the current user's profile."
          (bindings (lem-ui-view-options 'user)))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
       ;; we have this on the 's' binding now so no need:
-      ;; (when current-user
-      ;;   (let-alist current-user
-      ;;     (lem-ui-render-user .local_user_view)
-      ;;     (insert "Subscribed communities:\n")
-      ;;     (lem-ui-render-user-subscriptions .follows)))
       (let-alist user-json
         (lem-ui-render-user .person_view)
         (cond ((equal item "posts")
@@ -2281,8 +2265,7 @@ CURRENT-USER means we are displaying the current user's profile."
 (defun lem-ui-view-own-profile ()
   "View profile of the current user."
   (interactive)
-  (let* ((current-user (lem-api-get-current-user)))
-    (lem-ui-view-user lem-user-id nil nil nil current-user)))
+  (lem-ui-view-user lem-user-id))
 
 (defun lem-ui-view-item-user ()
   "View user of item at point."
@@ -2305,7 +2288,8 @@ CURRENT-USER means we are displaying the current user's profile."
         (lem-send-private-message message id))))
 
 (defun lem-ui-block-user (&optional unblock)
-  "Block author of item at point."
+  "Block author of item at point.
+If UNBLOCK, unblock them instead."
   (interactive)
   (lem-ui-with-item
       (let* ((id (lem-ui--property 'creator-id))
@@ -2320,7 +2304,7 @@ CURRENT-USER means we are displaying the current user's profile."
         (message "User %s %s!" name b-str))))
 
 (defun lem-ui-unblock-user ()
-  ""
+  "."
   ;; TODO: completing-read blocks!
   (lem-ui-block-user :unblock))
 
