@@ -2142,6 +2142,9 @@ TYPE should be either :unlike, :dislike, or nil to like."
                 (eq item 'comment-reply))
             (progn
               (let* ((vote (funcall fun id score))
+                     (item (if (eq item 'comment-reply)
+                               'comment
+                             item))
                      (obj (intern (concat (symbol-name item) "_view")))
                      (i (alist-get obj vote))
                      (saved (alist-get 'saved i))
