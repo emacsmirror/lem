@@ -1138,8 +1138,8 @@ SORT must be a member of `lem-sort-types'."
                             .post.published
                             (when community .community.name)
                             (when community .community.actor_id)
-                            .post.featured_community ; pinned for community
-                            ;; the other option is .post.featured_local
+                            (or (eq t .post.featured_community) ; pinned community
+                                (eq t .post.featured_local)) ; pinned instance
                             nil admin-p mod-p del-p handle)
          "\n"
          (if .post.body
