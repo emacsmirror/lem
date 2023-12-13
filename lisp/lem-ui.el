@@ -2361,5 +2361,19 @@ START and END mark the region to replace."
             (progn (kill-new url)
                    (message "url %s copied!" url))))))
 
+(defun lem-ui-print-json ()
+  "Fetch the JSON of item at point and pretty print it in a new buffer."
+  (interactive)
+  (let ((json (lem-ui-with-item
+                  (lem-ui--property 'json)))
+        (buf (get-buffer-create "*lem-json*")))
+    (with-current-buffer buf
+      (erase-buffer)
+      (emacs-lisp-mode)
+      (insert (prin1-to-string json))
+      (pp-buffer)
+      (goto-char (point-min))
+      (switch-to-buffer-other-window buf))))
+
 (provide 'lem-ui)
 ;;; lem-ui.el ends here
