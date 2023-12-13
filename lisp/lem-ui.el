@@ -1947,7 +1947,8 @@ DETAILS means display what community and post the comment is linked to."
         lem-ui-horiz-bar
         "\n")
        'json comment
-       'id (if reply .comment_reply.id .comment.id)
+       ;; in replies view we need the actual id for like-toggling:
+       'id .comment.id ;(if reply .comment_reply.id .comment.id)
        'post-id .comment.post_id
        'community-id .post.community_id
        'creator-id .creator.id
@@ -2179,6 +2180,7 @@ TYPE should be either :unlike, :dislike, or nil to like."
 
 (defun lem-ui--update-item-json (new-json)
   "Replace the json property of item at point with NEW-JSON."
+  ;; NB: this replaces a comment-reply obj with comment obj if a reply is liked!
   (let ((inhibit-read-only t)
         (region (fedi--find-property-range 'json (point) :backwards)))
     (add-text-properties (car region) (cdr region)
