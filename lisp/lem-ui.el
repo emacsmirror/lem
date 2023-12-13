@@ -2328,9 +2328,9 @@ It's a cheap hack, alas."
 
 (defun lem-shr-insert-image (start end)
   "Insert the image under point into the buffer.
-START and END mark the region to replace"
+START and END mark the region to replace."
   ;; we don't assume we have a * to replace
-  (interactive)
+  (interactive) ; does this need to be a cmd? (only if we make image display optional like in shr.el?)
   (let ((url (get-text-property (point) 'image-url))
         (shr-max-image-proportion 0.4 ))
     (if (not url)
