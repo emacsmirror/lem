@@ -1088,7 +1088,8 @@ INDENT is a number, the level of indent for the item."
         (markdown-standalone buf))
       (with-current-buffer buf
         (let ((shr-width (when indent
-                           (- (window-width) (+ 1 indent)))))
+                           (- (window-width) (+ 1 indent))))
+              (shr-discard-aria-hidden t)) ; for pandoc md image output
           ;; shr render:
           (shr-render-buffer (current-buffer))))
       (with-current-buffer "*html*" ; created by shr
@@ -1168,6 +1169,7 @@ SORT must be a member of `lem-sort-types'."
              (ext (car (last (split-string filename "\\.")))))
         (if (member ext lem-ui-image-formats)
             (let ((html (concat "<img src=\"" .post.url "\" alt=\"*\" />"))
+                  (shr-discard-aria-hidden t) ; for pandoc md image output
                   rendered)
               (with-temp-buffer
                 (insert html)
