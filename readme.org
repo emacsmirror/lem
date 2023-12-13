@@ -36,11 +36,10 @@ want to have to provide your username, add =(setq lem-current-user
 
 * dependencies
 
-- [[https://codeberg.org/martianh/fedi.el][fedi.el]], a library to make writing a library of API requests
-easier.
+- [[https://codeberg.org/martianh/fedi.el][fedi.el]], a library to make writing a library of API requests easier.
 
 - [[https://github.com/jrblevin/markdown-mode][markdown-mode]], which as per the =markdown-mode= docs also requires that you have a markdown command installed and available in your path in order to render HTML output.
-   - =markdown-mode= and =lem.el= will not install this for you! You must do it yourself. Examples include =markdown= and =pandoc=. Currently =lem.el= recommends =markdown=, as its  HTML output is slightly easier for =shr.el= to render, but =pandoc= should also be fine.
+   - =markdown-mode= and =lem.el= will not install this for you! You must do it yourself. Examples include =markdown= and =pandoc=. Currently =lem.el= recommends =markdown=, as its  HTML output is slightly easier for =shr.el= to render, but =pandoc= should also be fine. Once you have one installed, customize the variable =markdown-command= and point it to the exectuable. See =markdown-mode='s installation instructions for more details: [[https://github.com/jrblevin/markdown-mode#installation][jrblevin/markdown-mode#installation]].
 
 - =hierarchy.el=, which should be included in your emacs.
 
