@@ -89,7 +89,7 @@
 
 (defface lem-post-title-face
   '((t :inherit font-lock-comment-face :weight bold))
-  "Face for post title in compose buffer")
+  "Face for post title in compose buffer.")
 
 (defun lem-post-read-title ()
   "Read post title."
