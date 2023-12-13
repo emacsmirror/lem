@@ -2336,10 +2336,11 @@ START and END mark the region to replace"
       ;; (message "Inserting %s..." url) ; shut up shr.el!
       (url-retrieve url #'shr-image-fetched
 		    (list (current-buffer)
-                          start end) ; don't assume we have *
-                    ;; `(:width 40 :height 40))
-                    ;; (1- (point)) (point-marker))
-		    t))))
+                          start end) ;) ; don't assume we have *
+                    ;; `(:width 400
+                    ;; :height 400)) ; if ever needed?
+                    ;; (1- (point)) (point-marker)) ; old value
+                    t))))
 
 (defun lem-ui-copy-item-url ()
   "Copy the URL (ap_id) of the post or comment at point."
