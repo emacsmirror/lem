@@ -2201,7 +2201,10 @@ TYPE should be either :unlike, :dislike, or nil to like."
        (when (eq t .is_admin)
          (lem-ui-propertize-admin-box))
        ;; .person.actor_id
-       "\n"
+       (if .person.bio
+           (concat "\n"
+                   (lem-ui-render-body .person.bio))
+         "\n")
        (lem-ui-symbol 'direct) " " ; FIXME: we need a post symbol
        (number-to-string .counts.post_count) " | "
        (lem-ui-symbol 'reply) " "
