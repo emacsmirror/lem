@@ -50,7 +50,8 @@
 ;; banFromCommunity
 ;; banPerson
 ;; blockCommunity DONE
-;; blockPerson
+;; blockPerson DONE
+;; blockInstance DONE
 ;; changePassword
 ;; createComment DONE
 ;; createCommentReport
