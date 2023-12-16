@@ -546,6 +546,17 @@ Returns a post_view."
 Returns a post_report_view."
   (post-id reason))
 
+(lem-def-request "post" "feature-post" "post/feature"
+  (post-id featured feature-type)
+  "Feature, i.e. pin, a post with POST-ID.
+FEATURED is a boolean.
+FEATURE-TYPE is a string, either \"Local\" (for instance) or
+\"Community\".
+To feature a post, a user must be either an instance admin or
+community mod."
+  (post-id feature-type)
+  `(("featured" . ,featured)))
+
 ;;; COMMENTS
 ;; <https://join-lemmy.org/api/interfaces/GetComments.html>
 ;; To get posts for a federated community by name, use name@instance.tld .
