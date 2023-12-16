@@ -773,6 +773,67 @@ LIMIT."
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)))) ; limit
 
+(defun lem-ui-do-feature (id arg type str)
+  "Call `lem-feature-post' and handle the response.
+ID, ARG TYPE are for that function.
+STR is for message."
+  ;; TODO: we need a general response handler!
+  (let* ((resp (lem-feature-post id arg type)))
+    (if (stringp resp)
+        (message "%s" resp) ; TODO: actually handle server error
+      (when (alist-get 'post_view resp)
+        (message "Post %s!" str)))))
+
+(defun lem-ui-feature-post (&optional unfeature)
+  "Feature (pin) a post, either to its instance or community.
+UNFEATURE means we are unfeaturing a post."
+  (interactive)
+  (lem-ui-with-item
+      (let* ((json (lem-ui--property 'json))
+             (post (alist-get 'post json))
+             (id (lem-ui--property 'id))
+             (mod-p (alist-get 'creator_is_moderator json))
+             (admin-p (alist-get 'creator_is_admin json))
+             (feat-comm (alist-get 'featured_community post))
+             (feat-loc (alist-get 'featured_local post))
+             ;; TODO: annotate Local with "instance":
+             (feat-type
+              (if unfeature
+                  (cond ((eq t feat-comm)
+                         "Community")
+                        ((eq t feat-loc)
+                         "Local")
+                        (t
+                         (user-error "Post not featured?")))
+                (completing-read "Feature type: "
+                                 '("Local" "Community"))))
+             (feat-arg (if unfeature :json-false t))
+             (feat-str (if unfeature "unfeatured" "featured")))
+        (if (equal feat-type "Community")
+            ;; TODO: refactor conds:
+            (cond (unfeature
+                   (lem-ui-do-feature id feat-arg feat-type feat-str))
+                  ((not (eq t mod-p))
+                   (user-error "You need to be a mod to feature to community"))
+                  ((eq t feat-comm)
+                   (user-error "Post already featured?"))
+                  (t
+                   (lem-ui-do-feature id feat-arg feat-type feat-str)))
+          (cond (unfeature
+                 (lem-ui-do-feature id feat-arg feat-type feat-str))
+                ((not (eq t admin-p))
+                 (user-error "You need to be an admin to feature to instance"))
+                ((eq t feat-loc)
+                 (user-error "Post already featured?"))
+                (t
+                 (lem-ui-do-feature id feat-arg feat-type feat-str)))))
+    :number))
+
+(defun lem-ui-unfeature-post ()
+  "Unfeature (unpin) post at point."
+  (interactive)
+  (lem-ui-feature-post :unfeature))
+
 ;;; LINKS
 
 (defvar lem-ui--link-map
