@@ -200,6 +200,14 @@ Returns follows data, from under my_user, from the site endpoint."
 
 ;; (lem-get-federated-instances)
 
+(lem-def-request "post" "block-instance" "site/block"
+  (instance-id block)
+  "Block instance with INSTANCE-ID.
+BLOCK is a boolean, to block or not.
+Returns a blocked boolean."
+  (instance-id)
+  `(("block" . ,block)))
+
 ;;; SEARCH
 (lem-def-request "get" "search" "search"
   (q &optional type- listing-type sort limit page community-name community-id) ;  creator-id
