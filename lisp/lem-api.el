@@ -254,6 +254,13 @@ LISTING-TYPE, SORT, LIMIT, PAGE, COMMUNITY-NAME, and COMMUNITY-ID
 are for `lem-search'."
   (lem-search q "Comments" listing-type sort limit page community-name community-id))
 
+(defun lem-api-search-url
+    (q &optional listing-type sort limit page community-name community-id) ;  creator-id
+  "Search for Q, a URL.
+LISTING-TYPE, SORT, LIMIT, PAGE, COMMUNITY-NAME, and COMMUNITY-ID
+are for `lem-search'."
+  (lem-search q "Url" listing-type sort limit page community-name community-id))
+
 (lem-def-request "get" "resolve-object" "resolve_object"
   (q)
   "Do a webfinger lookup for query Q."
