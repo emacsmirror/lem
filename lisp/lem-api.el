@@ -67,7 +67,7 @@
 ;; deleteCommunity DONE
 ;; deleteCustomEmoji
 ;; deletePost DONE
-;; deletePrivateMessage
+;; deletePrivateMessage TODO
 ;; distinguishComment
 ;; editComment DONE
 ;; editCommunity TODO
@@ -75,7 +75,7 @@
 ;; editPost DONE
 ;; editPrivateMessage TODO
 ;; editSite
-;; featurePost
+;; featurePost DONE
 ;; followCommunity DONE
 ;; getBannedPersons
 ;; getCaptcha
@@ -85,7 +85,7 @@
 ;; getFederatedInstances DONE
 ;; getModlog
 ;; getPersonDetails DONE
-;; getPersonMentions
+;; getPersonMentions DONE
 ;; getPost DONE
 ;; getPosts DONE
 ;; getPrivateMessages DONE
@@ -286,10 +286,9 @@ are for `lem-search'."
 ;;; USERS / PERSON
 (lem-def-request "get" "get-person" "user"
   (&optional username person-id sort limit page community-id saved-only)
-  "Get person with ID.
+  "Get person with PERSON-ID or USERNAME.
 Returns a person_view, comments, posts, moderates objects."
   (username person-id sort limit page community-id)
-  ;; FIXME: this requires json string, while other params require plain lisp:
   (when saved-only
     '(("saved_only" . "true"))))
 
@@ -335,6 +334,7 @@ SORT, LIMIT, PAGE are all for `lem-get-person'."
 (lem-def-request "post" "block-user" "user/block"
   (person-id block)
   "Block user with PERSON-ID.
+BLOCK is a boolean.
 Returns a person_view plus a blocked boolean."
   (person-id)
   `(("block" . ,block)))
@@ -406,6 +406,7 @@ discussion_languages, default_post_language."
 (lem-def-request "post" "follow-community" "community/follow"
   (community-id follow)
   "Follow a community with COMMUNITY-ID.
+FOLLOW is a boolean.
 Returns a community_view and discussion_languages."
   (community-id)
   `(("follow" . ,follow)))
@@ -508,7 +509,7 @@ PAGE is a number, indexed at 1."
   (name community-id &optional body url nsfw honeypot language-id)
   "Create a new post with NAME, on community with COMMUNITY-ID.
 BODY is the post's content. URL is its link.
-NSFW and HONEYPOT not yet implemented.
+NSFW is a flag. HONEYPOT not yet implemented.
 Returns a post_view."
   (name community-id body url nsfw honeypot language-id))
 
@@ -524,16 +525,18 @@ Returns a post_view."
 ;; (lem-like-post 1341246 1)
 
 (lem-def-request "put" "edit-post" "post"
-  (post-id name &optional body url) ; nsfw url lang-id
-  "Edit post with ID, giving it a NEW-NAME, and NEW-BODY and NEW-URL.
+  (post-id name &optional body url nsfw) ; lang-id
+  "Edit post with ID, giving it NAME, and BODY and URL.
+NSFW is a flag.
 Returns a post_view."
-  (post-id name body url)) ; nsfw url lang-id
+  (post-id name body url nsfw)) ; lang-id
 
 ;; (lem-edit-post 1341246 "blaodh" "trep")
 
 (lem-def-request "post" "delete-post" "post/delete"
   (post-id deleted)
-  ""
+  "Delete post with POST-ID.
+DELETED is a boolean."
   (post-id)
   `(("deleted" . ,deleted)))
 
@@ -542,7 +545,8 @@ Returns a post_view."
 
 (lem-def-request "post" "report-post" "post/report"
   (post-id reason)
-  "Report post with ID to instance moderator, giving REASON, a string.
+  "Report post with ID to instance moderator.
+Give REASON, a string.
 Returns a post_report_view."
   (post-id reason))
 
@@ -668,7 +672,8 @@ Returns a comment_view."
 
 (lem-def-request "post" "delete-comment" "comment/delete"
   (comment-id deleted)
-  ""
+  "Delete comment with COMMENT-ID.
+DELETED is a bolean."
   (comment-id)
   `(("deleted" . ,deleted)))
 
@@ -677,7 +682,8 @@ Returns a comment_view."
 
 (lem-def-request "post" "report-comment" "comment/report"
   (comment-id reason)
-  "Report comment with COMMENT-ID to instance moderator, giving REASON, a string.
+  "Report comment with COMMENT-ID to instance moderator.
+Give REASON, a string.
 Returns comment_report_view."
   (comment-id reason))
 
@@ -727,7 +733,8 @@ Returns a private_message_view."
 
 (lem-def-request "put" "save-comment" "comment/save"
   (comment-id save)
-  "Save comment with COMMENT-ID, a number."
+  "Save comment with COMMENT-ID, a number.
+SAVE is a boolean."
   (comment-id)
   `(("save" . ,save)))
 
