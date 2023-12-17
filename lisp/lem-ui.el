@@ -1161,7 +1161,49 @@ INDENT is a number, the level of indent for the item."
         (setq str (buffer-substring (point) (point-max)))
         (kill-buffer-and-window)        ; shr's *html*
         (kill-buffer buf)))             ; our md
+    (setq str (lem-ui-propertize-handles str json))
     str))
+
+(defun lem-ui-propertize-handles (str json)
+  "Propertize any handles in STR as links using JSON.
+This is for simple @user or @user@instance.com handles not
+processed by the server."
+  (with-temp-buffer
+    (switch-to-buffer (current-buffer))
+    (insert str)
+    (goto-char (point-min))
+    (save-match-data
+      (while (re-search-forward fedi-post-handle-regex nil :no-error)
+        (let* ((username
+                (buffer-substring-no-properties
+                 (match-beginning 2)
+                 (match-end 2)))
+               (handle-beg (match-beginning 1))
+               (handle-end (match-end 1))
+               (domain
+                (if (match-beginning 3)
+                    (buffer-substring-no-properties
+                     (match-beginning 3)
+                     (match-end 3))))
+               (ap-link (url-generic-parse-url
+                         (alist-get 'ap_id json)))
+               (instance (or domain (url-domain ap-link)))
+               (link (concat "https://" instance
+                             "/u/"
+                             username)))
+          (add-text-properties handle-beg
+                               handle-end
+                               `(face '(shr-text shr-link)
+                                      lem-tab-stop handle
+                                      mouse-face highlight
+                                      shr-tabstop t
+                                      shr-url ,link ;"https://lemmy.ml"
+                                      button t
+                                      category shr
+                                      follow-link t
+                                      help-echo ,link
+                                      keymap ,lem-ui--link-map)))))
+    (buffer-string)))
 
 (defun lem-ui--set-mods (community-id)
   "Set `lem-ui-post-community-mods-ids'.
