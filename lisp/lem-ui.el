@@ -36,6 +36,7 @@
 (require 'markdown-mode)
 (require 'hierarchy)
 (require 'vtable)
+(require 'fedi-post) ; handle regex
 
 (require 'lem-api)
 
