@@ -108,7 +108,22 @@ Used for pagination.")
    "\\(?2:\\(news\\(post\\)?:\\|mailto:\\|file:\\|\\(ftp\\|https?\\|telnet\\|gopher\\|www\\|wais\\)://\\)" ; uri prefix
    "[^ )\n\t]*\\)" ; any old thing, i.e. we allow invalid/unwise chars. but no )
    "\\(/\\)?" ; optional ending slash? ; TODO: some are caught, some are not
-   "\\b"))
+   "\\b")
+  "Regex matching a URL.")
+
+(defvar lem-ui-handle-regex fedi-post-handle-regex)
+
+(defvar lem-ui-community-regex
+  (rx (| (any ?\( "\n" "\t "" ") bol) ; preceding things
+      (group-n 1 ; = commuinty with !
+        ?!
+        (group-n 2 ; = community only
+          (* (any ?- ?_ ?. "A-Z" "a-z" "0-9" )))
+        ?@
+        (group-n 3 ; = domain only
+          (* (not (any "\n" "\t" " ")))))
+      (| "'" word-boundary))
+  "Regex matching a lemmy community, ie \"!community@instance.com\".")
 
 (defvar lem-ui-image-formats
   '("png" "jpg" "jpeg" "webp")
@@ -1165,17 +1180,19 @@ INDENT is a number, the level of indent for the item."
     (setq str (lem-ui-propertize-handles str json))
     str))
 
+;; TODO: lem-ui-propertize-communities
 (defun lem-ui-propertize-handles (str json)
   "Propertize any handles in STR as links using JSON.
 This is for simple @user or @user@instance.com handles not
 processed by the server."
-  ;; NB: the web client doesn't propertize these kinds of handles!
+  ;; NB: the web client doesn't propertize these kinds of handles
+  ;; but jerboa does.
   (with-temp-buffer
     (switch-to-buffer (current-buffer))
     (insert str)
     (goto-char (point-min))
     (save-match-data
-      (while (re-search-forward fedi-post-handle-regex nil :no-error)
+      (while (re-search-forward lem-ui-handle-regex nil :no-error)
         (let* ((username
                 (buffer-substring-no-properties
                  (match-beginning 2)
