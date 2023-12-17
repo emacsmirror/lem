@@ -36,6 +36,7 @@
 (require 'markdown-mode)
 (require 'hierarchy)
 (require 'vtable)
+(require 'fedi-post) ; handle regex
 
 (require 'lem-api)
 
@@ -47,6 +48,7 @@
 (defvar lem-user-items-types)
 (defvar lem-items-types)
 (defvar lem-search-types)
+(defvar lem-inbox-types)
 (defvar lem-user-id)
 
 (defvar-local lem-ui-post-community-mods-ids nil
@@ -106,7 +108,22 @@ Used for pagination.")
    "\\(?2:\\(news\\(post\\)?:\\|mailto:\\|file:\\|\\(ftp\\|https?\\|telnet\\|gopher\\|www\\|wais\\)://\\)" ; uri prefix
    "[^ )\n\t]*\\)" ; any old thing, i.e. we allow invalid/unwise chars. but no )
    "\\(/\\)?" ; optional ending slash? ; TODO: some are caught, some are not
-   "\\b"))
+   "\\b")
+  "Regex matching a URL.")
+
+(defvar lem-ui-handle-regex fedi-post-handle-regex)
+
+(defvar lem-ui-community-regex
+  (rx (| (any ?\( "\n" "\t "" ") bol) ; preceding things
+      (group-n 1 ; = commuinty with !
+        ?!
+        (group-n 2 ; = community only
+          (* (any ?- ?_ ?. "A-Z" "a-z" "0-9" )))
+        ?@
+        (group-n 3 ; = domain only
+          (* (not (any "\n" "\t" " ")))))
+      (| "'" word-boundary))
+  "Regex matching a lemmy community, ie \"!community@instance.com\".")
 
 (defvar lem-ui-image-formats
   '("png" "jpg" "jpeg" "webp")
@@ -146,13 +163,13 @@ font settings do not support it."
 
 (defun lem-ui-make-fun (prefix suffix)
   "Make a function from PREFIX, a string, and SUFFIX, a symbol."
-  (string-to-symbol
+  (intern
    (concat prefix
            (symbol-name suffix))))
 
 (defun lem-ui-hyphen-to-underscore (symbol)
   "Replace any - with _ in SYMBOL."
-  (string-to-symbol
+  (intern
    (string-replace "-" "_"
                    (symbol-name symbol))))
 
@@ -494,12 +511,6 @@ SIDEBAR."
            'search)
           ((eq view-fun 'lem-ui-view-saved-items)
            'saved-items)
-          ;; ((eq view-fun 'lem-ui-view-replies)
-          ;;  'replies)
-          ;; ((eq view-fun 'lem-ui-view-mentions)
-          ;;  'mentions)
-          ;; ((eq view-fun 'lem-ui-view-private-messages)
-          ;;  'private-messages)
           ((eq view-fun 'lem-ui-view-inbox)
            'inbox))))
 
@@ -778,6 +789,67 @@ LIMIT."
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)))) ; limit
 
+(defun lem-ui-do-feature (id arg type str)
+  "Call `lem-feature-post' and handle the response.
+ID, ARG TYPE are for that function.
+STR is for message."
+  ;; TODO: we need a general response handler!
+  (let* ((resp (lem-feature-post id arg type)))
+    (if (stringp resp)
+        (message "%s" resp) ; TODO: actually handle server error
+      (when (alist-get 'post_view resp)
+        (message "Post %s!" str)))))
+
+(defun lem-ui-feature-post (&optional unfeature)
+  "Feature (pin) a post, either to its instance or community.
+UNFEATURE means we are unfeaturing a post."
+  (interactive)
+  (lem-ui-with-item
+      (let* ((json (lem-ui--property 'json))
+             (post (alist-get 'post json))
+             (id (lem-ui--property 'id))
+             (mod-p (alist-get 'creator_is_moderator json))
+             (admin-p (alist-get 'creator_is_admin json))
+             (feat-comm (alist-get 'featured_community post))
+             (feat-loc (alist-get 'featured_local post))
+             ;; TODO: annotate Local with "instance":
+             (feat-type
+              (if unfeature
+                  (cond ((eq t feat-comm)
+                         "Community")
+                        ((eq t feat-loc)
+                         "Local")
+                        (t
+                         (user-error "Post not featured?")))
+                (completing-read "Feature type: "
+                                 '("Local" "Community"))))
+             (feat-arg (if unfeature :json-false t))
+             (feat-str (if unfeature "unfeatured" "featured")))
+        (if (equal feat-type "Community")
+            ;; TODO: refactor conds:
+            (cond (unfeature
+                   (lem-ui-do-feature id feat-arg feat-type feat-str))
+                  ((not (eq t mod-p))
+                   (user-error "You need to be a mod to feature to community"))
+                  ((eq t feat-comm)
+                   (user-error "Post already featured?"))
+                  (t
+                   (lem-ui-do-feature id feat-arg feat-type feat-str)))
+          (cond (unfeature
+                 (lem-ui-do-feature id feat-arg feat-type feat-str))
+                ((not (eq t admin-p))
+                 (user-error "You need to be an admin to feature to instance"))
+                ((eq t feat-loc)
+                 (user-error "Post already featured?"))
+                (t
+                 (lem-ui-do-feature id feat-arg feat-type feat-str)))))
+    :number))
+
+(defun lem-ui-unfeature-post ()
+  "Unfeature (unpin) post at point."
+  (interactive)
+  (lem-ui-feature-post :unfeature))
+
 ;;; LINKS
 
 (defvar lem-ui--link-map
@@ -882,7 +954,7 @@ START and END are the boundaries of the link in the post body."
 ;;; BYLINES
 
 (defun lem-ui-propertize-box (str color obj)
-  "Propertize STR with box and `font-lock-keyword-face'."
+  "Propertize STR with COLOR, box, `font-lock-keyword-face' and OBJ help-echo."
   (propertize str
               'face `(:foreground ,color :box t)
               'help-echo obj))
@@ -1049,7 +1121,7 @@ NO-SHORTEN means display full URL, else only the domain is shown."
 (defun lem-ui-mdize-plain-urls ()
   "Markdown-ize any plain string URLs found in current buffer."
   ;; FIXME: this doesn't rly work with ```verbatim``` in md
-  ;; FIXME: this must not break any md, otherwise `markdown-standalone' may
+  ;; NB: this must not break any md, otherwise `markdown-standalone' may
   ;; hang!
   (while (re-search-forward lem-ui-url-regex nil :no-error)
     (unless
@@ -1090,12 +1162,11 @@ INDENT is a number, the level of indent for the item."
       (let ((replaced (string-replace "@" "\\@" (buffer-string))))
         (erase-buffer)
         (insert replaced)
-        ;; if our replacements broke markdown, this may not return.
-        ;; ideally we would check for errors before this runs:
         (markdown-standalone buf))
       (with-current-buffer buf
         (let ((shr-width (when indent
-                           (- (window-width) (+ 1 indent)))))
+                           (- (window-width) (+ 1 indent))))
+              (shr-discard-aria-hidden t)) ; for pandoc md image output
           ;; shr render:
           (shr-render-buffer (current-buffer))))
       (with-current-buffer "*html*" ; created by shr
@@ -1106,7 +1177,48 @@ INDENT is a number, the level of indent for the item."
         (setq str (buffer-substring (point) (point-max)))
         (kill-buffer-and-window)        ; shr's *html*
         (kill-buffer buf)))             ; our md
+    (setq str (lem-ui-propertize-items str json 'handle))
+    (setq str (lem-ui-propertize-items str json 'community))
     str))
+
+(defun lem-ui-propertize-items (str json type)
+  "Propertize any items of TYPE in STR as links using JSON.
+Type is a symbol, either handle or community.
+Communities are of the form \"!community@intance.com.\""
+  (with-temp-buffer
+    (switch-to-buffer (current-buffer))
+    (insert str)
+    (goto-char (point-min))
+    (save-match-data
+      (while (re-search-forward (if (eq type 'community)
+                                    lem-ui-community-regex
+                                  lem-ui-handle-regex)
+                                nil :no-error)
+        (let* ((item (buffer-substring-no-properties (match-beginning 2)
+                                                     (match-end 2)))
+               (beg (match-beginning 1))
+               (end (match-end 1))
+               (domain (if (match-beginning 3)
+                           (buffer-substring-no-properties (match-beginning 3)
+                                                           (match-end 3))))
+               (ap-link (url-generic-parse-url (alist-get 'ap_id json)))
+               (instance (or domain (url-domain ap-link)))
+               (link (concat "https://" instance
+                             (if (eq type 'community) "/c/" "/u/")
+                             item)))
+          (add-text-properties beg
+                               end
+                               `(face '(shr-text shr-link)
+                                      lem-tab-stop ,type
+                                      mouse-face highlight
+                                      shr-tabstop t
+                                      shr-url ,link
+                                      button t
+                                      category shr
+                                      follow-link t
+                                      help-echo ,link
+                                      keymap ,lem-ui--link-map)))))
+    (buffer-string)))
 
 (defun lem-ui--set-mods (community-id)
   "Set `lem-ui-post-community-mods-ids'.
@@ -1145,8 +1257,8 @@ SORT must be a member of `lem-sort-types'."
                             .post.published
                             (when community .community.name)
                             (when community .community.actor_id)
-                            .post.featured_community ; pinned for community
-                            ;; the other option is .post.featured_local
+                            (or (eq t .post.featured_community) ; pinned community
+                                (eq t .post.featured_local)) ; pinned instance
                             nil admin-p mod-p del-p handle)
          "\n"
          (if .post.body
@@ -1175,6 +1287,7 @@ SORT must be a member of `lem-sort-types'."
              (ext (car (last (split-string filename "\\.")))))
         (if (member ext lem-ui-image-formats)
             (let ((html (concat "<img src=\"" .post.url "\" alt=\"*\" />"))
+                  (shr-discard-aria-hidden t) ; for pandoc md image output
                   rendered)
               (with-temp-buffer
                 (insert html)
@@ -1386,7 +1499,6 @@ LIMIT is the max results to return."
   (let* ((json (lem-list-communities (or type "All")
                                      (or sort "TopAll")
                                      (or limit "50")))
-         ;; (list (alist-get 'communities json))
          (buf "*lem-communities*"))
     (lem-ui-with-buffer buf 'lem-mode nil nil
       (lem-ui-render-instance (lem-get-instance) :stats nil)
@@ -1470,7 +1582,7 @@ LIMIT is the max results to return."
                       .community.id))))
 
 (defun lem-ui-do-community-completing (prompt-str action-fun communities-fun)
-  "Read a subscribed community with PROMPT-STR and call ACTION-FUN on it."
+  "Fetch communities with COMMUNITIES-FUN and PROMPT-STR, then call ACTION-FUN."
   (let* ((communities (funcall communities-fun))
          (subs (lem-ui--communities-alist communities))
          (completion-extra-properties
@@ -1510,7 +1622,6 @@ SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return.
 PAGE is the page number of items to display, a string."
   (let* ((community (lem-get-community id))
-         ;; (view (alist-get 'community_view community))
          (buf "*lem-community*")
          ;; in case we set community posts, then switch to comments:
          (sort (if (equal item "comments")
@@ -1668,7 +1779,7 @@ And optionally for instance COMMUNITIES."
   (interactive)
   (lem-ui-view-replies :unread))
 
-(defun lem-ui-view-replies (&optional unread)
+(defun lem-ui-view-replies (&optional _unread)
   "View reply comments to the current user.
 Optionally only view UNREAD items."
   (interactive)
@@ -1690,7 +1801,7 @@ Optionally only view UNREAD items."
   (interactive)
   (lem-mark-all-read))
 
-(defun lem-ui-view-mentions (&optional unread)
+(defun lem-ui-view-mentions (&optional _unread)
   "View reply comments to the current user.
 Optionally only view UNREAD items."
   (interactive)
@@ -1704,7 +1815,7 @@ Optionally only view UNREAD items."
                (lem-ui-format-comment comment)
                "\n")))
 
-(defun lem-ui-view-private-messages (&optional unread)
+(defun lem-ui-view-private-messages (&optional _unread)
   "View reply comments to the current user.
 Optionally only view UNREAD items."
   (interactive)
@@ -1955,7 +2066,6 @@ DETAILS means display what community and post the comment is linked to."
        'lem-type (if reply 'comment-reply 'comment)
        'line-prefix indent-str))))
 
-;; TODO: refactor format funs? will let-alist dot notation work?
 (defun lem-ui-format-private-message (private-message &optional indent)
   "Format PRIVATE-MESSAGE, optionally with INDENT amount of indent bars."
   (let-alist private-message
@@ -1991,7 +2101,6 @@ DETAILS means display what community and post the comment is linked to."
 POST-ID is the post's id.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of items to return."
-  ;; TODO: TYPE_ default:
   (let* ((comments (lem-api-get-post-comments
                     post-id "All" sort (or limit lem-ui-comments-limit))))
     (if (eq 'string (type-of comments))
@@ -2143,6 +2252,9 @@ TYPE should be either :unlike, :dislike, or nil to like."
                 (eq item 'comment-reply))
             (progn
               (let* ((vote (funcall fun id score))
+                     (item (if (eq item 'comment-reply)
+                               'comment
+                             item))
                      (obj (intern (concat (symbol-name item) "_view")))
                      (i (alist-get obj vote))
                      (saved (alist-get 'saved i))
@@ -2207,7 +2319,10 @@ TYPE should be either :unlike, :dislike, or nil to like."
        (when (eq t .is_admin)
          (lem-ui-propertize-admin-box))
        ;; .person.actor_id
-       "\n"
+       (if .person.bio
+           (concat "\n"
+                   (lem-ui-render-body .person.bio))
+         "\n")
        (lem-ui-symbol 'direct) " " ; FIXME: we need a post symbol
        (number-to-string .counts.post_count) " | "
        (lem-ui-symbol 'reply) " "
@@ -2228,7 +2343,7 @@ TYPE should be either :unlike, :dislike, or nil to like."
   (cl-loop for community in json
            do (lem-ui-render-community community nil nil :subscription)))
 
-(defun lem-ui-view-user (id &optional item sort limit current-user)
+(defun lem-ui-view-user (id &optional item sort limit)
   "View user with ID.
 ITEM must be a member of `lem-user-items-types'.
 SORT must be a member of `lem-sort-types' or if item is
@@ -2251,11 +2366,6 @@ CURRENT-USER means we are displaying the current user's profile."
          (bindings (lem-ui-view-options 'user)))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
       ;; we have this on the 's' binding now so no need:
-      ;; (when current-user
-      ;;   (let-alist current-user
-      ;;     (lem-ui-render-user .local_user_view)
-      ;;     (insert "Subscribed communities:\n")
-      ;;     (lem-ui-render-user-subscriptions .follows)))
       (let-alist user-json
         (lem-ui-render-user .person_view)
         (cond ((equal item "posts")
@@ -2280,8 +2390,7 @@ CURRENT-USER means we are displaying the current user's profile."
 (defun lem-ui-view-own-profile ()
   "View profile of the current user."
   (interactive)
-  (let* ((current-user (lem-api-get-current-user)))
-    (lem-ui-view-user lem-user-id nil nil nil current-user)))
+  (lem-ui-view-user lem-user-id))
 
 (defun lem-ui-view-item-user ()
   "View user of item at point."
@@ -2304,7 +2413,8 @@ CURRENT-USER means we are displaying the current user's profile."
         (lem-send-private-message message id))))
 
 (defun lem-ui-block-user (&optional unblock)
-  "Block author of item at point."
+  "Block author of item at point.
+If UNBLOCK, unblock them instead."
   (interactive)
   (lem-ui-with-item
       (let* ((id (lem-ui--property 'creator-id))
@@ -2319,7 +2429,7 @@ CURRENT-USER means we are displaying the current user's profile."
         (message "User %s %s!" name b-str))))
 
 (defun lem-ui-unblock-user ()
-  ""
+  "."
   ;; TODO: completing-read blocks!
   (lem-ui-block-user :unblock))
 
@@ -2333,12 +2443,29 @@ It's a cheap hack, alas."
     (let (match
           (url-user-agent lem-user-agent))
       (while (setq match (text-property-search-forward 'image-url))
-        (goto-char (prop-match-beginning match))
-        ;; (re-search-forward "\*" nil :no-error) ; * is just for no alt-text
-        ;; (backward-char 1)
-        (progn (shr-insert-image)
-               (delete-char 1))
-        (goto-char (prop-match-end match))))))
+        (let ((beg (prop-match-beginning match))
+              (end (prop-match-end match)))
+          (goto-char beg)
+          (lem-shr-insert-image beg end)
+          (goto-char end))))))
+
+(defun lem-shr-insert-image (start end)
+  "Insert the image under point into the buffer.
+START and END mark the region to replace."
+  ;; we don't assume we have a * to replace
+  (interactive) ; does this need to be a cmd? (only if we make image display optional like in shr.el?)
+  (let ((url (get-text-property (point) 'image-url))
+        (shr-max-image-proportion 0.4 ))
+    (if (not url)
+	(message "No image under point")
+      ;; (message "Inserting %s..." url) ; shut up shr.el!
+      (url-retrieve url #'shr-image-fetched
+		    (list (current-buffer)
+                          start end) ;) ; don't assume we have *
+                    ;; `(:width 400
+                    ;; :height 400)) ; if ever needed?
+                    ;; (1- (point)) (point-marker)) ; old value
+                    t))))
 
 (defun lem-ui-copy-item-url ()
   "Copy the URL (ap_id) of the post or comment at point."
@@ -2351,6 +2478,20 @@ It's a cheap hack, alas."
         (if item
             (progn (kill-new url)
                    (message "url %s copied!" url))))))
+
+(defun lem-ui-print-json ()
+  "Fetch the JSON of item at point and pretty print it in a new buffer."
+  (interactive)
+  (let ((json (lem-ui-with-item
+                  (lem-ui--property 'json)))
+        (buf (get-buffer-create "*lem-json*")))
+    (with-current-buffer buf
+      (erase-buffer)
+      (emacs-lisp-mode)
+      (insert (prin1-to-string json))
+      (pp-buffer)
+      (goto-char (point-min))
+      (switch-to-buffer-other-window buf))))
 
 (provide 'lem-ui)
 ;;; lem-ui.el ends here

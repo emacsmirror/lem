@@ -156,6 +156,7 @@ I don't have a tech worker's income, so even a small tip would help out.
 | d         | lem-ui-delete-post-or-comment          | Delete post or comment at point.                                     |
 |           | lem-ui-dislike-item                    | Dislike (downvote) item at point.                                    |
 | e         | lem-ui-edit-comment                    | Edit comment at point if possible.                                   |
+|           | lem-ui-feature-post                    | Feature (pin) a post, either to its instance or community.           |
 |           | lem-ui-jump-to-moderated               | Prompt for a subscribed community and view it.                       |
 | s         | lem-ui-jump-to-subscribed              | Prompt for a subscribed community and view it.                       |
 |           | lem-ui-like-item                       | Like (upvote) item at point.                                         |
@@ -175,6 +176,7 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-subscribe-to-community          | Subscribe to a community, using ID or prompt for a handle.           |
 | S         | lem-ui-subscribe-to-community-at-point | Subscribe to community at point.                                     |
 | C-c C-v   | lem-ui-toggle-posts-comments           | Switch between displaying posts or comments.                         |
+|           | lem-ui-unfeature-post                  |                                                                      |
 |           | lem-ui-unlike-item                     | Unlike item at point.                                                |
 |           | lem-ui-unsave-item                     | Unsave item at point.                                                |
 |           | lem-ui-unsubscribe-from-community      | Prompt for a subscribed community and unsubscribe from it.           |
