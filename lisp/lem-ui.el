@@ -119,9 +119,9 @@ Used for pagination.")
         ?!
         (group-n 2 ; = community only
           (* (any ?- ?_ ?. "A-Z" "a-z" "0-9" )))
-        ?@
-        (group-n 3 ; = domain only
-          (* (not (any "\n" "\t" " ")))))
+        (? ?@ ; = optional for lem-post.el
+           (group-n 3 ; = domain only
+             (* (not (any "\n" "\t" " "))))))
       (| "'" word-boundary))
   "Regex matching a lemmy community, ie \"!community@instance.com\".")
 
