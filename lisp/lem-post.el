@@ -71,12 +71,6 @@
 (defvar-local lem-post-comment-post-id nil)
 (defvar-local lem-post-comment-comment-id nil)
 
-(defvar lem-post-community-regex
-  (rx (| (any ?\( "\n" "\t "" ") bol) ; preceding things
-      (group-n 2 (+ ?! (* (any ?- ?_ ?. "A-Z" "a-z" "0-9" ))) ; community
-               (? ?@ (* (not (any "\n" "\t" " "))))) ; optional domain
-      (| "'" word-boundary)))
-
 (defgroup lem-post
   nil
   "Posting for lem.el."
@@ -312,7 +306,7 @@ Prefix is either \"@\" or \"!\"."
 
 (defun lem-post--comms-capf ()
   "Build a communities completion backend for `completion-at-point-functions'."
-  (fedi-post--return-capf lem-post-community-regex
+  (fedi-post--return-capf lem-ui-community-regex
                           #'lem-post--comms-fun
                           #'lem-post--mentions-annot-fun
                           nil ; #'lem-post--mentions-affix-fun
