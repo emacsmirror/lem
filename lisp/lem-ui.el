@@ -1106,7 +1106,7 @@ NO-SHORTEN means display full URL, else only the domain is shown."
 (defun lem-ui-mdize-plain-urls ()
   "Markdown-ize any plain string URLs found in current buffer."
   ;; FIXME: this doesn't rly work with ```verbatim``` in md
-  ;; FIXME: this must not break any md, otherwise `markdown-standalone' may
+  ;; NB: this must not break any md, otherwise `markdown-standalone' may
   ;; hang!
   (while (re-search-forward lem-ui-url-regex nil :no-error)
     (unless
@@ -1169,6 +1169,7 @@ INDENT is a number, the level of indent for the item."
   "Propertize any handles in STR as links using JSON.
 This is for simple @user or @user@instance.com handles not
 processed by the server."
+  ;; NB: the web client doesn't propertize these kinds of handles!
   (with-temp-buffer
     (switch-to-buffer (current-buffer))
     (insert str)
