@@ -142,7 +142,7 @@ Used for pagination.")
     (favourite . ("⭐" . "F"))
     (bookmark  . ("🔖" . "K"))
     (media     . ("📹" . "[media]"))
-    (verified  . ("" . "V"))
+    (verified  . ("✓" . "V"))
     (locked    . ("🔒" . "[locked]"))
     (private   . ("🔒" . "[followers]"))
     (direct    . ("✉" . "[direct]"))
@@ -1475,13 +1475,16 @@ LIMIT is the max results to return."
               (propertize .community.title
                           'id .community.id
                           'type 'lem-tl-button
+                          ;; interrupted by :row-colors below:
+                          ;; 'face `(:inherit warning :underline t)
                           'help-echo .community.title)
               .counts.subscribers
               .counts.users_active_month .counts.posts
               (if (equal "Subscribed" .subscribed)
-                  "*"
+                  (or "✓" "*")
                 "")
-              (propertize .community.actor_id
+              (propertize (url-host
+                           (url-generic-parse-url .community.actor_id))
                           'help-echo .community.actor_id))
              ;; don't try to propertize numbers:
              collect (if (stringp i)
@@ -1504,7 +1507,7 @@ LIMIT is the max results to return."
       (lem-ui-render-instance (lem-get-instance) :stats nil)
       (make-vtable
        :use-header-line nil
-       :columns '((:name "Name" :max-width 30 :width "30%")
+       :columns '((:name "Name" :max-width 30 :width "35%")
                   (:name "Members" :width "7%")
                   (:name "Monthly users" :width "7%")
                   (:name "Posts" :width "7%")
