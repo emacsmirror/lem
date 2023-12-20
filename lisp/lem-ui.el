@@ -2209,6 +2209,8 @@ ITEMS should be an alist of the form '\=(plural-name ((items-list)))'."
   (let ((item (lem-ui-get-buffer-spec :item))
         (view-fun (lem-ui-get-buffer-spec :view-fun)))
     (cond ((eq view-fun 'lem-ui-view-post)
+           ;; nb max-depth doesn't work with pagination yet:
+           ;; https://github.com/LemmyNet/lemmy/issues/3585
            (lem-ui-more-items 'comment 'lem-api-get-post-comments
                               'lem-ui--build-and-render-comments-hierarchy))
           ((eq view-fun 'lem-ui-view-community)
