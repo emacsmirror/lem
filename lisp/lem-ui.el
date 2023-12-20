@@ -1537,8 +1537,7 @@ LIMIT is the max results to return."
                           ;; interrupted by :row-colors below:
                           'face 'lem-ui-community-face
                           'mouse-face 'highlight
-                          'help-echo "View community"
-                          )
+                          'help-echo "View community")
               .counts.subscribers
               .counts.users_active_month .counts.posts
               (if (equal "Subscribed" .subscribed)
@@ -2096,38 +2095,28 @@ Parent-fun for `hierarchy-add-tree'."
            ))))))
 
 (defvar lem-ui-indent-colors
-  '("red3"
-    "orange3"
-    "green3"
-    "yellow3"
-    "blue3"
-    "red3"
-    "orange3"
-    "green3"
-    "yellow3"
-    "blue3"
-    "red3"
-    "orange3"
-    "green3"
-    "yellow3"
-    "blue3")
+  '("red3" "orange3" "green3" "yellow3" "blue3")
   "List of colors for indent bars, subsequent items repeat.")
 
-;; (defun lem-ui-indent-colors-list ()
-;;   "Return a circular list made from `lem-ui-indent-colors'."
-;;   (nconc lem-ui-indent-colors lem-ui-indent-colors))
+(defun lem-ui-cycle-colors (index)
+  "Given INDEX, a number, cycle through `lem-ui-indent-colors'."
+  (nth
+   (mod index
+        (length
+         lem-ui-indent-colors))
+   lem-ui-indent-colors))
 
 (defun lem-ui--make-colored-indent-str (indent)
   "INDENT is the number of indent bars to return."
   (let ((str (make-string indent
                           (string-to-char
                            (lem-ui-symbol 'reply-bar)))))
-    ;; (colors (lem-ui-indent-colors-list)))
-    (dotimes (index indent str)
+    (dotimes (index indent)
       (add-text-properties
        index (1+ index)
-       `(face (:foreground ,(nth index lem-ui-indent-colors)))
-       str))))
+       `(face (:foreground ,(lem-ui-cycle-colors index)))
+       str))
+    str))
 
 (defun lem-ui-format-comment (comment &optional indent reply details)
   "Format COMMENT, optionally with INDENT amount of indent bars.
