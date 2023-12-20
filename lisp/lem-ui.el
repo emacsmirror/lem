@@ -1471,6 +1471,47 @@ LIMIT is the max results to return."
     (when column
       (vtable-goto-column column))))
 
+
+;; unfuck vtable's case-sensitive sorting:
+(defun lem-ui-string> (s1 s2)
+  "Case insensitive `string>', which compares S1 and S2."
+  (string> (downcase s1) (downcase s2)))
+
+(defun lem-ui-string< (s1 s2)
+  "Case insensitive `string<', which compares S1 and S2."
+  (string> (downcase s2) (downcase s1)))
+
+(defvar vtable-string-greater #'lem-ui-string>)
+(defvar vtable-string-lesser #'lem-ui-string<)
+
+;; TODO: rename?
+(defun vtable--sort (table)
+  (pcase-dolist (`(,index . ,direction) (vtable-sort-by table))
+    (let ((cache (vtable--cache table))
+          (numerical (vtable-column--numerical
+                      (elt (vtable-columns table) index)))
+          (numcomp (if (eq direction 'descend)
+                       #'> #'<))
+          (stringcomp
+           (if (eq direction 'descend)
+               vtable-string-greater
+             vtable-string-lesser)))
+      (setcar cache
+              (sort (car cache)
+                    (lambda (e1 e2)
+                      (let ((c1 (elt e1 (1+ index)))
+                            (c2 (elt e2 (1+ index))))
+                        (if numerical
+                            (funcall numcomp (car c1) (car c2))
+                          (funcall
+                           stringcomp
+                           (if (stringp (car c1))
+                               (car c1)
+                             (format "%s" (car c1)))
+                           (if (stringp (car c2))
+                               (car c2)
+                             (format "%s" (car c2))))))))))))
+
 (define-button-type 'lem-tl-button
   ;; few props work here, so we propertize again below:
   ;; 'follow-link t
