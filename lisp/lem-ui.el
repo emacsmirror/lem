@@ -2094,6 +2094,40 @@ Parent-fun for `hierarchy-add-tree'."
            ;; props
            ))))))
 
+(defvar lem-ui-indent-colors
+  '("red3"
+    "orange3"
+    "green3"
+    "yellow3"
+    "blue3"
+    "red3"
+    "orange3"
+    "green3"
+    "yellow3"
+    "blue3"
+    "red3"
+    "orange3"
+    "green3"
+    "yellow3"
+    "blue3")
+  "List of colors for indent bars, subsequent items repeat.")
+
+;; (defun lem-ui-indent-colors-list ()
+;;   "Return a circular list made from `lem-ui-indent-colors'."
+;;   (nconc lem-ui-indent-colors lem-ui-indent-colors))
+
+(defun lem-ui--make-colored-indent-str (indent)
+  "INDENT is the number of indent bars to return."
+  (let ((str (make-string indent
+                          (string-to-char
+                           (lem-ui-symbol 'reply-bar)))))
+    ;; (colors (lem-ui-indent-colors-list)))
+    (dotimes (index indent str)
+      (add-text-properties
+       index (1+ index)
+       `(face (:foreground ,(nth index lem-ui-indent-colors)))
+       str))))
+
 (defun lem-ui-format-comment (comment &optional indent reply details)
   "Format COMMENT, optionally with INDENT amount of indent bars.
 REPLY means it is a comment-reply object.
@@ -2105,8 +2139,7 @@ DETAILS means display what community and post the comment is linked to."
                                          (alist-get 'comment comment)
                                          indent)))
           (indent-str (when indent
-                        (make-string indent (string-to-char
-                                             (lem-ui-symbol 'reply-bar)))))
+                        (lem-ui--make-colored-indent-str indent)))
           (handle (lem-ui--handle-from-user-url .creator.actor_id))
           (post-title (when details .post.name))
           (community-name (when details (or .community.title
