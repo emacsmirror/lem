@@ -585,19 +585,32 @@ Returns a comment_view, recipient_ids, and form_id."
 
 (lem-def-request "get" "get-comments" "comment/list"
   (&optional post-id parent-id type- sort limit page
-             community-id community-name saved-only)
+             community-id community-name saved-only max-depth)
   "SORT must be a member of `lem-comment-sort-types'.
 LISTING-TYPE must be member of `lem-listing-types'.
 LIMIT is the amount of results to return.
 COMMUNITY-ID and COMMUNITY-NAME are the community to get posts from.
 Without any id or name, get instance comments."
   (post-id parent-id type- sort limit page
-           community-id community-name)
+           community-id community-name max-depth)
   (when saved-only
     '(("saved_only" . "true"))))
 
 ;; (lem-get-comments "1694468" nil nil "Hot")
 ;; (lem-get-comments nil nil nil "Hot")
+
+;; community_id? DONE
+;; community_name? DONE
+;; disliked_only? TODO
+;; liked_only? TODO
+;; limit? DONE
+;; max_depth? TODO
+;; page? DONE
+;; parent_id? DONE
+;; post_id? DONE
+;; saved_only? DONE
+;; sort? DONE
+;; type_? DONE
 
 (defun lem-api-get-community-comments (community-id
                                        &optional type sort limit page)
@@ -605,14 +618,24 @@ Without any id or name, get instance comments."
 TYPE, SORT, LIMIT and PAGE are all for `lem-get-comments'."
   (lem-get-comments nil nil type sort limit page community-id))
 
-(defun lem-api-get-post-comments (post-id &optional type sort limit page saved-only)
+(defvar lem-api-comments-max-depth 300
+  ;; server currently has a hard max of 300.
+  ;; https://github.com/LemmyNet/lemmy/pull/3306/files
+  ;; but this will be changed in future.
+  "Value for max_depth arg when fetching post comments.")
+
+(defun lem-api-get-post-comments (post-id &optional type sort limit
+                                          page saved-only max-depth)
   "Get comments for POST-ID.
 TYPE must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return.
 PAGE is a number, indexed at 1.
-SAVED-ONLY means to only return saved items."
-  (lem-get-comments post-id nil type sort limit page nil nil saved-only))
+SAVED-ONLY means to only return saved items.
+MAX-DEPTH is a number, the maximum depth of comments to fetch in
+the tree. See `lem-api-comments-max-depth'."
+  (lem-get-comments post-id nil type sort limit page nil nil
+                    saved-only (or max-depth lem-api-comments-max-depth))) ; max-depth default
 
 ;; (lem-get-post-comments "1485706" "All")
 ;; (lem-api-get-post-comments "44280" "All")

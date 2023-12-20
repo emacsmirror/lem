@@ -58,6 +58,12 @@
 (autoload 'lem-comment-sort-type-p "lem.el")
 (autoload 'lem-sort-type-p "lem.el")
 
+(defface lem-ui-user-face '((t :inherit warning :underline t))
+  "Face user displaying usernames.")
+
+(defface lem-ui-community-face '((t :inherit success :underline t))
+  "Face for displaying communities.")
+
 ;;; HIERARCHY PATCHES
 
 (defun lem--hierarchy-print (hierarchy &optional to-string)
@@ -142,7 +148,7 @@ Used for pagination.")
     (favourite . ("⭐" . "F"))
     (bookmark  . ("🔖" . "K"))
     (media     . ("📹" . "[media]"))
-    (verified  . ("" . "V"))
+    (verified  . ("✓" . "V"))
     (locked    . ("🔒" . "[locked]"))
     (private   . ("🔒" . "[followers]"))
     (direct    . ("✉" . "[direct]"))
@@ -443,7 +449,7 @@ STR is the preceding string to insert."
                                (cl-second x)
                                'user
                                (cl-third x)
-                               'warning))
+                               'lem-ui-user-face))
     list " | ")))
 
 (defun lem-ui-render-instance (instance &optional stats sidebar)
@@ -903,7 +909,7 @@ HELP-ECHO is a help-echo string."
               'mouse-face 'highlight
               'id id
               'lem-tab-stop type
-              'face `(:inherit ,face :underline t)
+              'face face
               'help-echo help-echo))
 
 (defun lem-ui--find-property-range (property start-point
@@ -997,7 +1003,8 @@ comment display."
       (if url
           (concat url "\n")
         "")
-      (lem-ui--propertize-link username nil 'user nil 'warning handle)
+      (lem-ui--propertize-link username nil 'user
+                               nil 'lem-ui-user-face handle)
       (when op-p
         (concat " "
                 (lem-ui-propertize-box "OP" "green3" "original poster")))
@@ -1014,7 +1021,8 @@ comment display."
         (concat
          (propertize " to "
                      'face font-lock-comment-face)
-         (lem-ui--propertize-link community nil 'community nil 'success)))
+         (lem-ui--propertize-link community nil 'community
+                                  nil 'lem-ui-community-face)))
       (propertize
        (concat
         " | "
@@ -1399,7 +1407,8 @@ LIMIT is the max results to return."
   "}" #'vtable-widen-current-column
   "g" #'lem-vtable-revert-command
   "M-<left>" #'vtable-previous-column
-  "M-<right>" #'vtable-next-column)
+  "M-<right>" #'vtable-next-column
+  "<mouse-2>" 'lem-ui-view-thing-at-point)
 
 (defun lem-vtable-sort-by-current-column ()
   "Sort the table under point by the column under point."
@@ -1462,10 +1471,56 @@ LIMIT is the max results to return."
     (when column
       (vtable-goto-column column))))
 
+
+;; unfuck vtable's case-sensitive sorting:
+(defun lem-ui-string> (s1 s2)
+  "Case insensitive `string>', which compares S1 and S2."
+  (string> (downcase s1) (downcase s2)))
+
+(defun lem-ui-string< (s1 s2)
+  "Case insensitive `string<', which compares S1 and S2."
+  (string> (downcase s2) (downcase s1)))
+
+(defvar vtable-string-greater #'lem-ui-string>)
+(defvar vtable-string-lesser #'lem-ui-string<)
+
+;; TODO: rename?
+(defun vtable--sort (table)
+  (pcase-dolist (`(,index . ,direction) (vtable-sort-by table))
+    (let ((cache (vtable--cache table))
+          (numerical (vtable-column--numerical
+                      (elt (vtable-columns table) index)))
+          (numcomp (if (eq direction 'descend)
+                       #'> #'<))
+          (stringcomp
+           (if (eq direction 'descend)
+               vtable-string-greater
+             vtable-string-lesser)))
+      (setcar cache
+              (sort (car cache)
+                    (lambda (e1 e2)
+                      (let ((c1 (elt e1 (1+ index)))
+                            (c2 (elt e2 (1+ index))))
+                        (if numerical
+                            (funcall numcomp (car c1) (car c2))
+                          (funcall
+                           stringcomp
+                           (if (stringp (car c1))
+                               (car c1)
+                             (format "%s" (car c1)))
+                           (if (stringp (car c2))
+                               (car c2)
+                             (format "%s" (car c2))))))))))))
+
 (define-button-type 'lem-tl-button
-  'follow-link t
-  'help-echo "View community"
-  'action #'lem-ui-view-community-at-point-tl)
+  ;; few props work here, so we propertize again below:
+  ;; 'follow-link t
+  ;; 'category 'shr
+  ;; 'face '(:inherit warning :unterline t)
+  ;; 'help-echo "View community"
+  ;; 'mouse-face 'highlight
+  ;; 'action #'lem-ui-view-community-at-point-tl)
+  )
 
 (defun lem-ui-return-community-obj (community)
   "Return a vtable object for COMMUNITY."
@@ -1474,15 +1529,31 @@ LIMIT is the max results to return."
              (list
               (propertize .community.title
                           'id .community.id
+                          'follow-link t
                           'type 'lem-tl-button
-                          'help-echo .community.title)
+                          'category 'shr
+                          'shr-url .community.actor_id
+                          ;; interrupted by :row-colors below:
+                          'face 'lem-ui-community-face
+                          'mouse-face 'highlight
+                          'help-echo "View community"
+                          )
               .counts.subscribers
               .counts.users_active_month .counts.posts
               (if (equal "Subscribed" .subscribed)
-                  "*"
+                  (if (char-displayable-p (string-to-char "✓"))
+                      "✓"
+                    "*")
                 "")
-              (propertize .community.actor_id
-                          'help-echo .community.actor_id))
+              (propertize (url-host
+                           (url-generic-parse-url .community.actor_id))
+                          'help-echo .community.actor_id
+                          'id .community.id
+                          'follow-link t
+                          'type 'lem-tl-button
+                          'category 'shr
+                          'mouse-face 'highlight
+                          'shr-url .community.actor_id))
              ;; don't try to propertize numbers:
              collect (if (stringp i)
                          (propertize i
@@ -1504,7 +1575,7 @@ LIMIT is the max results to return."
       (lem-ui-render-instance (lem-get-instance) :stats nil)
       (make-vtable
        :use-header-line nil
-       :columns '((:name "Name" :max-width 30 :width "30%")
+       :columns '((:name "Name" :max-width 30 :width "35%")
                   (:name "Members" :width "7%")
                   (:name "Monthly users" :width "7%")
                   (:name "Posts" :width "7%")
@@ -1515,23 +1586,27 @@ LIMIT is the max results to return."
        (lambda ()
          (cl-loop for c in (alist-get 'communities json)
                   collect (lem-ui-return-community-obj c)))
-       :row-colors  '(highlight vtable)
+       :row-colors  '("gray23" "gray19")
+       ;; highlight vtable) ; breaks table with face props
        :divider-width 1
-       :keymap lem-vtable-map
-       :actions '("RET" lem-ui-view-community-at-point-tl
-                  "s" lem-ui-subscribe-to-community-at-point-tl))
+       :keymap lem-vtable-map)
+      ;; whey "actions" when we have map + our own props?:
+      ;; :actions '("RET" lem-ui-view-community-at-point-tl
+      ;; "s" lem-ui-subscribe-to-community-at-point-tl))
       (lem-ui-set-buffer-spec
        type sort #'lem-ui-view-communities-tl 'communities))))
 
 ;; actions are called on the column's object, but we use text props instead,
 ;; so we have to reimplement these for tl:
-(defun lem-ui-view-community-at-point-tl (_)
-  "View community at point, from tabulated list."
-  (lem-ui-view-item-community))
+;; (defun lem-ui-view-community-at-point-tl (_)
+;;   "View community at point, from tabulated list."
+;;   (interactive)
+;;   (lem-ui-view-item-community))
 
-(defun lem-ui-subscribe-to-community-at-point-tl (_)
-  "Subscribe to community at point, from tabulated list."
-  (lem-ui-subscribe-to-community-at-point))
+;; (defun lem-ui-subscribe-to-community-at-point-tl (_)
+;;   "Subscribe to community at point, from tabulated list."
+;;   (interactive)
+;;   (lem-ui-subscribe-to-community-at-point))
 
 (defun lem-ui-subscribe-to-community (&optional id)
   "Subscribe to a community, using ID or prompt for a handle."
@@ -2102,7 +2177,8 @@ POST-ID is the post's id.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of items to return."
   (let* ((comments (lem-api-get-post-comments
-                    post-id "All" sort (or limit lem-ui-comments-limit))))
+                    post-id "All" sort (or limit lem-ui-comments-limit)
+                    nil nil lem-api-comments-max-depth)))
     (if (eq 'string (type-of comments))
         (message comments) ; server error
       (let ((unique-comments (cl-remove-duplicates comments)))
