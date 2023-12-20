@@ -618,6 +618,12 @@ Without any id or name, get instance comments."
 TYPE, SORT, LIMIT and PAGE are all for `lem-get-comments'."
   (lem-get-comments nil nil type sort limit page community-id))
 
+(defvar lem-api-comments-max-depth 300
+  ;; server currently has a hard max of 300.
+  ;; https://github.com/LemmyNet/lemmy/pull/3306/files
+  ;; but this will be changed in future.
+  "Value for max_depth arg when fetching post comments.")
+
 (defun lem-api-get-post-comments (post-id &optional type sort limit
                                           page saved-only max-depth)
   "Get comments for POST-ID.
@@ -625,9 +631,11 @@ TYPE must be member of `lem-listing-types'.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return.
 PAGE is a number, indexed at 1.
-SAVED-ONLY means to only return saved items."
+SAVED-ONLY means to only return saved items.
+MAX-DEPTH is a number, the maximum depth of comments to fetch in
+the tree. See `lem-api-comments-max-depth'."
   (lem-get-comments post-id nil type sort limit page nil nil
-                    saved-only (or max-depth 50))) ; max-depth default
+                    saved-only (or max-depth lem-api-comments-max-depth))) ; max-depth default
 
 ;; (lem-get-post-comments "1485706" "All")
 ;; (lem-api-get-post-comments "44280" "All")
