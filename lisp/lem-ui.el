@@ -186,9 +186,10 @@ font settings do not support it."
 
 (defun lem-ui-format-heading (name)
   "Format a heading for NAME, a string."
-  (let ((name (if (symbolp name)
+  (let* ((name (if (symbolp name)
                   (symbol-name name)
-                name)))
+                name))
+        (name (string-replace "-" " " name)))
     (propertize
      (concat " " lem-ui-horiz-bar "\n "
              (upcase name)
