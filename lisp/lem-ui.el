@@ -1407,7 +1407,8 @@ LIMIT is the max results to return."
   "}" #'vtable-widen-current-column
   "g" #'lem-vtable-revert-command
   "M-<left>" #'vtable-previous-column
-  "M-<right>" #'vtable-next-column)
+  "M-<right>" #'vtable-next-column
+  "<mouse-2>" 'lem-ui-view-thing-at-point)
 
 (defun lem-vtable-sort-by-current-column ()
   "Sort the table under point by the column under point."
@@ -1471,9 +1472,14 @@ LIMIT is the max results to return."
       (vtable-goto-column column))))
 
 (define-button-type 'lem-tl-button
-  'follow-link t
-  'help-echo "View community"
-  'action #'lem-ui-view-community-at-point-tl)
+  ;; few props work here, so we propertize again below:
+  ;; 'follow-link t
+  ;; 'category 'shr
+  ;; 'face '(:inherit warning :unterline t)
+  ;; 'help-echo "View community"
+  ;; 'mouse-face 'highlight
+  ;; 'action #'lem-ui-view-community-at-point-tl)
+  )
 
 (defun lem-ui-return-community-obj (community)
   "Return a vtable object for COMMUNITY."
@@ -1482,18 +1488,31 @@ LIMIT is the max results to return."
              (list
               (propertize .community.title
                           'id .community.id
+                          'follow-link t
                           'type 'lem-tl-button
+                          'category 'shr
+                          'shr-url .community.actor_id
                           ;; interrupted by :row-colors below:
-                          ;; 'face `(:inherit warning :underline t)
-                          'help-echo .community.title)
+                          ;; 'face 'lem-ui-community-face
+                          'mouse-face 'highlight
+                          'help-echo "View community"
+                          )
               .counts.subscribers
               .counts.users_active_month .counts.posts
               (if (equal "Subscribed" .subscribed)
-                  (or "✓" "*")
+                  (if (char-displayable-p (string-to-char "✓"))
+                      "✓"
+                    "*")
                 "")
               (propertize (url-host
                            (url-generic-parse-url .community.actor_id))
-                          'help-echo .community.actor_id))
+                          'help-echo .community.actor_id
+                          'id .community.id
+                          'follow-link t
+                          'type 'lem-tl-button
+                          'category 'shr
+                          'mouse-face 'highlight
+                          'shr-url .community.actor_id))
              ;; don't try to propertize numbers:
              collect (if (stringp i)
                          (propertize i
@@ -1528,21 +1547,24 @@ LIMIT is the max results to return."
                   collect (lem-ui-return-community-obj c)))
        :row-colors  '(highlight vtable)
        :divider-width 1
-       :keymap lem-vtable-map
-       :actions '("RET" lem-ui-view-community-at-point-tl
-                  "s" lem-ui-subscribe-to-community-at-point-tl))
+       :keymap lem-vtable-map)
+      ;; whey "actions" when we have map + our own props?:
+      ;; :actions '("RET" lem-ui-view-community-at-point-tl
+      ;; "s" lem-ui-subscribe-to-community-at-point-tl))
       (lem-ui-set-buffer-spec
        type sort #'lem-ui-view-communities-tl 'communities))))
 
 ;; actions are called on the column's object, but we use text props instead,
 ;; so we have to reimplement these for tl:
-(defun lem-ui-view-community-at-point-tl (_)
-  "View community at point, from tabulated list."
-  (lem-ui-view-item-community))
+;; (defun lem-ui-view-community-at-point-tl (_)
+;;   "View community at point, from tabulated list."
+;;   (interactive)
+;;   (lem-ui-view-item-community))
 
-(defun lem-ui-subscribe-to-community-at-point-tl (_)
-  "Subscribe to community at point, from tabulated list."
-  (lem-ui-subscribe-to-community-at-point))
+;; (defun lem-ui-subscribe-to-community-at-point-tl (_)
+;;   "Subscribe to community at point, from tabulated list."
+;;   (interactive)
+;;   (lem-ui-subscribe-to-community-at-point))
 
 (defun lem-ui-subscribe-to-community (&optional id)
   "Subscribe to a community, using ID or prompt for a handle."
