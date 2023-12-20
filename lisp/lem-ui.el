@@ -58,6 +58,12 @@
 (autoload 'lem-comment-sort-type-p "lem.el")
 (autoload 'lem-sort-type-p "lem.el")
 
+(defface lem-ui-user-face '((t :inherit warning :underline t))
+  "Face user displaying usernames.")
+
+(defface lem-ui-community-face '((t :inherit success :underline t))
+  "Face for displaying communities.")
+
 ;;; HIERARCHY PATCHES
 
 (defun lem--hierarchy-print (hierarchy &optional to-string)
@@ -443,7 +449,7 @@ STR is the preceding string to insert."
                                (cl-second x)
                                'user
                                (cl-third x)
-                               'warning))
+                               'lem-ui-user-face))
     list " | ")))
 
 (defun lem-ui-render-instance (instance &optional stats sidebar)
@@ -903,7 +909,7 @@ HELP-ECHO is a help-echo string."
               'mouse-face 'highlight
               'id id
               'lem-tab-stop type
-              'face `(:inherit ,face :underline t)
+              'face face
               'help-echo help-echo))
 
 (defun lem-ui--find-property-range (property start-point
@@ -997,7 +1003,8 @@ comment display."
       (if url
           (concat url "\n")
         "")
-      (lem-ui--propertize-link username nil 'user nil 'warning handle)
+      (lem-ui--propertize-link username nil 'user
+                               nil 'lem-ui-user-face handle)
       (when op-p
         (concat " "
                 (lem-ui-propertize-box "OP" "green3" "original poster")))
@@ -1014,7 +1021,8 @@ comment display."
         (concat
          (propertize " to "
                      'face font-lock-comment-face)
-         (lem-ui--propertize-link community nil 'community nil 'success)))
+         (lem-ui--propertize-link community nil 'community
+                                  nil 'lem-ui-community-face)))
       (propertize
        (concat
         " | "
