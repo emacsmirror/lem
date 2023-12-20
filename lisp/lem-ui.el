@@ -2177,7 +2177,8 @@ POST-ID is the post's id.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of items to return."
   (let* ((comments (lem-api-get-post-comments
-                    post-id "All" sort (or limit lem-ui-comments-limit))))
+                    post-id "All" sort (or limit lem-ui-comments-limit)
+                    nil nil 50))) ; max_depth
     (if (eq 'string (type-of comments))
         (message comments) ; server error
       (let ((unique-comments (cl-remove-duplicates comments)))
