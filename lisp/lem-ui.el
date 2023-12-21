@@ -2237,6 +2237,8 @@ DETAILS means display what community and post the comment is linked to."
 POST-ID is the post's id.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of items to return."
+  ;; NB: max_depth, required for comment trees, breaks limit
+  ;; and that's why huge threads are slow to load :/
   (let* ((comments (lem-api-get-post-comments
                     post-id "All" sort (or limit lem-ui-comments-limit)
                     nil nil lem-api-comments-max-depth)))
