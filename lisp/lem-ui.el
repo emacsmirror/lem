@@ -66,21 +66,38 @@
 
 ;;; HIERARCHY PATCHES
 
-(defun lem--hierarchy-print (hierarchy &optional to-string)
-  "Insert HIERARCHY in current buffer as plain text.
+(defun lem--hierarchy-labelfn-indent (labelfn &optional indent-string
+                                              prop attrib cycle-fun)
+  "Return a function rendering LABELFN indented with INDENT-STRING.
 
-Use TO-STRING to convert each element to a string.  TO-STRING is
-a function taking an item of HIERARCHY as input and returning a
-string.
+INDENT-STRING defaults to a 2-space string.  Indentation is
+multiplied by the depth of the displayed item."
+  (let ((indent-string (or indent-string "  ")))
+    (lambda (item indent)
+      (dotimes (index indent)
+        (insert
+         (funcall 'propertize indent-string
+                  ;; theres a better way to do this, but we need to funcall
+                  ;; cycle-fun on index to work
+                  prop (list attrib
+                             (funcall cycle-fun index)))))
+      (funcall labelfn item indent))))
 
-Calls `lem--hierarchy-print-line' with `hierarchy-labelfn-indent' as
-second argument."
-  (let ((to-string (or to-string (lambda (item) (format "%s" item)))))
-    (lem--hierarchy-print-line
-     hierarchy
-     (hierarchy-labelfn-indent
-      (lambda (item _)
-        (funcall to-string item))))))
+;; (defun lem--hierarchy-print (hierarchy &optional to-string)
+;;   "Insert HIERARCHY in current buffer as plain text.
+
+;; Use TO-STRING to convert each element to a string.  TO-STRING is
+;; a function taking an item of HIERARCHY as input and returning a
+;; string.
+
+;; Calls `lem--hierarchy-print-line' with `hierarchy-labelfn-indent' as
+;; second argument."
+;;   (let ((to-string (or to-string (lambda (item) (format "%s" item)))))
+;;     (lem--hierarchy-print-line
+;;      hierarchy
+;;      (lem--hierarchy-labelfn-indent
+;;       (lambda (item _)
+;;         (funcall to-string item))))))
 
 (defun lem--hierarchy-print-line (hierarchy &optional labelfn)
   "Insert HIERARCHY in current buffer as plain text.
@@ -158,7 +175,7 @@ Used for pagination.")
     (pinned    . ("📌" . "[pinned]"))
     (replied   . ("⬇" . "↓"))
     (community . ("👪" . "[community]"))
-    (reply-bar . ("┃" . "|"))
+    (reply-bar . ("│" . "|")) ;┃
     (deleted   . ("🗑" . "[deleted]")))
   "A set of symbols (and fallback strings) to be used in timeline.
 If a symbol does not look right (tofu), it means your
@@ -186,9 +203,10 @@ font settings do not support it."
 
 (defun lem-ui-format-heading (name)
   "Format a heading for NAME, a string."
-  (let ((name (if (symbolp name)
+  (let* ((name (if (symbolp name)
                   (symbol-name name)
-                name)))
+                name))
+        (name (string-replace "-" " " name)))
     (propertize
      (concat " " lem-ui-horiz-bar "\n "
              (upcase name)
@@ -529,7 +547,8 @@ Returns a list of the variables containing the specific options."
          '(lem-items-types lem-sort-types lem-listing-types))
         ((eq view 'search)
          '(lem-listing-types lem-sort-types lem-search-types))
-        ((eq view 'user)
+        ((or (eq view 'user)
+             (eq view 'current-user))
          '(lem-user-items-types lem-sort-types))
         ((eq view 'community)
          '(lem-items-types lem-sort-types))
@@ -555,12 +574,16 @@ Works on instance, community, and user views, which also have an overview."
                  (car sort-types)))
          (type (lem-ui-get-buffer-spec :listing-type))
          (id (lem-ui-get-view-id))
-         (item-types (if (eq view 'user) lem-user-items-types lem-items-types))
+         (item-types (if (or (eq view 'user)
+                             (eq view 'current-user))
+                         lem-user-items-types
+                       lem-items-types))
          (item-next (lem-ui-next-type item item-types)))
     (cond ((eq view 'community)
            (lem-ui-view-community id item-next sort)
            (message "Viewing: %s" item-next))
-          ((eq view 'user)
+          ((or (eq view 'user)
+               (eq view 'current-user))
            (lem-ui-view-user id item-next sort)
            (message "Viewing: %s" item-next))
           ((eq view 'instance)
@@ -599,6 +622,7 @@ It must be a member of the same list."
          (item (lem-ui-get-buffer-spec :item))
          (listing-type (or type (lem-ui-next-listing-type type-last))))
     (cond ((or (eq view 'user)
+               (eq view 'current-user)
                (eq view 'community)
                (eq view 'post))
            (message "%s views don't have listing type."
@@ -644,7 +668,8 @@ Optionally, use SORT."
                        (lem-ui-get-sort-types view item)))
          (sort-next (or sort
                         (lem-ui-next-type sort-last sort-types))))
-    (cond ((eq view 'user)
+    (cond ((or (eq view 'user)
+               (eq view 'current-user))
            (lem-ui-view-user id item sort-next))
           ((eq view 'community)
            (lem-ui-view-community id item sort-next))
@@ -787,8 +812,9 @@ LIMIT."
          (community-id (alist-get 'community_id
                                   (alist-get 'post post)))
          (sort (or sort lem-default-comment-sort-type))
-         (bindings (lem-ui-view-options 'post)))
-    (lem-ui-with-buffer "*lem-post*" 'lem-mode nil bindings
+         (bindings (lem-ui-view-options 'post))
+         (buf (format "*lem-post-%s*" id)))
+    (lem-ui-with-buffer buf 'lem-mode nil bindings
       (lem-ui--set-mods community-id)
       (lem-ui-render-post post :community)
       (lem-ui-render-post-comments id sort limit)
@@ -1536,8 +1562,7 @@ LIMIT is the max results to return."
                           ;; interrupted by :row-colors below:
                           'face 'lem-ui-community-face
                           'mouse-face 'highlight
-                          'help-echo "View community"
-                          )
+                          'help-echo "View community")
               .counts.subscribers
               .counts.users_active_month .counts.posts
               (if (equal "Subscribed" .subscribed)
@@ -1950,8 +1975,8 @@ Optionally set ITEMS to view."
          (t
           ,@body)))
 
-(defun lem-ui-edit-comment ()
-  "Edit comment at point if possible."
+(defun lem-ui-edit-comment-brief ()
+  "Edit comment at point if possible, in the minibuffer."
   (interactive)
   (lem-ui-with-own-item 'comment
     (let* ((id (lem-ui--property 'id))
@@ -2024,18 +2049,22 @@ DETAILS means display what community and post the comment is linked to."
 (defvar-local lem-comments-hierarchy nil)
 (defvar-local lem-comments-raw nil)
 
-(defun lem-ui--build-and-render-comments-hierarchy (comments)
-  "Build `lem-comments-hierarchy', a hierarchy, from COMMENTS, and render."
+(defun lem-ui--build-and-render-comments-hierarchy (comments id)
+  "Build `lem-comments-hierarchy', a hierarchy, from COMMENTS, and render.
+ID is the post's id, used for unique buffer names."
   (setq lem-comments-raw comments)
-  (let ((list (alist-get 'comments comments)))
-    (lem-ui--build-hierarchy list)) ; sets `lem-comments-hierarchy'
-  (with-current-buffer (get-buffer-create "*lem-post*")
-    (let ((inhibit-read-only t))
-      (lem--hierarchy-print-line lem-comments-hierarchy
-                                 (hierarchy-labelfn-indent
-                                  (lambda (item indent)
-                                    (lem-ui-format-comment item indent))
-                                  (lem-ui-symbol 'reply-bar))))))
+  (let ((list (alist-get 'comments comments))
+        (buf (format "*lem-post-%s*" id)))
+    (lem-ui--build-hierarchy list) ; sets `lem-comments-hierarchy'
+    (with-current-buffer (get-buffer-create buf)
+      (let ((inhibit-read-only t))
+        (lem--hierarchy-print-line
+         lem-comments-hierarchy
+         (lem--hierarchy-labelfn-indent
+          (lambda (item indent)
+            (lem-ui-format-comment item indent))
+          (lem-ui-symbol 'reply-bar)
+          'face ':foreground 'lem-ui-cycle-colors))))))
 
 (defun lem-ui-get-comment-path (comment)
   "Get path value from COMMENT."
@@ -2094,6 +2123,37 @@ Parent-fun for `hierarchy-add-tree'."
            ;; props
            ))))))
 
+(defvar lem-ui-indent-colors
+  '("red3" "orange3" "green3" "yellow3" "blue3")
+  ;; Tried with rainbow-delimiters colors but they don't match the actual
+  ;; display of my lovely parens?!
+  ;; '("#707183"
+  ;;   "#7388d6" "#909183" "#709870" "#907373"
+  ;;   "#6276ba" "#858580" "#80a880" "#887070")
+  ;; '("grey55" "#93a8c6" "#b0b1a3" "#97b098" "#aebed8"
+  ;;   "#b0b0b3" "#90a890" "#a2b6da" "#9cb6ad")
+  "List of colors for indent bars, subsequent items repeat.")
+
+(defun lem-ui-cycle-colors (index)
+  "Given INDEX, a number, cycle through `lem-ui-indent-colors'."
+  (nth
+   (mod index
+        (length
+         lem-ui-indent-colors))
+   lem-ui-indent-colors))
+
+(defun lem-ui--make-colored-indent-str (indent)
+  "INDENT is the number of indent bars to return."
+  (let ((str (make-string indent
+                          (string-to-char
+                           (lem-ui-symbol 'reply-bar)))))
+    (dotimes (index indent)
+      (add-text-properties
+       index (1+ index)
+       `(face (:foreground ,(lem-ui-cycle-colors index)))
+       str))
+    str))
+
 (defun lem-ui-format-comment (comment &optional indent reply details)
   "Format COMMENT, optionally with INDENT amount of indent bars.
 REPLY means it is a comment-reply object.
@@ -2104,9 +2164,11 @@ DETAILS means display what community and post the comment is linked to."
                      (lem-ui-render-body .comment.content
                                          (alist-get 'comment comment)
                                          indent)))
-          (indent-str (when indent
-                        (make-string indent (string-to-char
-                                             (lem-ui-symbol 'reply-bar)))))
+          (indent-str
+           ;; NB this is also done in `lem--hierarchy-labelfn-indent'
+           ;; to propertize the first line's indent bars:
+           (when indent
+             (lem-ui--make-colored-indent-str indent)))
           (handle (lem-ui--handle-from-user-url .creator.actor_id))
           (post-title (when details .post.name))
           (community-name (when details (or .community.title
@@ -2182,7 +2244,8 @@ LIMIT is the amount of items to return."
     (if (eq 'string (type-of comments))
         (message comments) ; server error
       (let ((unique-comments (cl-remove-duplicates comments)))
-        (lem-ui--build-and-render-comments-hierarchy unique-comments)))))
+        (lem-ui--build-and-render-comments-hierarchy unique-comments
+                                                     post-id)))))
 
 (defun lem-ui-plural-symbol (symbol)
   "Return a plural of SYMBOL."
@@ -2209,6 +2272,8 @@ ITEMS should be an alist of the form '\=(plural-name ((items-list)))'."
   (let ((item (lem-ui-get-buffer-spec :item))
         (view-fun (lem-ui-get-buffer-spec :view-fun)))
     (cond ((eq view-fun 'lem-ui-view-post)
+           ;; nb max-depth doesn't work with pagination yet:
+           ;; https://github.com/LemmyNet/lemmy/issues/3585
            (lem-ui-more-items 'comment 'lem-api-get-post-comments
                               'lem-ui--build-and-render-comments-hierarchy))
           ((eq view-fun 'lem-ui-view-community)
@@ -2275,7 +2340,7 @@ RENDER-FUN is the name of a function to render them."
           (inhibit-read-only t))
       ;; NB: `lem-ui-current-items' is updated during rendering:
       (if (eq render-fun 'lem-ui--build-and-render-comments-hierarchy)
-          (funcall render-fun all-items)
+          (funcall render-fun all-items id)
         (funcall render-fun (alist-get (lem-ui-plural-symbol type)
                                        all-items)))
       (goto-char old-max)
@@ -2535,13 +2600,15 @@ START and END mark the region to replace."
     (if (not url)
 	(message "No image under point")
       ;; (message "Inserting %s..." url) ; shut up shr.el!
-      (url-retrieve url #'shr-image-fetched
-		    (list (current-buffer)
-                          start end) ;) ; don't assume we have *
-                    ;; `(:width 400
-                    ;; :height 400)) ; if ever needed?
-                    ;; (1- (point)) (point-marker)) ; old value
-                    t))))
+      (with-demoted-errors "Error: %s"
+        ;; in case of bad URL, e.g. relative link
+        (url-retrieve url #'shr-image-fetched
+		      (list (current-buffer)
+                            start end) ;) ; don't assume we have *
+                      ;; `(:width 400
+                      ;; :height 400)) ; if ever needed?
+                      ;; (1- (point)) (point-marker)) ; old value
+                      t)))))
 
 (defun lem-ui-copy-item-url ()
   "Copy the URL (ap_id) of the post or comment at point."
