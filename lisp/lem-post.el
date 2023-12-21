@@ -302,7 +302,7 @@ INITIAL-TEXT is the item's original text to inject into the edit buffer."
       (lem-post-compose :edit #'lem-post-comment-mode 'comment)
       (lem-post--set-comment-properties id old-str))))
 
-(defun lem-post-edit-item-at-point ()
+(defun lem-post-edit-post-or-comment ()
   "Try to edit item at point.
 Should be either comment or post, and owned by the current user."
   (interactive)
