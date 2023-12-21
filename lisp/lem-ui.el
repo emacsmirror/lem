@@ -2117,6 +2117,13 @@ Parent-fun for `hierarchy-add-tree'."
 
 (defvar lem-ui-indent-colors
   '("red3" "orange3" "green3" "yellow3" "blue3")
+  ;; Tried with rainbow-delimiters colors but they don't match the actual
+  ;; display of my lovely parens?!
+  ;; '("#707183"
+  ;;   "#7388d6" "#909183" "#709870" "#907373"
+  ;;   "#6276ba" "#858580" "#80a880" "#887070")
+  ;; '("grey55" "#93a8c6" "#b0b1a3" "#97b098" "#aebed8"
+  ;;   "#b0b0b3" "#90a890" "#a2b6da" "#9cb6ad")
   "List of colors for indent bars, subsequent items repeat.")
 
 (defun lem-ui-cycle-colors (index)
