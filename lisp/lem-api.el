@@ -525,11 +525,11 @@ Returns a post_view."
 ;; (lem-like-post 1341246 1)
 
 (lem-def-request "put" "edit-post" "post"
-  (post-id name &optional body url nsfw) ; lang-id
+  (post-id name &optional body url nsfw language-id)
   "Edit post with ID, giving it NAME, and BODY and URL.
 NSFW is a flag.
 Returns a post_view."
-  (post-id name body url nsfw)) ; lang-id
+  (post-id name body url nsfw language-id))
 
 ;; (lem-edit-post 1341246 "blaodh" "trep")
 
