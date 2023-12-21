@@ -1611,7 +1611,8 @@ LIMIT is the max results to return."
        (lambda ()
          (cl-loop for c in (alist-get 'communities json)
                   collect (lem-ui-return-community-obj c)))
-       :row-colors  '("gray23" "gray19")
+       :row-colors  '(higlight ;"gray23"
+                      "gray19")
        ;; highlight vtable) ; breaks table with face props
        :divider-width 1
        :keymap lem-vtable-map)
