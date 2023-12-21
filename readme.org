@@ -185,8 +185,8 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-unsubscribe-from-community      | Prompt for a subscribed community and unsubscribe from it.           |
 |           | lem-ui-url-lookup                      | Perform a webfinger lookup on URL and load the result in `lem.el'.   |
 |           | lem-ui-view-comment-post               | View post of comment at point, or of POST-ID.                        |
-| C         | lem-ui-view-communities                | View Lemmy communities.                                              |
-|           | lem-ui-view-communities-tl             | View Lemmy communities in a tabulated list.                          |
+|           | lem-ui-view-communities                | View Lemmy communities.                                              |
+| C         | lem-ui-view-communities-tl             | View Lemmy communities in a tabulated list.                          |
 | B         | lem-ui-view-inbox                      | View user inbox, for replies, mentions, and PMs to the current user. |
 | I         | lem-ui-view-instance                   | View posts of current user's home instance.                          |
 |           | lem-ui-view-instance-full              | View full instance details.                                          |
