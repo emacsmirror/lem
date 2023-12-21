@@ -152,7 +152,7 @@ Uses `cursor-face-highlight-mode'."
     (define-key map (kbd "RET") #'lem-ui-view-thing-at-point)
     ;; views:
     (define-key map (kbd "I") #'lem-ui-view-instance)
-    (define-key map (kbd "C") #'lem-ui-view-communities)
+    (define-key map (kbd "C") #'lem-ui-view-communities-tl)
     (define-key map (kbd "s") #'lem-ui-jump-to-subscribed)
     (define-key map (kbd "P") #'lem-ui-view-user-at-point)
     (define-key map (kbd "O") #'lem-ui-view-own-profile)
