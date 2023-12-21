@@ -66,7 +66,8 @@
 
 ;;; HIERARCHY PATCHES
 
-(defun lem--hierarchy-labelfn-indent (labelfn &optional indent-string)
+(defun lem--hierarchy-labelfn-indent (labelfn &optional indent-string
+                                              prop attrib cycle-fun)
   "Return a function rendering LABELFN indented with INDENT-STRING.
 
 INDENT-STRING defaults to a 2-space string.  Indentation is
@@ -75,25 +76,28 @@ multiplied by the depth of the displayed item."
     (lambda (item indent)
       (dotimes (index indent)
         (insert
-         (propertize indent-string
-                     'face `(:foreground ,(lem-ui-cycle-colors index)))))
+         (funcall 'propertize indent-string
+                  ;; theres a better way to do this, but we need to funcall
+                  ;; cycle-fun on index to work
+                  prop (list attrib
+                             (funcall cycle-fun index)))))
       (funcall labelfn item indent))))
 
-(defun lem--hierarchy-print (hierarchy &optional to-string)
-  "Insert HIERARCHY in current buffer as plain text.
+;; (defun lem--hierarchy-print (hierarchy &optional to-string)
+;;   "Insert HIERARCHY in current buffer as plain text.
 
-Use TO-STRING to convert each element to a string.  TO-STRING is
-a function taking an item of HIERARCHY as input and returning a
-string.
+;; Use TO-STRING to convert each element to a string.  TO-STRING is
+;; a function taking an item of HIERARCHY as input and returning a
+;; string.
 
-Calls `lem--hierarchy-print-line' with `hierarchy-labelfn-indent' as
-second argument."
-  (let ((to-string (or to-string (lambda (item) (format "%s" item)))))
-    (lem--hierarchy-print-line
-     hierarchy
-     (lem--hierarchy-labelfn-indent
-      (lambda (item _)
-        (funcall to-string item))))))
+;; Calls `lem--hierarchy-print-line' with `hierarchy-labelfn-indent' as
+;; second argument."
+;;   (let ((to-string (or to-string (lambda (item) (format "%s" item)))))
+;;     (lem--hierarchy-print-line
+;;      hierarchy
+;;      (lem--hierarchy-labelfn-indent
+;;       (lambda (item _)
+;;         (funcall to-string item))))))
 
 (defun lem--hierarchy-print-line (hierarchy &optional labelfn)
   "Insert HIERARCHY in current buffer as plain text.
@@ -801,8 +805,9 @@ LIMIT."
          (community-id (alist-get 'community_id
                                   (alist-get 'post post)))
          (sort (or sort lem-default-comment-sort-type))
-         (bindings (lem-ui-view-options 'post)))
-    (lem-ui-with-buffer "*lem-post*" 'lem-mode nil bindings
+         (bindings (lem-ui-view-options 'post))
+         (buf (format "*lem-post-%s*" id)))
+    (lem-ui-with-buffer buf 'lem-mode nil bindings
       (lem-ui--set-mods community-id)
       (lem-ui-render-post post :community)
       (lem-ui-render-post-comments id sort limit)
@@ -2037,19 +2042,21 @@ DETAILS means display what community and post the comment is linked to."
 (defvar-local lem-comments-hierarchy nil)
 (defvar-local lem-comments-raw nil)
 
-(defun lem-ui--build-and-render-comments-hierarchy (comments)
+(defun lem-ui--build-and-render-comments-hierarchy (comments id)
   "Build `lem-comments-hierarchy', a hierarchy, from COMMENTS, and render."
   (setq lem-comments-raw comments)
-  (let ((list (alist-get 'comments comments)))
-    (lem-ui--build-hierarchy list)) ; sets `lem-comments-hierarchy'
-  (with-current-buffer (get-buffer-create "*lem-post*")
-    (let ((inhibit-read-only t))
-      (lem--hierarchy-print-line
-       lem-comments-hierarchy
-       (lem--hierarchy-labelfn-indent
-        (lambda (item indent)
-          (lem-ui-format-comment item indent))
-        (lem-ui-symbol 'reply-bar))))))
+  (let ((list (alist-get 'comments comments))
+        (buf (format "*lem-post-%s*" id)))
+    (lem-ui--build-hierarchy list) ; sets `lem-comments-hierarchy'
+    (with-current-buffer (get-buffer-create buf)
+      (let ((inhibit-read-only t))
+        (lem--hierarchy-print-line
+         lem-comments-hierarchy
+         (lem--hierarchy-labelfn-indent
+          (lambda (item indent)
+            (lem-ui-format-comment item indent))
+          (lem-ui-symbol 'reply-bar)
+          'face ':foreground 'lem-ui-cycle-colors))))))
 
 (defun lem-ui-get-comment-path (comment)
   "Get path value from COMMENT."
@@ -2222,7 +2229,8 @@ LIMIT is the amount of items to return."
     (if (eq 'string (type-of comments))
         (message comments) ; server error
       (let ((unique-comments (cl-remove-duplicates comments)))
-        (lem-ui--build-and-render-comments-hierarchy unique-comments)))))
+        (lem-ui--build-and-render-comments-hierarchy unique-comments
+                                                     post-id)))))
 
 (defun lem-ui-plural-symbol (symbol)
   "Return a plural of SYMBOL."
@@ -2317,7 +2325,7 @@ RENDER-FUN is the name of a function to render them."
           (inhibit-read-only t))
       ;; NB: `lem-ui-current-items' is updated during rendering:
       (if (eq render-fun 'lem-ui--build-and-render-comments-hierarchy)
-          (funcall render-fun all-items)
+          (funcall render-fun all-items id)
         (funcall render-fun (alist-get (lem-ui-plural-symbol type)
                                        all-items)))
       (goto-char old-max)
