@@ -66,6 +66,19 @@
 
 ;;; HIERARCHY PATCHES
 
+(defun lem--hierarchy-labelfn-indent (labelfn &optional indent-string)
+  "Return a function rendering LABELFN indented with INDENT-STRING.
+
+INDENT-STRING defaults to a 2-space string.  Indentation is
+multiplied by the depth of the displayed item."
+  (let ((indent-string (or indent-string "  ")))
+    (lambda (item indent)
+      (dotimes (index indent)
+        (insert
+         (propertize indent-string
+                     'face `(:foreground ,(lem-ui-cycle-colors index)))))
+      (funcall labelfn item indent))))
+
 (defun lem--hierarchy-print (hierarchy &optional to-string)
   "Insert HIERARCHY in current buffer as plain text.
 
@@ -78,7 +91,7 @@ second argument."
   (let ((to-string (or to-string (lambda (item) (format "%s" item)))))
     (lem--hierarchy-print-line
      hierarchy
-     (hierarchy-labelfn-indent
+     (lem--hierarchy-labelfn-indent
       (lambda (item _)
         (funcall to-string item))))))
 
@@ -2031,11 +2044,12 @@ DETAILS means display what community and post the comment is linked to."
     (lem-ui--build-hierarchy list)) ; sets `lem-comments-hierarchy'
   (with-current-buffer (get-buffer-create "*lem-post*")
     (let ((inhibit-read-only t))
-      (lem--hierarchy-print-line lem-comments-hierarchy
-                                 (hierarchy-labelfn-indent
-                                  (lambda (item indent)
-                                    (lem-ui-format-comment item indent))
-                                  (lem-ui-symbol 'reply-bar))))))
+      (lem--hierarchy-print-line
+       lem-comments-hierarchy
+       (lem--hierarchy-labelfn-indent
+        (lambda (item indent)
+          (lem-ui-format-comment item indent))
+        (lem-ui-symbol 'reply-bar))))))
 
 (defun lem-ui-get-comment-path (comment)
   "Get path value from COMMENT."
@@ -2128,8 +2142,11 @@ DETAILS means display what community and post the comment is linked to."
                      (lem-ui-render-body .comment.content
                                          (alist-get 'comment comment)
                                          indent)))
-          (indent-str (when indent
-                        (lem-ui--make-colored-indent-str indent)))
+          (indent-str
+           ;; NB this is also done in `lem--hierarchy-labelfn-indent'
+           ;; to propertize the first line's indent bars:
+           (when indent
+             (lem-ui--make-colored-indent-str indent)))
           (handle (lem-ui--handle-from-user-url .creator.actor_id))
           (post-title (when details .post.name))
           (community-name (when details (or .community.title
