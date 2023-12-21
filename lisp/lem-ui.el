@@ -1887,7 +1887,7 @@ Optionally only view UNREAD items."
 (defun lem-ui-render-replies (replies)
   "Render REPLIES, reply comments to the current user."
   (cl-loop for reply in replies
-           do (lem-ui-render-comment reply :reply)))
+           do (lem-ui-render-comment reply :reply :details)))
 
 (defun lem-ui-mark-reply-comment-read ()
   "Mark the comment-reply at point as read."
