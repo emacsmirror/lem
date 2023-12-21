@@ -1065,8 +1065,7 @@ comment display."
        'face font-lock-comment-face)
       (when post-title
         (concat "\n"
-                (propertize post-title
-                            'face '(:weight bold)))))
+                (lem-ui-propertize-title post-title))))
      'byline-top t)))
 
 (defun lem-ui-prop-score (my-vote score)
