@@ -1968,8 +1968,8 @@ Optionally set ITEMS to view."
          (t
           ,@body)))
 
-(defun lem-ui-edit-comment ()
-  "Edit comment at point if possible."
+(defun lem-ui-edit-comment-brief ()
+  "Edit comment at point if possible, in the minibuffer."
   (interactive)
   (lem-ui-with-own-item 'comment
     (let* ((id (lem-ui--property 'id))
@@ -2043,7 +2043,8 @@ DETAILS means display what community and post the comment is linked to."
 (defvar-local lem-comments-raw nil)
 
 (defun lem-ui--build-and-render-comments-hierarchy (comments id)
-  "Build `lem-comments-hierarchy', a hierarchy, from COMMENTS, and render."
+  "Build `lem-comments-hierarchy', a hierarchy, from COMMENTS, and render.
+ID is the post's id, used for unique buffer names."
   (setq lem-comments-raw comments)
   (let ((list (alist-get 'comments comments))
         (buf (format "*lem-post-%s*" id)))

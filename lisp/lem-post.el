@@ -35,6 +35,32 @@
 (defalias 'lem-post-toggle-nsfw #'fedi-post-toggle-nsfw)
 (defalias 'lem-post-set-post-language #'fedi-post-set-post-language)
 
+(defvar lem-user-id)
+
+(defvar-local lem-post-title nil)
+(defvar-local lem-post-url nil)
+(defvar-local lem-post-community-id nil)
+(defvar-local lem-post-community-name nil)
+(defvar-local lem-post-edit-id nil)
+(defvar-local lem-post-comment-edit-id nil)
+
+(defvar-local lem-post-comment-post-id nil)
+(defvar-local lem-post-comment-comment-id nil)
+
+(defgroup lem-post
+  nil
+  "Posting for lem.el."
+  :prefix "lem-post-"
+  :group 'lem)
+
+(defface lem-post-community-face
+  '((t :inherit success))
+  "Face used for community status field.")
+
+(defface lem-post-title-face
+  '((t :inherit font-lock-comment-face :weight bold))
+  "Face for post title in compose buffer.")
+
 (defvar lem-post-mode-map
   (let ((map (make-sparse-keymap)))
     ;; inheriting doesn't work for our post docs display
@@ -62,28 +88,6 @@
     (define-key map (kbd "C-c C-c") #'lem-post-submit)
     map)
   "Keymap for `lem-post-comment-mode'.")
-
-(defvar-local lem-post-title nil)
-(defvar-local lem-post-url nil)
-(defvar-local lem-post-community-id nil)
-(defvar-local lem-post-community-name nil)
-
-(defvar-local lem-post-comment-post-id nil)
-(defvar-local lem-post-comment-comment-id nil)
-
-(defgroup lem-post
-  nil
-  "Posting for lem.el."
-  :prefix "lem-post-"
-  :group 'lem)
-
-(defface lem-post-community-face
-  '((t :inherit success))
-  "Face used for community status field.")
-
-(defface lem-post-title-face
-  '((t :inherit font-lock-comment-face :weight bold))
-  "Face for post title in compose buffer.")
 
 (defun lem-post-read-title ()
   "Read post title."
@@ -153,22 +157,32 @@ COMMENT means we are composing a comment."
                        lem-post-community-id)))
         (message "You need to set at least a post name and community.")
       (let* ((body (fedi-post--remove-docs))
-             (response (if lem-post-comment-post-id
-                           (lem-create-comment lem-post-comment-post-id
-                                               body
-                                               lem-post-comment-comment-id)
-                         (lem-create-post lem-post-title lem-post-community-id body
-                                          lem-post-url fedi-post-content-nsfw
-                                          nil fedi-post-language)))) ; TODO: honeypot
+             (response (cond (lem-post-comment-post-id ; creating a comment
+                              (lem-create-comment lem-post-comment-post-id
+                                                  body
+                                                  lem-post-comment-comment-id))
+                             (lem-post-edit-id ; editing a post
+                              (lem-edit-post lem-post-edit-id lem-post-title body
+                                             lem-post-url fedi-post-content-nsfw fedi-post-language))
+                             (lem-post-comment-edit-id ; editing a comment
+                              (lem-edit-comment lem-post-comment-edit-id body))
+                             (t ; creating a post
+                              (lem-create-post lem-post-title lem-post-community-id body
+                                               lem-post-url fedi-post-content-nsfw
+                                               nil fedi-post-language))))) ; TODO: honeypot
         (when response
           (let-alist response
-            (if lem-post-comment-post-id
-                ;; (progn
-                (message "Comment created: %s" .comment_view.comment.content)
-              ;; FIXME: prev window config + reload instead, coz maybe in a diff view:
-              ;; this breaks `fedi-post-kill'
-              ;; (lem-ui-view-post (number-to-string lem-post-comment-post-id)))
-              (message "Post %s created!" .post_view.post.name)))
+            (cond (lem-post-comment-post-id
+                   (message "Comment created: %s" .comment_view.comment.content))
+                  (lem-post-comment-edit-id
+                   (message "Comment edited: %s" .comment_view.comment.content))
+                  ;; FIXME: prev window config + reload instead, coz maybe in a diff view:
+                  ;; this breaks `fedi-post-kill'
+                  ;; (lem-ui-view-post (number-to-string lem-post-comment-post-id)))
+                  (lem-post-edit-id
+                   (message "Post %s edited!" .post_view.post.name))
+                  (t
+                   (message "Post %s created!" .post_view.post.name))))
           (with-current-buffer buf
             ;; FIXME: we have to call this after using b-local
             ;; `lem-post-comment-post-id', but it baulks:
@@ -209,7 +223,7 @@ COMMENT means we are composing a comment."
                         (lem-ui--id-from-json json 'post)))
              (comment-id (when (equal type 'comment)
                            (lem-ui--id-from-json json 'comment))))
-        (lem-post-compose nil #'lem-post-comment-mode :comment)
+        (lem-post-compose nil #'lem-post-comment-mode 'comment)
         (setq lem-post-comment-post-id post-id)
         (setq lem-post-comment-comment-id comment-id)))))
 
@@ -230,6 +244,70 @@ Simple means we just read a string."
       (let-alist response
         (message "Comment created: %s" .comment_view.comment.content)
         (lem-ui-view-post (number-to-string post-id))))))
+
+;;; EDITING POSTS/COMMENTS
+
+(defun lem-post--set-post-properties
+    (post-id community-name community-id title url
+             &optional initial-text _post-lang)
+  "Set the properties for the current edited post.
+POST-ID is the posts id, a number.
+COMMUNITY-NAME is a string.
+COMMUNITY-ID is a number.
+TITLE is a string.
+URL is a string.
+INITIAL-TEXT is the post's original text to inject into the buffer.
+POST-LANG is the post's language (Not yet implemented)"
+  (with-current-buffer "*edit post*"
+    (setq lem-post-edit-id post-id)
+    (setq lem-post-community-name community-name)
+    (setq lem-post-community-id community-id)
+    (setq lem-post-url url)
+    (setq lem-post-title title)
+    (fedi-post--update-status-fields)
+    (when initial-text
+      (insert initial-text))))
+
+(defun lem-post-edit ()
+  "Edit the post at point if possible."
+  (interactive)
+  (lem-ui-with-own-item 'post
+    (let-alist (lem-ui--property 'json)
+      (lem-post-compose :edit)
+      (lem-post--set-post-properties .post.id
+                                     .community.name .community.id
+                                     .post.name .post.url
+                                     .post.body))))
+
+(defun lem-post--set-comment-properties (comment-id &optional
+                                                    initial-text _post-lang)
+  "Set the properties for the edited comment.
+COMMENT-ID is its id, a number.
+POST-LANG is its language.
+INITIAL-TEXT is the item's original text to inject into the edit buffer."
+  (with-current-buffer "*edit comment*"
+    (setq lem-post-comment-edit-id comment-id)
+    (fedi-post--update-status-fields)
+    (when initial-text
+      (insert initial-text))))
+
+(defun lem-post-edit-comment ()
+  "Edit comment at point if possible."
+  (interactive)
+  (lem-ui-with-own-item 'comment
+    (let* ((id (lem-ui--property 'id))
+           (json (lem-ui--property 'json))
+           (old-str (alist-get 'content (alist-get 'comment json))))
+      (lem-post-compose :edit #'lem-post-comment-mode 'comment)
+      (lem-post--set-comment-properties id old-str))))
+
+(defun lem-post-edit-item-at-point ()
+  "Try to edit item at point.
+Should be either comment or post, and owned by the current user."
+  (interactive)
+  (if (eq 'comment (lem-ui--property 'lem-type))
+      (lem-post-edit-comment)
+    (lem-post-edit)))
 
 ;;; COMPLETION
 
