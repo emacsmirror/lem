@@ -41,7 +41,7 @@ want to have to provide your username, add =(setq lem-current-user
 - [[https://github.com/jrblevin/markdown-mode][markdown-mode]], which as per the =markdown-mode= docs also requires that you have a markdown command installed and available in your path in order to render HTML output.
    - =markdown-mode= and =lem.el= will not install this for you! You must do it yourself. Examples include =markdown= and =pandoc=. Currently =lem.el= recommends =markdown=, as its  HTML output is slightly easier for =shr.el= to render, but =pandoc= should also be fine. Once you have one installed, customize the variable =markdown-command= and point it to the exectuable. See =markdown-mode='s installation instructions for more details: [[https://github.com/jrblevin/markdown-mode#installation][jrblevin/markdown-mode#installation]].
 
-- =hierarchy.el=, which should be included in your emacs.
+- =hierarchy.el= and =vtable.el= which should be included in your emacs.
 
 * API, other frontends
 
@@ -133,6 +133,9 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-post-comment-simple                | Reply to post or comment at point.                                   |
 | N         | lem-post-compose                       | Compose a new post.                                                  |
 |           | lem-post-compose-simple                | Create and submit new post, reading strings in the minibuffer.       |
+|           | lem-post-edit                          | Edit the post at point if possible.                                  |
+|           | lem-post-edit-comment                  | Edit comment at point if possible.                                   |
+| e         | lem-post-edit-post-or-comment          | Try to edit item at point.                                           |
 |           | lem-post-mode                          | Minor mode for submitting posts to lemmy.                            |
 | C-c C-t   | lem-post-read-title                    | Read post title.                                                     |
 | C-c C-u   | lem-post-read-url                      | Read post URL.                                                       |
@@ -155,7 +158,7 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-delete-post                     | Delete post at point.                                                |
 | d         | lem-ui-delete-post-or-comment          | Delete post or comment at point.                                     |
 |           | lem-ui-dislike-item                    | Dislike (downvote) item at point.                                    |
-| e         | lem-ui-edit-comment                    | Edit comment at point if possible.                                   |
+|           | lem-ui-edit-comment-brief              | Edit comment at point if possible, in the minibuffer.                |
 |           | lem-ui-feature-post                    | Feature (pin) a post, either to its instance or community.           |
 |           | lem-ui-jump-to-moderated               | Prompt for a subscribed community and view it.                       |
 | s         | lem-ui-jump-to-subscribed              | Prompt for a subscribed community and view it.                       |
@@ -176,7 +179,7 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-subscribe-to-community          | Subscribe to a community, using ID or prompt for a handle.           |
 | S         | lem-ui-subscribe-to-community-at-point | Subscribe to community at point.                                     |
 | C-c C-v   | lem-ui-toggle-posts-comments           | Switch between displaying posts or comments.                         |
-|           | lem-ui-unfeature-post                  |                                                                      |
+|           | lem-ui-unfeature-post                  | Unfeature (unpin) post at point.                                     |
 |           | lem-ui-unlike-item                     | Unlike item at point.                                                |
 |           | lem-ui-unsave-item                     | Unsave item at point.                                                |
 |           | lem-ui-unsubscribe-from-community      | Prompt for a subscribed community and unsubscribe from it.           |
