@@ -2346,24 +2346,29 @@ RENDER-FUN is the name of a function to render them."
       (lem-ui--init-view)
       (message "Loading more items... [done]"))))
 
-(defun lem-ui-post-goto-comment (comment-id)
+(defun lem-ui-post-goto-comment (comment-id post-id)
   "Move point to comment with COMMENT-ID, a number, if possible."
   ;; TODO: implement forward-search/pagination
-  (with-current-buffer "*lem-post*"
+  (with-current-buffer (format "*lem-post-%s*" post-id)
     (when-let ((match (text-property-search-forward 'id comment-id t)))
-      (goto-char (prop-match-beginning match)))))
+      (goto-char (prop-match-beginning match))
+      (recenter-top-bottom '(4)))))
 
 (defun lem-ui-view-comment-post (&optional post-id comment-id)
-  "View post of comment at point, or of POST-ID.
+  "View post-id of comment at point, or of POST-ID.
 If COMMENT-ID is provided, move point to that comment."
   (interactive)
-  (if (not (or post-id
-               (eq (lem-ui--item-type) 'comment)
-               (eq (lem-ui--item-type) 'comment-reply)))
-      (message "Not at a comment?")
-    (let* ((post (or post-id (lem-ui--property 'post-id))))
-      (lem-ui-view-post post)
-      (lem-ui-post-goto-comment comment-id))))
+  (let ((comment-p (or (eq (lem-ui--item-type) 'comment)
+                       (eq (lem-ui--item-type) 'comment-reply))))
+    (if (not (or post-id
+                 comment-p))
+        (message "Not at a comment?")
+      (let* ((post-id (or post-id (lem-ui--property 'post-id)))
+             (comment-id (or comment-id
+                             (when comment-p
+                               (lem-ui--property 'id)))))
+        (lem-ui-view-post post-id)
+        (lem-ui-post-goto-comment comment-id post-id)))))
 
 ;;; LIKES / VOTES
 
