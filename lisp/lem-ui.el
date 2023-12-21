@@ -420,6 +420,8 @@ TYPE must be member of `lem-listing-types'.
 ITEM must be a member of `lem-items-types'."
   (interactive)
   (let* ((instance (lem-get-instance))
+         (sort (or sort lem-default-sort-type))
+         (type (or type lem-default-listing-type))
          (items (if (equal item "comments")
                     (progn
                       (unless (lem-comment-sort-type-p sort)
@@ -429,7 +431,6 @@ ITEM must be a member of `lem-items-types'."
          (items (if (equal item "comments")
                     (alist-get 'comments items)
                   (alist-get 'posts items)))
-         (sort (or sort lem-default-sort-type))
          (buf "*lem-instance*")
          (bindings (lem-ui-view-options 'instance)))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
