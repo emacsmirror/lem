@@ -1019,7 +1019,7 @@ START and END are the boundaries of the link in the post body."
               'face '(:weight bold)))
 
 (defun lem-ui-top-byline (title url username _score timestamp
-                                &optional community _community-url
+                                &optional community community-url
                                 featured-p op-p admin-p mod-p del-p handle
                                 post-title)
   "Format a top byline with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
@@ -1062,7 +1062,8 @@ comment display."
          (propertize " to "
                      'face font-lock-comment-face)
          (lem-ui--propertize-link community nil 'community
-                                  nil 'lem-ui-community-face)))
+                                  nil 'lem-ui-community-face
+                                  community-url)))
       (propertize
        (concat
         " | "
@@ -2187,6 +2188,7 @@ DETAILS means display what community and post the comment is linked to."
           (post-title (when details .post.name))
           (community-name (when details (or .community.title
                                             .community.name)))
+          (community-url (when details .community.actor_id))
           (admin-p (eq t .creator_is_admin))
           (mod-p (or (cl-member .creator.id lem-ui-post-community-mods-ids)
                      (eq t .creator_is_moderator)))
@@ -2200,8 +2202,8 @@ DETAILS means display what community and post the comment is linked to."
                            (or .creator.display_name .creator.name)
                            .counts.score
                            .comment.published
-                           community-name nil nil
-                           op-p admin-p mod-p nil handle
+                           community-name community-url
+                           nil op-p admin-p mod-p nil handle
                            post-title)
         "\n"
         (propertize (or content "")
