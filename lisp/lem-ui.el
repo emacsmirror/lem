@@ -2179,7 +2179,9 @@ DETAILS means display what community and post the comment is linked to."
           (admin-p (eq t .creator_is_admin))
           (mod-p (or (cl-member .creator.id lem-ui-post-community-mods-ids)
                      (eq t .creator_is_moderator)))
-          (op-p (eq .comment.creator_id .post.creator_id)))
+          (op-p (eq .comment.creator_id .post.creator_id))
+          (deleted .comment.deleted)
+          (removed .comment.removed))
       (push .comment.id lem-ui-current-items) ; pagination
       (propertize
        (concat
@@ -2191,7 +2193,8 @@ DETAILS means display what community and post the comment is linked to."
                            op-p admin-p mod-p nil handle
                            post-title)
         "\n"
-        (or content "")
+        (propertize (or content "")
+                    'display (lem-ui-format-display-prop deleted removed))
         "\n"
         (lem-ui-bt-byline .counts.score .counts.child_count .my_vote .saved)
         "\n"
@@ -2205,6 +2208,18 @@ DETAILS means display what community and post the comment is linked to."
        'creator-id .creator.id
        'lem-type (if reply 'comment-reply 'comment)
        'line-prefix indent-str))))
+
+(defun lem-ui-format-display-prop (del rem)
+  "Format a string for display property.
+DEL and REM are the values of the deleted and removed attributes
+in an item's data."
+  (cond ((eq del t)
+         (propertize "[deleted by user]"
+                     'face '(:slant italic)))
+        ((eq rem t)
+         (propertize "[removed by mod]"
+                     'face '(:slant italic)))
+        (t nil)))
 
 (defun lem-ui-format-private-message (private-message &optional indent)
   "Format PRIVATE-MESSAGE, optionally with INDENT amount of indent bars."
