@@ -45,6 +45,7 @@
 (defvar lem-default-comment-sort-type)
 (defvar lem-sort-types)
 (defvar lem-default-sort-type)
+(defvar lem-default-listing-type)
 (defvar lem-user-items-types)
 (defvar lem-items-types)
 (defvar lem-search-types)
@@ -71,7 +72,13 @@
   "Return a function rendering LABELFN indented with INDENT-STRING.
 
 INDENT-STRING defaults to a 2-space string.  Indentation is
-multiplied by the depth of the displayed item."
+multiplied by the depth of the displayed item.
+PROP is a property name, a symbol.
+ATTRIB is the prop's attribute, a kw symbol.
+
+CYCLE-FUN is called with one argument, the current indent level
+inside the loop, and is used to return the color for that indentation.
+Currently it is always `lem-ui-cycle-colors'."
   (let ((indent-string (or indent-string "  ")))
     (lambda (item indent)
       (dotimes (index indent)
@@ -2368,7 +2375,8 @@ RENDER-FUN is the name of a function to render them."
       (message "Loading more items... [done]"))))
 
 (defun lem-ui-post-goto-comment (comment-id post-id)
-  "Move point to comment with COMMENT-ID, a number, if possible."
+  "Move point to comment with COMMENT-ID, a number, if possible.
+POST-ID is the post's id, used to fetch the right buffer."
   ;; TODO: implement forward-search/pagination
   (with-current-buffer (format "*lem-post-%s*" post-id)
     (when-let ((match (text-property-search-forward 'id comment-id t)))
