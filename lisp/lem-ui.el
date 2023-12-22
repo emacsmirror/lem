@@ -1313,7 +1313,8 @@ SORT must be a member of `lem-sort-types'."
          "\n"
          (if .post.body
              (if trim
-                 (string-limit body 400)
+                 (let ((width (* 5 (window-width))))
+                   (truncate-string-to-width body width nil nil "..."))
                body)
            "")
          (lem-ui-insert-post-image-maybe post)
