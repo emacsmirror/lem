@@ -276,7 +276,9 @@ If STRING, return the id as a string."
   "Initialize a lemmy view.
 Inserts images and sets relative timestamp timers."
   (let ((inhibit-read-only t))
-    ;; load images
+    ;; don't wrap long verbatim text:
+    (setq truncate-lines t)
+    ;; load images:
     (lem-ui-insert-images)
     ;; relative timestamps:
     (setq
