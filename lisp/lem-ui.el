@@ -1094,12 +1094,13 @@ comment display."
         (t
          (number-to-string score))))
 
-(defun lem-ui-bt-byline (score comments &optional my-vote saved)
+(defun lem-ui-bt-byline (score comments &optional my-vote saved prefix)
   "Format a bottom byline for an item.
 SCORE is the item's score.
 COMMENTS is the comments count to render.
 MY-VOTE is a number, the current vote by the current user.
-SAVED means to add saved icon."
+SAVED means to add saved icon.
+PREFIX is a line-prefix property to add."
   (let* ((my-score (lem-ui-prop-score my-vote score))
          (str (concat (lem-ui-symbol 'upvote) " "
                       my-score " | "
@@ -1109,7 +1110,8 @@ SAVED means to add saved icon."
                         (concat " | "
                                 (lem-ui-symbol 'bookmark))))))
     (propertize str
-                'byline-bottom t)))
+                'byline-bottom t
+                'line-prefix prefix)))
 
 (defun lem-ui-update-bt-byline-from-json (&optional vote saved)
   "Update the text of the bottom byline based on item JSON.
@@ -1121,7 +1123,8 @@ SAVED means to add saved icon."
           (byline
            (fedi--find-property-range 'byline-bottom (point)
                                       (when (lem-ui--property 'byline-bottom)
-                                        :backwards))))
+                                        :backwards)))
+          (prefix (lem-ui--property 'line-prefix)))
       ;; `emojify-mode' doesn't work with display prop, so we replace byline
       ;; string:
       (lem-ui--replace-region-contents
@@ -1130,8 +1133,7 @@ SAVED means to add saved icon."
          (lem-ui-bt-byline .counts.score
                            (or .counts.child_count
                                .counts.comments)
-                           vote
-                           saved))))))
+                           vote saved prefix))))))
 
 (defun lem-ui--replace-region-contents (beg end replace-fun)
   "Replace buffer contents from BEG to END with REPLACE-FUN.
