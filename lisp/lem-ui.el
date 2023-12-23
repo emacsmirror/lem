@@ -1695,6 +1695,15 @@ LIMIT is the max results to return."
         (lem-block-community id t)))
     :number))
 
+(defun lem-ui-unblock-community ()
+  "Prompt for a blocked community, and unblock it."
+  (interactive)
+  (lem-ui-do-community-completing
+   "Unblock community: "
+   (lambda (id _choice)
+     (lem-block-community id :json-false))
+   #'lem-api-get-blocked-communities))
+
 (defun lem-ui--communities-alist (communities)
   "Return an alist of name/description and ID from COMMUNITIES."
   (cl-loop for item in communities
@@ -1707,6 +1716,7 @@ LIMIT is the max results to return."
                       .community.description
                       .community.id))))
 
+;; TODO: refactor for users, instances:
 (defun lem-ui-do-community-completing (prompt-str action-fun communities-fun)
   "Fetch communities with COMMUNITIES-FUN and PROMPT-STR, then call ACTION-FUN."
   (let* ((communities (funcall communities-fun))
