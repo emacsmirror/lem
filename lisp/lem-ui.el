@@ -1685,6 +1685,16 @@ LIMIT is the max results to return."
        (message "Community %s unsubscribed!" choice)))
    #'lem-api-get-subscribed-communities))
 
+(defun lem-ui-block-community-at-point ()
+  "Block to community at point."
+  (interactive)
+  (lem-ui-with-item
+    (if (not (equal 'community (lem-ui--item-type)))
+        (message "no community at point?")
+      (when (y-or-n-p "Block community?")
+        (lem-block-community id t)))
+    :number))
+
 (defun lem-ui--communities-alist (communities)
   "Return an alist of name/description and ID from COMMUNITIES."
   (cl-loop for item in communities
