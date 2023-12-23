@@ -2630,9 +2630,18 @@ If UNBLOCK, unblock them instead."
       (message "User %s %s!" name b-str))))
 
 (defun lem-ui-unblock-user ()
-  "."
-  ;; TODO: completing-read blocks!
-  (lem-ui-block-user :unblock))
+  "Prompt for a blocked user, and unblock them."
+  (interactive)
+  (let* ((blocks (lem-api-get-blocked-users))
+         (users (mapcar #'lem-ui-user-list blocks))
+         (choice (completing-read "Unblock user: " users))
+         (id (car (last (assoc choice users #'equal)))))
+    (lem-block-user id :json-false)))
+
+(defun lem-ui-user-list (block)
+  "Return USER's name, URL, and id."
+  (let-alist (alist-get 'target block)
+    (list .name .actor_id .id)))
 
 ;;; IMAGES
 
