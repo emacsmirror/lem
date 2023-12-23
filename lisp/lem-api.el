@@ -215,7 +215,9 @@ Returns data from my_user, from the site endpoint."
 
 ;; (setq lem-test-inst-posts (lem-api-get-instance-posts "Subscribed"))
 
-(lem-def-request "get" "get-federated-instances" "federated_instances")
+(lem-def-request "get" "get-federated-instances" "federated_instances"
+  ()
+  "Returns list of allowed, blocked, and linked instances.")
 
 ;; (lem-get-federated-instances)
 
