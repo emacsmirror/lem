@@ -271,6 +271,42 @@ If STRING, return the id as a string."
         (number-to-string id)
       id)))
 
+(defun lem-ui-handle-from-url (url &optional prefix)
+  "Format a handle, user or community, from a URL.
+PREFIX is a string, ! for community, @ for user."
+  (let* ((parsed (url-generic-parse-url url))
+         (domain (url-domain parsed))
+         (filename (url-filename parsed))
+         (item (car (last (split-string filename "/")))))
+    (concat (or prefix "")
+            item "@" domain)))
+
+(defun lem-ui-response-msg (response &optional key value format-str)
+  "Check RESPONSE, JSON from the server, and message on success.
+Used to handle server responses after the user
+does some action, such as subscribing, blocking, etc.
+KEY returns the value of a field from RESPONSE, using `alist-get'.
+VALUE specifies how to check the value: possible values are
+:non-nil, :json-false and t.
+FORMAT-STR is passed to message if the value check passes.
+If the check doesn't pass, error.
+Currently we error if we receive incorrect KEY or CHECK args,
+even though the request may have succeeded."
+  (if (stringp response) ; a string is an error
+      (error "Error: %s" response))
+  (let ((field (alist-get key response)))
+    (cond ((eq value :non-nil) ; value json exists
+           (if field
+               (message format-str)
+             (error "Error")))
+          ((or (eq value t) ; json val t or :json-false
+               (eq value :json-false))
+           (if (eq field value)
+               (message format-str)
+             (error "Error")))
+          (t
+           (error "Error")))))
+
 ;; TODO: add to `lem-ui-with-buffer'? we almost always call it
 (defun lem-ui--init-view ()
   "Initialize a lemmy view.
@@ -335,6 +371,7 @@ BINDINGS is a list of variables for which to display bidings."
          (message
           (substitute-command-keys msg-str))))))
 
+;; consider adding a lem-type check arg
 (defmacro lem-ui-with-item (body &optional number)
   "Call BODY after fetching ID of thing (at point).
 Thing can be anything handled by `lem-ui-thing-json', currently:
@@ -835,12 +872,10 @@ LIMIT."
   "Call `lem-feature-post' and handle the response.
 ID, ARG TYPE are for that function.
 STR is for message."
-  ;; TODO: we need a general response handler!
-  (let* ((resp (lem-feature-post id arg type)))
-    (if (stringp resp)
-        (message "%s" resp) ; TODO: actually handle server error
-      (when (alist-get 'post_view resp)
-        (message "Post %s!" str)))))
+  (lem-ui-response-msg
+   (lem-feature-post id arg type)
+   'post_view :non-nil
+   (format "Post %s!" str)))
 
 (defun lem-ui-feature-post (&optional unfeature)
   "Feature (pin) a post, either to its instance or community.
@@ -1116,6 +1151,7 @@ PREFIX is a line-prefix property to add."
                 'byline-bottom t
                 'line-prefix prefix)))
 
+;; TODO: update top byline (needs to update item json also)
 (defun lem-ui-update-bt-byline-from-json (&optional vote saved)
   "Update the text of the bottom byline based on item JSON.
 Used to adjust counts after (un)liking.
@@ -1377,15 +1413,19 @@ If UNSAVE, unsave the item instead."
             ((eq type 'post)
              (let ((json (lem-save-post id s-bool))
                    (my-vote (alist-get 'my_vote json)))
+               (lem-ui-response-msg json
+                                    'post_view :non-nil
+                                    (format "%s %s %s!" type id s-str))
                (lem-ui--update-item-json (alist-get 'post_view json))
-               (lem-ui-update-bt-byline-from-json my-vote s-bool)
-               (message "%s %s %s!" type id s-str)))
+               (lem-ui-update-bt-byline-from-json my-vote s-bool)))
             ((eq type 'comment)
              (let ((json (lem-save-comment id s-bool))
                    (my-vote (alist-get 'my_vote json)))
+               (lem-ui-response-msg json
+                                    'comment_view :non-nil
+                                    (format "%s %s %s!" type id s-str))
                (lem-ui--update-item-json (alist-get 'comment_view json))
-               (lem-ui-update-bt-byline-from-json my-vote s-bool)
-               (message "%s %s %s!" type id s-str)))
+               (lem-ui-update-bt-byline-from-json my-vote s-bool)))
             (t
              (message "You can only save posts and comments."))))
     :number))
@@ -1422,6 +1462,58 @@ SORT. LIMIT. PAGE."
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil (or sort "Active")
                               #'lem-ui-view-saved-items))))
+
+;;; COMPLETION FOR ACTIONS
+
+(defun lem-ui--communities-list (communities)
+  "Return an alist of name/description and ID from COMMUNITIES."
+  (cl-loop for item in communities
+           collect (let-alist item
+                     (list
+                      (lem-ui-handle-from-url .community.actor_id "!")
+                      .community.description
+                      .community.id))))
+
+(defun lem-ui-users-list (users)
+  "Return USER's name, URL, and id."
+  (cl-loop for item in users
+           collect (let-alist item
+                     (list (lem-ui-handle-from-url .actor_id "@")
+                           ;; .name
+                           ;; .actor_id
+                           .id))))
+
+(defun lem-ui-blocks-list (blocks)
+  "For user in BLOCKS, return handle, and id."
+  (cl-loop for item in blocks
+           collect (let-alist (alist-get 'target item)
+                     (list (lem-ui-handle-from-url .actor_id "@")
+                           .id))))
+
+(defun lem-ui-do-item-completing (fetch-fun list-fun prompt action-fun)
+  "Fetch items, choose one, and do an action.
+FETCH-FUN is the function to fetch data.
+LIST-FUN is called on the data to return a collection for
+`completing-read'. It should return a string (name, handle) as
+car, and id as last element. A second element will be used as an
+annotation.
+PROMPT is for the same.
+ACTION-FUN is called with 2 args: the chosen item's id and its
+car, usually its name or a handle."
+  (let* ((data (funcall fetch-fun))
+         (list (funcall list-fun data))
+         (completion-extra-properties
+          (list :annotation-function
+                (lambda (i)
+                  (let ((annot (nth 1 (assoc i list #'equal))))
+                    (concat
+                     (propertize " " 'display
+                                 '(space :align-to (- right-margin 51)))
+                     (string-limit (car (string-lines annot)) 50))))))
+         (choice (completing-read prompt list))
+         (id (car (last ;(nth 2
+                   (assoc choice list #'equal)))))
+    (funcall action-fun id choice)))
 
 ;;; COMMUNITIES
 
@@ -1513,7 +1605,6 @@ LIMIT is the max results to return."
       (vtable-goto-object object))
     (when column
       (vtable-goto-column column))))
-
 
 ;; unfuck vtable's case-sensitive sorting:
 (defun lem-ui-string> (s1 s2)
@@ -1653,7 +1744,7 @@ LIMIT is the max results to return."
   "Subscribe to a community, using ID or prompt for a handle."
   (interactive)
   (let* ((handle (unless id
-                   (read-string "Handle of community to subscribe to: ")))
+                   (read-string "Subscribe to community (by handle): ")))
          (community (unless id
                       (lem-get-community nil handle))))
     (if-let ((id (or id (lem-ui-get-community-id community)))
@@ -1662,8 +1753,9 @@ LIMIT is the max results to return."
                               (alist-get 'community_view fol)))
              (name (or (alist-get 'title comm)
                        (alist-get 'name comm))))
-        (message "Subscribed to community %s!" name)
-      (message "something went wrong."))))
+        (lem-ui-response-msg fol
+                             'community_view :non-nil
+                             (format "Subscribed to community %s!" name)))))
 
 (defun lem-ui-subscribe-to-community-at-point ()
   "Subscribe to community at point."
@@ -1677,13 +1769,16 @@ LIMIT is the max results to return."
 (defun lem-ui-unsubscribe-from-community ()
   "Prompt for a subscribed community and unsubscribe from it."
   (interactive)
-  (lem-ui-do-community-completing
+  (lem-ui-do-item-completing
+   #'lem-api-get-subscribed-communities
+   #'lem-ui--communities-list
    "Unsubscribe from community: "
    (lambda (id choice)
      (when (and (y-or-n-p (format "Unsubscribe from %s?" choice))
-                (lem-follow-community id :json-false))
-       (message "Community %s unsubscribed!" choice)))
-   #'lem-api-get-subscribed-communities))
+                (lem-ui-response-msg
+                 (lem-follow-community id :json-false)
+                 'community_view :non-nil
+                 (format "Community %s unsubscribed!" choice)))))))
 
 (defun lem-ui-block-community-at-point ()
   "Block to community at point."
@@ -1692,64 +1787,44 @@ LIMIT is the max results to return."
     (if (not (equal 'community (lem-ui--item-type)))
         (message "no community at point?")
       (when (y-or-n-p "Block community?")
-        (lem-block-community id t)))
+        (lem-ui-response-msg
+         (lem-block-community id t)
+         'blocked t
+         "Community blocked!")))
     :number))
 
 (defun lem-ui-unblock-community ()
   "Prompt for a blocked community, and unblock it."
   (interactive)
-  (lem-ui-do-community-completing
+  (lem-ui-do-item-completing
+   #'lem-api-get-blocked-communities
+   #'lem-ui--communities-list
    "Unblock community: "
    (lambda (id _choice)
-     (lem-block-community id :json-false))
-   #'lem-api-get-blocked-communities))
-
-(defun lem-ui--communities-alist (communities)
-  "Return an alist of name/description and ID from COMMUNITIES."
-  (cl-loop for item in communities
-           collect (let-alist item
-                     (list
-                      (format "%s@%s"
-                              .community.name
-                              (url-domain
-                               (url-generic-parse-url .community.actor_id)))
-                      .community.description
-                      .community.id))))
-
-;; TODO: refactor for users, instances:
-(defun lem-ui-do-community-completing (prompt-str action-fun communities-fun)
-  "Fetch communities with COMMUNITIES-FUN and PROMPT-STR, then call ACTION-FUN."
-  (let* ((communities (funcall communities-fun))
-         (subs (lem-ui--communities-alist communities))
-         (completion-extra-properties
-          (list :annotation-function
-                (lambda (c)
-                  (let ((annot (nth 1 (assoc c subs #'equal))))
-                    (concat
-                     (propertize " " 'display
-                                 '(space :align-to (- right-margin 51)))
-                     (string-limit (car (string-lines annot)) 50))))))
-         (choice (completing-read prompt-str subs))
-         (id (nth 2 (assoc choice subs #'equal))))
-    (funcall action-fun id choice)))
+     (lem-ui-response-msg
+      (lem-block-community id :json-false)
+      'blocked :json-false
+      "Community unblocked!"))))
 
 (defun lem-ui-jump-to-subscribed ()
   "Prompt for a subscribed community and view it."
   (interactive)
-  (lem-ui-do-community-completing
+  (lem-ui-do-item-completing
+   #'lem-api-get-subscribed-communities
+   #'lem-ui--communities-list
    "Jump to community: "
    (lambda (id _choice)
-     (lem-ui-view-community id "posts"))
-   #'lem-api-get-subscribed-communities))
+     (lem-ui-view-community id "posts"))))
 
 (defun lem-ui-jump-to-moderated ()
   "Prompt for a community moderated by the current user and view it."
   (interactive)
-  (lem-ui-do-community-completing
+  (lem-ui-do-item-completing
+   #'lem-api-get-moderated-communities
+   #'lem-ui--communities-list
    "Jump to moderated community: "
    (lambda (id _choice)
-     (lem-ui-view-community id "posts"))
-   #'lem-api-get-moderated-communities))
+     (lem-ui-view-community id "posts"))))
 
 (defun lem-ui-view-community (id &optional item sort limit page)
   "View community with ID.
@@ -1905,8 +1980,10 @@ And optionally for instance COMMUNITIES."
     (if (not (eq 'community (lem-ui--property 'lem-type)))
         (message "No community at point")
       (when (y-or-n-p (format "Delete community %s?" name))
-        (lem-delete-community id t)
-        (message "Community %s deleted!" name)))))
+        (lem-ui-response-msg
+         (lem-delete-community id t)
+         'community_view :non-nil
+         (format "Community %s deleted!" name))))))
 
 ;;; INBOX / REPLIES / MENTIONS / PMS
 
@@ -2029,10 +2106,18 @@ If RESTORE, restore the item instead."
       (when (y-or-n-p (format "%s %s?"
                               (if restore "Restore" "Delete")
                               item))
-        (progn
-          (funcall fun id (if restore :json-false t))
-          (message "%s %s %s!" item id
-                   (if restore "restored" "deleted")))))))
+        (lem-ui-response-msg
+         (funcall fun id (if restore :json-false t))
+         (lem-ui-item-to-alist-key item) :non-nil
+         (format "%s %s %s!" item id
+                 (if restore "restored" "deleted")))))))
+
+(defun lem-ui-item-to-alist-key (item)
+  "Given ITEM, a symbol, return a valid JSON key, item_view.
+Item may be post, comment, community, etc."
+  (intern
+   (concat
+    (symbol-name item) "_view")))
 
 (defun lem-ui-delete-comment ()
   "Delete comment at point."
@@ -2048,6 +2133,11 @@ If RESTORE, restore the item instead."
   "Restore deleted post at point."
   (interactive)
   (lem-ui-delete-item 'post #'lem-delete-post :restore))
+
+(defun lem-ui-restore-comment ()
+  "Restore deleted comment at point."
+  (interactive)
+  (lem-ui-delete-item 'comment #'lem-delete-comment :restore))
 
 (defun lem-ui-delete-post-or-comment ()
   "Delete post or comment at point."
@@ -2456,14 +2546,15 @@ TYPE should be either :unlike, :dislike, or nil to like."
                    (item (if (eq item 'comment-reply)
                              'comment
                            item))
-                   (obj (intern (concat (symbol-name item) "_view")))
+                   (obj (lem-ui-item-to-alist-key item))
                    (i (alist-get obj vote))
                    (saved (alist-get 'saved i))
                    (my-vote (alist-get 'my_vote i)))
-              (when i ; no my_vote if we unliked in 0.19-rc5?
-                (lem-ui--update-item-json i)
-                (lem-ui-update-bt-byline-from-json my-vote saved)
-                (message "%s %s %s!" item id like-str))))))
+              (lem-ui-response-msg i ; no my_vote if we unliked in 0.19?
+                                   item :non-nil
+                                   (format "%s %s %s!" item id like-str))
+              (lem-ui--update-item-json i)
+              (lem-ui-update-bt-byline-from-json my-vote saved)))))
     :number))
 
 (defun lem-ui-dislike-item ()
@@ -2613,35 +2704,34 @@ CURRENT-USER means we are displaying the current user's profile."
     (let ((message (read-string "Private message: ")))
       (lem-send-private-message message id))))
 
-(defun lem-ui-block-user (&optional unblock)
-  "Block author of item at point.
-If UNBLOCK, unblock them instead."
+(defun lem-ui-block-user ()
+  "Block author of item at point."
   (interactive)
   (lem-ui-with-item
     (let* ((id (lem-ui--property 'creator-id))
            (json (lem-ui--property 'json))
            (name (alist-get 'name
-                            (alist-get 'creator json)))
-           (b-str (if unblock "unblocked" "blocked")))
-      (if unblock
-          (lem-block-user id :json-false)
+                            (alist-get 'creator json))))
+      (if (not name)
+          (user-error "Looks like no user at point?")
         (when (y-or-n-p (format "Block %s?" name))
-          (lem-block-user id t)))
-      (message "User %s %s!" name b-str))))
+          (lem-ui-response-msg
+           (lem-block-user id t)
+           'blocked 't
+           (format "User %s blocked!" name)))))))
 
 (defun lem-ui-unblock-user ()
   "Prompt for a blocked user, and unblock them."
   (interactive)
-  (let* ((blocks (lem-api-get-blocked-users))
-         (users (mapcar #'lem-ui-user-list blocks))
-         (choice (completing-read "Unblock user: " users))
-         (id (car (last (assoc choice users #'equal)))))
-    (lem-block-user id :json-false)))
-
-(defun lem-ui-user-list (block)
-  "Return USER's name, URL, and id."
-  (let-alist (alist-get 'target block)
-    (list .name .actor_id .id)))
+  (lem-ui-do-item-completing
+   #'lem-api-get-blocked-users
+   #'lem-ui-blocks-list
+   "Unlbock user: "
+   (lambda (id choice)
+     (lem-ui-response-msg
+      (lem-block-user id :json-false)
+      'blocked :json-false
+      (format "User %s unblocked!" choice)))))
 
 ;;; IMAGES
 
