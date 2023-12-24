@@ -305,14 +305,14 @@ even though the request may have succeeded."
                (message format-str)
              (error "Error")))
           (t
-           (error "Error")))))
+           (error "Error handling response data, but request succeeded")))))
 
 ;; TODO: add to `lem-ui-with-buffer'? we almost always call it
 (defun lem-ui--init-view ()
   "Initialize a lemmy view.
 Inserts images and sets relative timestamp timers."
   (let ((inhibit-read-only t))
-    ;; don't wrap long verbatim text:
+    ;; don't wrap long verbatim text (affects headings):
     (setq truncate-lines t)
     ;; load images:
     (lem-ui-insert-images)
@@ -892,10 +892,8 @@ UNFEATURE means we are unfeaturing a post."
            ;; TODO: annotate Local with "instance":
            (feat-type
             (if unfeature
-                (cond ((eq t feat-comm)
-                       "Community")
-                      ((eq t feat-loc)
-                       "Local")
+                (cond ((eq t feat-comm) "Community")
+                      ((eq t feat-loc) "Local")
                       (t
                        (user-error "Post not featured?")))
               (completing-read "Feature type: "
@@ -2529,15 +2527,11 @@ TYPE should be either :unlike, :dislike, or nil to like."
            (fun (if (eq item 'post)
                     #'lem-like-post
                   #'lem-like-comment))
-           (score (cond ((eq type :unlike)
-                         0)
-                        ((eq type :dislike)
-                         -1)
+           (score (cond ((eq type :unlike) 0)
+                        ((eq type :dislike) -1)
                         (t 1)))
-           (like-str (cond ((eq type :unlike)
-                            "unliked")
-                           ((eq type :dislike)
-                            "disliked")
+           (like-str (cond ((eq type :unlike) "unliked")
+                           ((eq type :dislike) "disliked")
                            (t "liked"))))
       (if (or (eq item 'post)
               (eq item 'comment)
