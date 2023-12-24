@@ -872,10 +872,16 @@ LIMIT."
   "Call `lem-feature-post' and handle the response.
 ID, ARG TYPE are for that function.
 STR is for message."
-  (lem-ui-response-msg
-   (lem-feature-post id arg type)
-   'post_view :non-nil
-   (format "Post %s!" str)))
+  (let ((response (lem-feature-post id arg type))
+        (view (lem-ui-get-buffer-spec :view-fun)))
+    (lem-ui-response-msg
+     response
+     'post_view :non-nil
+     (format "Post %s!" str))
+    (lem-ui--update-item-json (alist-get 'post_view response))
+    (lem-ui-update-top-byline-from-json
+     (unless (eq view 'lem-ui-view-community)
+       :community))))
 
 (defun lem-ui-feature-post (&optional unfeature)
   "Feature (pin) a post, either to its instance or community.
@@ -1065,7 +1071,7 @@ DEL-P means add icon for deleted item.
 HANDLE is a user handle as a string.
 POST-TITLE is the name of the parent post, used for details
 comment display."
-  (let ((url (lem-ui-render-url url))
+  (let ((url (ignore-errors (lem-ui-render-url url)))
         (parsed-time (date-to-time timestamp)))
     (propertize
      (concat
@@ -1171,6 +1177,51 @@ SAVED means to add saved icon."
                            (or .counts.child_count
                                .counts.comments)
                            vote saved prefix))))))
+
+(defun lem-ui-call-top-byline (json &optional community)
+  "Call `lem-ui-top-byline' and add post properties to it.
+JSON is the data to use.
+COMMUNITY means display the community posted to."
+  (let-alist json
+    (propertize
+     (lem-ui-top-byline .post.name
+                        (or .post.url "")
+                        (or .creator.display_name .creator.name)
+                        .counts.score
+                        .post.published
+                        (when community .community.name)
+                        (when community .community.actor_id)
+                        (or (eq t .post.featured_community) ; pinned community
+                            (eq t .post.featured_local)) ; pinned instance
+                        nil
+                        (eq t .creator_is_admin)
+                        (or (eq t .creator_is_moderator)
+                            (cl-member .creator.id lem-ui-post-community-mods-ids))
+                        (eq t .post.deleted)
+                        (lem-ui--handle-from-user-url .creator.actor_id))
+     ;; add render-post props:
+     'json json
+     'id .post.id
+     'community-id .post.community_id
+     'creator-id .creator.id
+     'lem-type (caar json))))
+
+(defun lem-ui-update-top-byline-from-json (&optional community)
+  "Update the top byline based on item JSON.
+COMMUNITY means render community details."
+  (let ((json (lem-ui--property 'json)))
+    (let ((inhibit-read-only t)
+          (byline
+           (fedi--find-property-range 'byline-top (point)
+                                      (when (lem-ui--property 'byline-top)
+                                        :backwards))))
+      ;; (prefix (lem-ui--property 'line-prefix)))
+      ;; `emojify-mode' doesn't work with display prop, so we replace byline
+      ;; string:
+      (lem-ui--replace-region-contents
+       (car byline) (cdr byline)
+       (lambda ()
+         (lem-ui-call-top-byline json community))))))
 
 (defun lem-ui--replace-region-contents (beg end replace-fun)
   "Replace buffer contents from BEG to END with REPLACE-FUN.
