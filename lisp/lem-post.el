@@ -174,16 +174,23 @@ COMMENT means we are composing a comment."
         (when response
           (let-alist response
             (cond (lem-post-comment-post-id
-                   (message "Comment created: %s" .comment_view.comment.content))
+                   (lem-ui-response-msg
+                    response 'comment_view :non-nil
+                    (format "Comment created: %s" .comment_view.comment.content)))
                   (lem-post-comment-edit-id
-                   (message "Comment edited: %s" .comment_view.comment.content))
+                   (lem-ui-response-msg
+                    response 'comment_view :non-nil
+                    (format "Comment edited: %s" .comment_view.comment.content)))
                   ;; FIXME: prev window config + reload instead, coz maybe in a diff view:
                   ;; this breaks `fedi-post-kill'
                   ;; (lem-ui-view-post (number-to-string lem-post-comment-post-id)))
                   (lem-post-edit-id
-                   (message "Post %s edited!" .post_view.post.name))
+                   (lem-ui-response-msg
+                    response 'post_view :non-nil
+                    (format "Post %s edited!" .post_view.post.name)))
                   (t
-                   (message "Post %s created!" .post_view.post.name))))
+                   (message "Looks like we ran into trouble"))))
+          ;; (message "Post %s created!" .post_view.post.name))))
           (with-current-buffer buf
             ;; FIXME: we have to call this after using b-local
             ;; `lem-post-comment-post-id', but it baulks:
