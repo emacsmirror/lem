@@ -111,12 +111,14 @@
 (defun lem-post-select-community ()
   "Select community to post to."
   (interactive)
-  (lem-ui-do-community-completing "Post to community: "
-                                  (lambda (id choice)
-                                    (setq lem-post-community-name choice)
-                                    (setq lem-post-community-id id)
-                                    (message "Posting to %s" choice))
-                                  #'lem-api-get-subscribed-communities)
+  (lem-ui-do-item-completing
+   #'lem-api-get-subscribed-communities
+   #'lem-ui--communities-list
+   "Post to community: "
+   (lambda (id choice)
+     (setq lem-post-community-name choice)
+     (setq lem-post-community-id id)
+     (message "Posting to %s" choice)))
   (fedi-post--update-status-fields))
 
 (defun lem-post-compose (&optional edit mode comment)
