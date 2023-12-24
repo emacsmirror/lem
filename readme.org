@@ -146,6 +146,7 @@ I don't have a tech worker's income, so even a small tip would help out.
 | p         | lem-prev-item                          | Move to prev item.                                                   |
 |           | lem-shr-insert-image                   | Insert the image under point into the buffer.                        |
 |           | lem-ui--follow-link-at-point           | Follow link at point.                                                |
+|           | lem-ui-block-community-at-point        | Block community at point.                                            |
 |           | lem-ui-block-user                      | Block author of item at point.                                       |
 |           | lem-ui-choose-listing-type             | Prompt for a listing type, and use it to reload current view.        |
 | o         | lem-ui-choose-sort                     | Prompt for a sort type, and use it to reload the current view.       |
@@ -160,7 +161,7 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-dislike-item                    | Dislike (downvote) item at point.                                    |
 |           | lem-ui-edit-comment-brief              | Edit comment at point if possible, in the minibuffer.                |
 |           | lem-ui-feature-post                    | Feature (pin) a post, either to its instance or community.           |
-|           | lem-ui-jump-to-moderated               | Prompt for a subscribed community and view it.                       |
+|           | lem-ui-jump-to-moderated               | Prompt for a community moderated by the current user and view it.    |
 | s         | lem-ui-jump-to-subscribed              | Prompt for a subscribed community and view it.                       |
 |           | lem-ui-like-item                       | Like (upvote) item at point.                                         |
 | l         | lem-ui-like-item-toggle                | Toggle like status of item at point.                                 |
@@ -171,6 +172,7 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-more                            | Append more items to the current view.                               |
 | TAB       | lem-ui-next-tab-item                   | Jump to next tab item.                                               |
 | <backtab> | lem-ui-prev-tab-item                   | Jump to prev tab item.                                               |
+|           | lem-ui-restore-comment                 | Restore deleted comment at point.                                    |
 |           | lem-ui-restore-post                    | Restore deleted post at point.                                       |
 |           | lem-ui-save-item                       | Save item at point.                                                  |
 | a         | lem-ui-save-item-toggle                | Toggle saved status of item at point.                                |
@@ -179,6 +181,8 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-subscribe-to-community          | Subscribe to a community, using ID or prompt for a handle.           |
 | S         | lem-ui-subscribe-to-community-at-point | Subscribe to community at point.                                     |
 | C-c C-v   | lem-ui-toggle-posts-comments           | Switch between displaying posts or comments.                         |
+|           | lem-ui-unblock-community               | Prompt for a blocked community, and unblock it.                      |
+|           | lem-ui-unblock-user                    | Prompt for a blocked user, and unblock them.                         |
 |           | lem-ui-unfeature-post                  | Unfeature (unpin) post at point.                                     |
 |           | lem-ui-unlike-item                     | Unlike item at point.                                                |
 |           | lem-ui-unsave-item                     | Unsave item at point.                                                |
