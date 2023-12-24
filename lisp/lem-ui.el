@@ -1786,7 +1786,7 @@ LIMIT is the max results to return."
         (format "Community %s unsubscribed!" choice))))))
 
 (defun lem-ui-block-community-at-point ()
-  "Block to community at point."
+  "Block community at point."
   (interactive)
   (lem-ui-with-item
     (if (not (equal 'community (lem-ui--item-type)))
@@ -2514,7 +2514,7 @@ POST-ID is the post's id, used to fetch the right buffer."
       (recenter-top-bottom '(4)))))
 
 (defun lem-ui-view-comment-post (&optional post-id comment-id)
-  "View post-id of comment at point, or of POST-ID.
+  "View post of comment at point, or of POST-ID.
 If COMMENT-ID is provided, move point to that comment."
   (interactive)
   (let ((comment-p (or (eq (lem-ui--item-type) 'comment)
