@@ -1799,11 +1799,11 @@ LIMIT is the max results to return."
    #'lem-api-get-blocked-communities
    #'lem-ui--communities-list
    "Unblock community: "
-   (lambda (id _choice)
+   (lambda (id choice)
      (lem-ui-response-msg
       (lem-block-community id :json-false)
       'blocked :json-false
-      "Community unblocked!"))))
+      (format "Community %s unblocked!" choice)))))
 
 (defun lem-ui-jump-to-subscribed ()
   "Prompt for a subscribed community and view it."
