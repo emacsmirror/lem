@@ -1471,11 +1471,11 @@ SORT. LIMIT. PAGE."
            collect (let-alist item
                      (list
                       (lem-ui-handle-from-url .community.actor_id "!")
-                      .community.description
-                      .community.id))))
+                      .community.id
+                      .community.actor_id))))
 
 (defun lem-ui-users-list (users)
-  "Return USER's name, URL, and id."
+  "For user in list USERS, return name, URL, and id."
   (cl-loop for item in users
            collect (let-alist item
                      (list (lem-ui-handle-from-url .actor_id "@")
@@ -1495,8 +1495,8 @@ SORT. LIMIT. PAGE."
 FETCH-FUN is the function to fetch data.
 LIST-FUN is called on the data to return a collection for
 `completing-read'. It should return a string (name, handle) as
-car, and id as last element. A second element will be used as an
-annotation.
+its first element, and an id as second element. A second element
+will be used as an annotation.
 PROMPT is for the same.
 ACTION-FUN is called with 2 args: the chosen item's id and its
 car, usually its name or a handle."
@@ -1505,14 +1505,14 @@ car, usually its name or a handle."
          (completion-extra-properties
           (list :annotation-function
                 (lambda (i)
-                  (let ((annot (nth 1 (assoc i list #'equal))))
+                  (let ((annot (nth 2 (assoc i list #'equal))))
                     (concat
                      (propertize " " 'display
                                  '(space :align-to (- right-margin 51)))
                      (string-limit (car (string-lines annot)) 50))))))
          (choice (completing-read prompt list))
-         (id (car (last ;(nth 2
-                   (assoc choice list #'equal)))))
+         (id ;(cdr (last
+          (nth 1 (assoc choice list #'equal))))
     (funcall action-fun id choice)))
 
 ;;; COMMUNITIES
