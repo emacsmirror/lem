@@ -1501,17 +1501,21 @@ car, usually its name or a handle."
   (let* ((data (funcall fetch-fun))
          (list (funcall list-fun data))
          (completion-extra-properties
-          (list :annotation-function
-                (lambda (i)
-                  (let ((annot (nth 2 (assoc i list #'equal))))
-                    (concat
-                     (propertize " " 'display
-                                 '(space :align-to (- right-margin 51)))
-                     (string-limit (car (string-lines annot)) 50))))))
-         (choice (completing-read prompt list))
+          (when list
+            (list :annotation-function
+                  (lambda (i)
+                    (let ((annot (nth 2 (assoc i list #'equal))))
+                      (concat
+                       (propertize " " 'display
+                                   '(space :align-to (- right-margin 51)))
+                       (string-limit (car (string-lines annot)) 50)))))))
+         (choice (when list (completing-read prompt list)))
          (id ;(cdr (last
-          (nth 1 (assoc choice list #'equal))))
-    (funcall action-fun id choice)))
+          (when list
+            (nth 1 (assoc choice list #'equal)))))
+    (if (not list)
+        (user-error "No items returned")
+      (funcall action-fun id choice))))
 
 ;;; COMMUNITIES
 
