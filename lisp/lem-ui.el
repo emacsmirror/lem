@@ -1138,7 +1138,7 @@ SCORE is the item's score.
 COMMENTS is the comments count to render.
 MY-VOTE is a number, the current vote by the current user.
 SAVED means to add saved icon.
-PREFIX is a line-prefix property to add."
+PREFIX is a \"line-prefix\" property to add."
   (let* ((my-score (lem-ui-prop-score my-vote score))
          (str (concat (lem-ui-symbol 'upvote) " "
                       my-score " | "
@@ -1620,6 +1620,7 @@ LIMIT is the max results to return."
 
 ;; TODO: rename?
 (defun vtable--sort (table)
+  "TABLE."
   (pcase-dolist (`(,index . ,direction) (vtable-sort-by table))
     (let ((cache (vtable--cache table))
           (numerical (vtable-column--numerical
@@ -1774,11 +1775,11 @@ LIMIT is the max results to return."
    #'lem-ui--communities-list
    "Unsubscribe from community: "
    (lambda (id choice)
-     (when (and (y-or-n-p (format "Unsubscribe from %s?" choice))
-                (lem-ui-response-msg
-                 (lem-follow-community id :json-false)
-                 'community_view :non-nil
-                 (format "Community %s unsubscribed!" choice)))))))
+     (when (y-or-n-p (format "Unsubscribe from %s?" choice))
+       (lem-ui-response-msg
+        (lem-follow-community id :json-false)
+        'community_view :non-nil
+        (format "Community %s unsubscribed!" choice))))))
 
 (defun lem-ui-block-community-at-point ()
   "Block to community at point."
