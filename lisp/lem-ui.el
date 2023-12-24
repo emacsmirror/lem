@@ -1304,15 +1304,19 @@ Communities are of the form \"!community@intance.com.\""
                                       keymap ,lem-ui--link-map)))))
     (buffer-string)))
 
+(defun lem-ui-mods-ids (mods)
+  "Return a list of the ids of MODS."
+  (cl-loop for mod in mods
+           collect (alist-get 'id
+                              (alist-get 'moderator mod))))
+
 (defun lem-ui--set-mods (community-id)
   "Set `lem-ui-post-community-mods-ids'.
 The variable contains the list of community moderator ids for the
 community of the current post, with COMMUNITY-ID."
   (let* ((community-json (lem-get-community community-id))
          (mods (alist-get 'moderators community-json))
-         (mods-ids (cl-loop for mod in mods
-                            collect (alist-get 'id
-                                               (alist-get 'moderator mod)))))
+         (mods-ids (lem-ui-mods-ids mods)))
     (setq lem-ui-post-community-mods-ids mods-ids)))
 
 (defun lem-ui-render-post (post &optional community trim)
@@ -1928,6 +1932,7 @@ profile page."
            (unless brief (concat "\n" desc "\n"
                                  lem-ui-horiz-bar "\n")))
           'json community
+          'mods mods-list
           'byline-top t ; next/prev hack
           'id .community.id
           'lem-type 'community)))
@@ -1978,14 +1983,20 @@ And optionally for instance COMMUNITIES."
   (let* ((id (lem-ui--property 'id))
          (community (alist-get 'community
                                (lem-ui--property 'json)))
-         (name (alist-get 'name community)))
-    (if (not (eq 'community (lem-ui--property 'lem-type)))
-        (message "No community at point")
-      (when (y-or-n-p (format "Delete community %s?" name))
-        (lem-ui-response-msg
-         (lem-delete-community id t)
-         'community_view :non-nil
-         (format "Community %s deleted!" name))))))
+         (name (alist-get 'name community))
+         (mods (lem-ui--property 'mods))
+         (ids (lem-ui-mods-ids mods))
+         (own-p (member lem-user-id ids)))
+    (cond ((not (eq 'community (lem-ui--property 'lem-type)))
+           (user-error "No community at point"))
+          ((not own-p)
+           (user-error "Must be a mod to delete community"))
+          (t
+           (when (y-or-n-p (format "Delete community %s?" name))
+             (lem-ui-response-msg
+              (lem-delete-community id t)
+              'community_view :non-nil
+              (format "Community %s deleted!" name)))))))
 
 ;;; INBOX / REPLIES / MENTIONS / PMS
 
