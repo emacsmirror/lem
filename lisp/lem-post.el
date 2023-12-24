@@ -191,7 +191,9 @@ COMMENT means we are composing a comment."
                     response 'post_view :non-nil
                     (format "Post %s edited!" .post_view.post.name)))
                   (t
-                   (message "Looks like we ran into trouble"))))
+                   (lem-ui-response-msg
+                    response 'post_view :non-nil
+                    (format "Post %s created!" .post_view.post.name)))))
           ;; (message "Post %s created!" .post_view.post.name))))
           (with-current-buffer buf
             ;; FIXME: we have to call this after using b-local
