@@ -1789,12 +1789,13 @@ LIMIT is the max results to return."
   (lem-ui-with-item
     (if (not (equal 'community (lem-ui--item-type)))
         (message "no community at point?")
-      (when (y-or-n-p "Block community?")
-        (lem-ui-response-msg
-         (lem-block-community id t)
-         'blocked t
-         "Community blocked!")))
-    :number))
+      (let-alist (lem-ui--property 'json)
+        (when (y-or-n-p (format "Block community %s?" .community.name))
+          (lem-ui-response-msg
+           (lem-block-community .community.id t)
+           'blocked t
+           (format "Community %s blocked!" .community.name))))
+      :number)))
 
 (defun lem-ui-unblock-community ()
   "Prompt for a blocked community, and unblock it."
