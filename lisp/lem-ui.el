@@ -771,31 +771,7 @@ Lemmy supports lookups for users, posts, comments and communities."
                (message "unknown lookup response.")
                (browse-url query)))))))
 
-;;; POSTS
-
-(defun lem-ui-view-post-at-point ()
-  "View post at point."
-  (interactive)
-  (lem-ui-with-item
-    (lem-ui-view-post id)))
-
-(defun lem-ui-view-post (id &optional sort limit)
-  "View post with ID.
-SORT must be a member of `lem-comment-sort-types.'
-LIMIT."
-  (let* ((post-view (lem-get-post id))
-         (post (alist-get 'post_view post-view))
-         (community-id (alist-get 'community_id
-                                  (alist-get 'post post)))
-         (sort (or sort lem-default-comment-sort-type))
-         (bindings (lem-ui-view-options 'post))
-         (buf (format "*lem-post-%s*" id)))
-    (lem-ui-with-buffer buf 'lem-mode nil bindings
-      (lem-ui--set-mods community-id)
-      (lem-ui-render-post post :community)
-      (lem-ui-render-post-comments id sort limit)
-      (lem-ui--init-view)
-      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)))) ; limit
+;;; FEATURE (PIN) POSTS
 
 (defun lem-ui-do-feature (id arg type str)
   "Call `lem-feature-post' and handle the response.
@@ -1133,7 +1109,7 @@ COMMUNITY means display the community posted to."
      'creator-id .creator.id
      'lem-type (caar json))))
 
-
+;; MARKDOWN BODY RENDERING
 (defun lem-ui-render-url (url &optional no-shorten)
   "Render URL, a plain non-html string.
 NO-SHORTEN means display full URL, else only the domain is shown."
@@ -1268,6 +1244,32 @@ community of the current post, with COMMUNITY-ID."
          (mods-ids (lem-ui-mods-ids mods)))
     (setq lem-ui-post-community-mods-ids mods-ids)))
 
+;;; POSTS
+
+(defun lem-ui-view-post-at-point ()
+  "View post at point."
+  (interactive)
+  (lem-ui-with-item
+    (lem-ui-view-post id)))
+
+(defun lem-ui-view-post (id &optional sort limit)
+  "View post with ID.
+SORT must be a member of `lem-comment-sort-types.'
+LIMIT."
+  (let* ((post-view (lem-get-post id))
+         (post (alist-get 'post_view post-view))
+         (community-id (alist-get 'community_id
+                                  (alist-get 'post post)))
+         (sort (or sort lem-default-comment-sort-type))
+         (bindings (lem-ui-view-options 'post))
+         (buf (format "*lem-post-%s*" id)))
+    (lem-ui-with-buffer buf 'lem-mode nil bindings
+      (lem-ui--set-mods community-id)
+      (lem-ui-render-post post :community)
+      (lem-ui-render-post-comments id sort limit)
+      (lem-ui--init-view)
+      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)))) ; limit
+
 (defun lem-ui-render-post (post &optional community trim)
   ;; NB trim in instance, community, and user views
   ;; NB show community info in instance and in post views
@@ -1348,6 +1350,8 @@ TRIM means trim each post for length."
   (cl-loop for x in posts
            do (lem-ui-render-post x community trim)))
 
+;;; SAVING
+
 (defun lem-ui-save-item (&optional unsave)
   "Save item at point.
 Saved items can be viewed in your profile, like bookmarks.
@@ -1422,6 +1426,8 @@ SORT. LIMIT. PAGE."
 
 ;;; COMPLETION FOR ACTIONS
 
+(defalias 'lem-ui-do-item-completing 'fedi-do-item-completing)
+
 (defun lem-ui--communities-list (communities)
   "Return an alist of name/description and ID from COMMUNITIES."
   (cl-loop for item in communities
@@ -1446,8 +1452,6 @@ SORT. LIMIT. PAGE."
            collect (let-alist (alist-get 'target item)
                      (list (lem-ui-handle-from-url .actor_id "@")
                            .id))))
-
-(defalias 'lem-ui-do-item-completing 'fedi-do-item-completing)
 
 ;;; COMMUNITIES
 
