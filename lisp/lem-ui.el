@@ -166,28 +166,7 @@ Used for pagination.")
   :prefix "lem-ui-"
   :group 'lem)
 
-(defcustom lem-ui-symbols
-  '((reply     . ("💬" . "R"))
-    (boost     . ("🔁" . "B"))
-    (favourite . ("⭐" . "F"))
-    (bookmark  . ("🔖" . "K"))
-    (media     . ("📹" . "[media]"))
-    (verified  . ("✓" . "V"))
-    (locked    . ("🔒" . "[locked]"))
-    (private   . ("🔒" . "[followers]"))
-    (direct    . ("✉" . "[direct]"))
-    (edited    . ("✍" . "[edited]"))
-    (upvote    . ("⬆" . "[upvotes]"))
-    (person    . ("👤" . "[people]"))
-    (pinned    . ("📌" . "[pinned]"))
-    (replied   . ("⬇" . "↓"))
-    (community . ("👪" . "[community]"))
-    (reply-bar . ("│" . "|")) ;┃
-    (deleted   . ("🗑" . "[deleted]")))
-  "A set of symbols (and fallback strings) to be used in timeline.
-If a symbol does not look right (tofu), it means your
-font settings do not support it."
-  :type '(alist :key-type symbol :value-type string))
+(defvar lem-ui-symbols fedi-symbols)
 
 ;;; UTILITIES
 
@@ -208,44 +187,17 @@ font settings do not support it."
       (make-string 12 ?―)
     (make-string 12 ?-)))
 
-(defun lem-ui-format-heading (name)
-  "Format a heading for NAME, a string."
-  (let* ((name (if (symbolp name)
-                   (symbol-name name)
-                 name))
-         (name (string-replace "-" " " name)))
-    (propertize
-     (concat " " lem-ui-horiz-bar "\n "
-             (upcase name)
-             "\n " lem-ui-horiz-bar "\n")
-     'face 'success)))
+(defalias 'lem-ui-format-heading 'fedi-format-heading)
 
-(defun lem-ui-insert-heading (name)
-  "Insert heading for NAME, a string."
-  (insert (lem-ui-format-heading name)))
+(defalias 'lem-ui-insert-heading 'fedi-insert-heading)
 
-(defun lem-ui-symbol (name)
-  "Return the unicode symbol (as a string) corresponding to NAME.
-If symbol is not displayable, an ASCII equivalent is returned. If
-NAME is not part of the symbol table, '?' is returned."
-  (if-let* ((symbol (alist-get name lem-ui-symbols)))
-      (if (char-displayable-p (string-to-char (car symbol)))
-          (car symbol)
-        (cdr symbol))
-    "?"))
+(defalias 'lem-ui-symbol 'fedi-symbol)
 
-(defun lem-ui-font-lock-comment (&rest strs)
-  "Font lock comment face STRS."
-  (propertize (mapconcat #'identity strs "")
-              'face font-lock-comment-face))
+(defalias 'lem-ui-font-lock-comment 'fedi-font-lock-comment)
 
-(defun lem-ui-thing-json ()
-  "Get json of thing at point, comment, post, community or user."
-  (get-text-property (point) 'json))
+(defalias 'lem-ui-thing-json 'fedi-thing-json)
 
-(defun lem-ui--property (prop)
-  "Get text property PROP from item at point."
-  (get-text-property (point) prop))
+(defalias 'lem-ui--property 'fedi--property)
 
 (defun lem-ui--item-type ()
   "Return the type property of item at point."
@@ -281,38 +233,15 @@ PREFIX is a string, ! for community, @ for user."
     (concat (or prefix "")
             item "@" domain)))
 
-(defun lem-ui-response-msg (response &optional key value format-str)
-  "Check RESPONSE, JSON from the server, and message on success.
-Used to handle server responses after the user
-does some action, such as subscribing, blocking, etc.
-KEY returns the value of a field from RESPONSE, using `alist-get'.
-VALUE specifies how to check the value: possible values are
-:non-nil, :json-false and t.
-FORMAT-STR is passed to message if the value check passes.
-If the check doesn't pass, error.
-Currently we error if we receive incorrect KEY or CHECK args,
-even though the request may have succeeded."
-  (if (stringp response) ; a string is an error
-      (error "Error: %s" response))
-  (let ((field (alist-get key response)))
-    (cond ((eq value :non-nil) ; value json exists
-           (if field
-               (message format-str)
-             (error "Error")))
-          ((or (eq value t) ; json val t or :json-false
-               (eq value :json-false))
-           (if (eq field value)
-               (message format-str)
-             (error "Error")))
-          (t
-           (error "Error handling response data, but request succeeded")))))
+(defalias 'lem-ui-response-msg 'fedi-response-msg)
 
 ;; TODO: add to `lem-ui-with-buffer'? we almost always call it
+;; TODO: factor out into fedi.el (just has 1 lem fn call)
 (defun lem-ui--init-view ()
   "Initialize a lemmy view.
 Inserts images and sets relative timestamp timers."
   (let ((inhibit-read-only t))
-    ;; don't wrap long verbatim text (affects headings):
+    ;; don't wrap long verbatim text:
     (setq truncate-lines t)
     ;; load images:
     (lem-ui-insert-images)
@@ -1076,8 +1005,9 @@ comment display."
     (propertize
      (concat
       (if title
-          (concat (lem-ui-propertize-title title)
-                  "\n")
+          ;; TODO: preserve shr-props and add bold?
+          (lem-ui-propertize-title
+           (lem-ui-render-body title))
         "")
       (if url
           (concat url "\n")
@@ -1543,32 +1473,7 @@ SORT. LIMIT. PAGE."
                      (list (lem-ui-handle-from-url .actor_id "@")
                            .id))))
 
-(defun lem-ui-do-item-completing (fetch-fun list-fun prompt action-fun)
-  "Fetch items, choose one, and do an action.
-FETCH-FUN is the function to fetch data.
-LIST-FUN is called on the data to return a collection for
-`completing-read'. It should return a string (name, handle) as
-its first element, and an id as second element. A second element
-will be used as an annotation.
-PROMPT is for the same.
-ACTION-FUN is called with 2 args: the chosen item's id and the
-candidate's car, a string, usually its name or a handle."
-  (let* ((data (funcall fetch-fun))
-         (list (funcall list-fun data))
-         (completion-extra-properties
-          (when list
-            (list :annotation-function
-                  (lambda (i)
-                    (let ((annot (nth 2 (assoc i list #'equal))))
-                      (concat
-                       (propertize " " 'display
-                                   '(space :align-to (- right-margin 51)))
-                       (string-limit (car (string-lines annot)) 50)))))))
-         (choice (when list (completing-read prompt list)))
-         (id (when list (nth 1 (assoc choice list #'equal)))))
-    (if (not list)
-        (user-error "No items returned")
-      (funcall action-fun id choice))))
+(defalias 'lem-ui-do-item-completing 'fedi-do-item-completing)
 
 ;;; COMMUNITIES
 
@@ -2644,7 +2549,7 @@ TYPE should be either :unlike, :dislike, or nil to like."
 
 (defun lem-ui--update-item-json (new-json)
   "Replace the json property of item at point with NEW-JSON."
-  ;; NB: this replaces a comment-reply obj with comment obj if a reply is liked!
+  ;; FIXME: this replaces a comment-reply obj with comment obj if a reply is liked!
   (let ((inhibit-read-only t)
         (region (fedi--find-property-range 'json (point) :backwards)))
     (add-text-properties (car region) (cdr region)
