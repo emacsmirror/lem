@@ -808,9 +808,13 @@ STR is for message."
      'post_view :non-nil
      (format "Post %s!" str))
     (lem-ui--update-item-json (alist-get 'post_view response))
-    (lem-ui-update-top-byline-from-json
-     (unless (eq view 'lem-ui-view-community)
-       :community))))
+    (lem-ui-update-item-from-json
+     'byline-top
+     (lambda (json)
+       (lem-ui-top-byline-replace
+        json
+        (unless (eq view 'lem-ui-view-community)
+          :community))))))
 
 (defun lem-ui-feature-post (&optional unfeature)
   "Feature (pin) a post, either to its instance or community.
@@ -1085,30 +1089,23 @@ PREFIX is a \"line-prefix\" property to add."
                 'byline-bottom t
                 'line-prefix prefix)))
 
-;; TODO: update top byline (needs to update item json also)
-(defun lem-ui-update-bt-byline-from-json (&optional vote saved)
-  "Update the text of the bottom byline based on item JSON.
-Used to adjust counts after (un)liking.
-VOTE is a number, handed to `lem-ui-bt-byline'.
-SAVED means to add saved icon."
-  (let-alist (lem-ui--property 'json)
-    (let ((inhibit-read-only t)
-          (byline
-           (fedi--find-property-range 'byline-bottom (point)
-                                      (when (lem-ui--property 'byline-bottom)
-                                        :backwards)))
-          (prefix (lem-ui--property 'line-prefix)))
-      ;; `emojify-mode' doesn't work with display prop, so we replace byline
-      ;; string:
-      (lem-ui--replace-region-contents
-       (car byline) (cdr byline)
-       (lambda ()
-         (lem-ui-bt-byline .counts.score
-                           (or .counts.child_count
-                               .counts.comments)
-                           vote saved prefix))))))
+;;; UPDATING ITEMS
 
-(defun lem-ui-call-top-byline (json &optional community)
+(defalias 'lem-ui-update-item-from-json 'fedi-update-item-from-json)
+
+(defalias 'lem-ui--replace-region-contents 'fedi--replace-region-contents)
+
+(defun lem-ui-bt-byline-replace (json vote saved &optional prefix)
+  "Call `lem-ui-bt-byline' to update the bottom byline.
+JSON is the item's json.
+VOTE, SAVED, and PREFIX are arguments for `lem-ui-bt-byline'."
+  (let-alist json
+    (lem-ui-bt-byline .counts.score
+                      (or .counts.child_count
+                          .counts.comments)
+                      vote saved prefix)))
+
+(defun lem-ui-top-byline-replace (json &optional community)
   "Call `lem-ui-top-byline' and add post properties to it.
 JSON is the data to use.
 COMMUNITY means display the community posted to."
@@ -1136,35 +1133,6 @@ COMMUNITY means display the community posted to."
      'creator-id .creator.id
      'lem-type (caar json))))
 
-(defun lem-ui-update-top-byline-from-json (&optional community)
-  "Update the top byline based on item JSON.
-COMMUNITY means render community details."
-  (let ((json (lem-ui--property 'json)))
-    (let ((inhibit-read-only t)
-          (byline
-           (fedi--find-property-range 'byline-top (point)
-                                      (when (lem-ui--property 'byline-top)
-                                        :backwards))))
-      ;; (prefix (lem-ui--property 'line-prefix)))
-      ;; `emojify-mode' doesn't work with display prop, so we replace byline
-      ;; string:
-      (lem-ui--replace-region-contents
-       (car byline) (cdr byline)
-       (lambda ()
-         (lem-ui-call-top-byline json community))))))
-
-(defun lem-ui--replace-region-contents (beg end replace-fun)
-  "Replace buffer contents from BEG to END with REPLACE-FUN.
-We roll our own `replace-region-contents' because it is as
-non-destructive as possible, whereas we need to always replace
-the whole likes count in order to propertize it fully."
-  (save-excursion
-    (save-restriction
-      (narrow-to-region beg end)
-      (goto-char (point-min))
-      (delete-region (point-min) (point-max))
-      (insert
-       (funcall replace-fun)))))
 
 (defun lem-ui-render-url (url &optional no-shorten)
   "Render URL, a plain non-html string.
@@ -1400,7 +1368,10 @@ If UNSAVE, unsave the item instead."
                                     'post_view :non-nil
                                     (format "%s %s %s!" type id s-str))
                (lem-ui--update-item-json (alist-get 'post_view json))
-               (lem-ui-update-bt-byline-from-json my-vote s-bool)))
+               (lem-ui-update-item-from-json
+                'byline-bottom
+                (lambda (json)
+                  (lem-ui-bt-byline-replace json my-vote s-bool)))))
             ((eq type 'comment)
              (let ((json (lem-save-comment id s-bool))
                    (my-vote (alist-get 'my_vote json)))
@@ -1408,7 +1379,10 @@ If UNSAVE, unsave the item instead."
                                     'comment_view :non-nil
                                     (format "%s %s %s!" type id s-str))
                (lem-ui--update-item-json (alist-get 'comment_view json))
-               (lem-ui-update-bt-byline-from-json my-vote s-bool)))
+               (lem-ui-update-item-from-json
+                'byline-bottom
+                (lambda (json)
+                  (lem-ui-bt-byline-replace json my-vote s-bool)))))
             (t
              (message "You can only save posts and comments."))))
     :number))
@@ -2519,7 +2493,10 @@ TYPE should be either :unlike, :dislike, or nil to like."
                                    item :non-nil
                                    (format "%s %s %s!" item id like-str))
               (lem-ui--update-item-json i)
-              (lem-ui-update-bt-byline-from-json my-vote saved)))))
+              (lem-ui-update-item-from-json
+               'byline-bottom
+               (lambda (json)
+                 (lem-ui-bt-byline-replace json my-vote saved)))))))
     :number))
 
 (defun lem-ui-dislike-item ()
