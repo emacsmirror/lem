@@ -1127,6 +1127,25 @@ COMMUNITY means display the community posted to."
      'lem-type 'comment
      'line-prefix indent-str)))
 
+(defun lem-ui-reload-view ()
+  "Reload the current view."
+  (let ((type (lem-ui-view-type))
+        (id (save-excursion
+              (goto-char (point-min))
+              (lem-ui--property 'id))))
+    (cond ((eq type 'post)
+           (lem-ui-view-post id))
+          ((eq type 'instance)
+           (lem-ui-view-instance))
+          ((eq type 'community)
+           (lem-ui-view-community id))
+          ((eq type 'user)
+           (lem-ui-view-user id))
+          ((eq type 'inbox)
+           (lem-ui-view-inbox))
+          (t
+           (user-error "Unable to reload view type %s." type)))))
+
 ;; MARKDOWN BODY RENDERING
 (defun lem-ui-render-url (url &optional no-shorten)
   "Render URL, a plain non-html string.
