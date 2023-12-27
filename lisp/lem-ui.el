@@ -1109,6 +1109,24 @@ COMMUNITY means display the community posted to."
      'creator-id .creator.id
      'lem-type (caar json))))
 
+(defun lem-ui-comment-body-replace (json &optional indent del rem)
+  "Return a rendered text body from JSON, a modified post or comment."
+  (let-alist json
+    (propertize
+     (lem-ui-render-body
+      (or .post.body .comment_view.comment.content)
+      .comment_view.comment
+      indent)
+     'display (lem-ui-format-display-prop del rem)
+     ;; props from `lem-ui-format-comment':
+     'json comment
+     'id .comment.id
+     'post-id .comment.post_id
+     'community-id .post.community_id
+     'creator-id .creator.id
+     'lem-type 'comment
+     'line-prefix indent-str)))
+
 ;; MARKDOWN BODY RENDERING
 (defun lem-ui-render-url (url &optional no-shorten)
   "Render URL, a plain non-html string.
@@ -2053,11 +2071,17 @@ If RESTORE, restore the item instead."
       (when (y-or-n-p (format "%s %s?"
                               (if restore "Restore" "Delete")
                               item))
-        (lem-ui-response-msg
-         (funcall fun id (if restore :json-false t))
-         (lem-ui-item-to-alist-key item) :non-nil
-         (format "%s %s %s!" item id
-                 (if restore "restored" "deleted")))))))
+        (let ((response (funcall fun id (if restore :json-false t))))
+          (lem-ui-response-msg
+           response
+           (lem-ui-item-to-alist-key item) :non-nil
+           (format "%s %s %s!" item id
+                   (if restore "restored" "deleted")))
+          (lem-ui--update-item-json response)
+          (lem-ui-update-item-from-json
+           'lem-type
+           (lambda (json)
+             (lem-ui-format-comment json))))))))
 
 (defun lem-ui-item-to-alist-key (item)
   "Given ITEM, a symbol, return a valid JSON key, item_view.
@@ -2265,6 +2289,7 @@ DETAILS means display what community and post the comment is linked to."
                            post-title)
         "\n"
         (propertize (or content "")
+                    'body t
                     'display (lem-ui-format-display-prop deleted removed))
         "\n"
         (lem-ui-bt-byline .counts.score .counts.child_count .my_vote .saved)
@@ -2533,8 +2558,10 @@ TYPE should be either :unlike, :dislike, or nil to like."
   ;; FIXME: this replaces a comment-reply obj with comment obj if a reply is liked!
   (let ((inhibit-read-only t)
         (region (fedi--find-property-range 'json (point) :backwards)))
-    (add-text-properties (car region) (cdr region)
-                         `(json ,new-json))))
+    (save-restriction
+      (narrow-to-region (car region) (cdr region))
+      (add-text-properties (car region) (cdr region)
+                           `(json ,new-json)))))
 
 ;;; USERS
 
