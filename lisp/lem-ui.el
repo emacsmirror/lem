@@ -2091,20 +2091,26 @@ If RESTORE, restore the item instead."
       (when (y-or-n-p (format "%s %s?"
                               (if restore "Restore" "Delete")
                               item))
-        (let ((response (funcall fun id (if restore :json-false t))))
+        (let ((response (funcall fun id (if restore :json-false t)))
+              (view (lem-ui-get-buffer-spec :view-fun)))
           (lem-ui-response-msg
            response
            (lem-ui-item-to-alist-key item) :non-nil
            (format "%s %s %s!" item id
                    (if restore "restored" "deleted")))
           (lem-ui--update-item-json response)
-          (lem-ui-update-item-from-json
-           'lem-type
-           (lambda (json)
-             (let ((item-resp (alist-get
-                               (lem-ui-item-to-alist-key item)
-                               json)))
-               (lem-ui-format-comment item-resp)))))))))
+          (if (eq item 'post)
+              (lem-ui-update-item-from-json
+               'byline-top
+               (lambda (response)
+                 (lem-ui-top-byline-replace
+                  (alist-get 'post_view response)
+                  (unless (eq view 'lem-ui-view-community)
+                    :community))))
+            (lem-ui-update-item-from-json
+             'lem-type
+             (lambda (response)
+               (lem-ui-render-comment (alist-get 'comment_view response))))))))))
 
 (defun lem-ui-item-to-alist-key (item)
   "Given ITEM, a symbol, return a valid JSON key, item_view.
