@@ -2132,8 +2132,7 @@ If RESTORE, restore the item instead."
                  (lambda (response)
                    (lem-ui-format-comment (alist-get 'comment_view response)
                                           indent)))
-                ;; TODO: if comment, update parent count?
-                )))))))))
+                (lem-ui-update-parent-post))))))))))
 
 (defun lem-ui-item-to-alist-key (item)
   "Given ITEM, a symbol, return a valid JSON key, item_view.
@@ -2141,6 +2140,22 @@ Item may be post, comment, community, etc."
   (intern
    (concat
     (symbol-name item) "_view")))
+
+(defun lem-ui-update-parent-post ()
+  "Go to buffer's first element, and reload its json data and bottom byline."
+  (save-restriction
+    (save-excursion
+      (widen)
+      (goto-char (point-min))
+      (forward-char)
+      (let* ((id (lem-ui--property 'id))
+             (post-view (lem-get-post id))
+             (post (alist-get 'post_view post-view)))
+        (lem-ui--update-item-json post)
+        (lem-ui-update-item-from-json
+         'byline-bottom
+         (lambda (json)
+           (lem-ui-bt-byline-replace json)))))))
 
 (defun lem-ui-delete-comment ()
   "Delete comment at point."
