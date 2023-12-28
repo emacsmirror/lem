@@ -2101,7 +2101,8 @@ If RESTORE, restore the item instead."
                                   (if restore "Restore" "Delete")
                                   item))
             (let ((response (funcall fun id (if restore :json-false t)))
-                  (view (lem-ui-get-buffer-spec :view-fun)))
+                  (view (lem-ui-get-buffer-spec :view-fun))
+                  (indent (length (lem-ui--property 'line-prefix))))
               (lem-ui-response-msg
                response
                (lem-ui-item-to-alist-key item) :non-nil
@@ -2119,7 +2120,10 @@ If RESTORE, restore the item instead."
                 (lem-ui-update-item-from-json
                  'lem-type
                  (lambda (response)
-                   (lem-ui-render-comment (alist-get 'comment_view response)))))))))))))
+                   (lem-ui-format-comment (alist-get 'comment_view response)
+                                          indent)))
+                ;; TODO: if comment, update parent count?
+                )))))))))
 
 (defun lem-ui-item-to-alist-key (item)
   "Given ITEM, a symbol, return a valid JSON key, item_view.
