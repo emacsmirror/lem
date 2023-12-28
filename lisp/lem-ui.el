@@ -2573,26 +2573,25 @@ TYPE should be either :unlike, :dislike, or nil to like."
            (like-str (cond ((eq type :unlike) "unliked")
                            ((eq type :dislike) "disliked")
                            (t "liked"))))
-      (if (or (eq item 'post)
-              (eq item 'comment)
-              (eq item 'comment-reply))
-          (progn
-            (let* ((vote (funcall fun id score))
-                   (item (if (eq item 'comment-reply)
-                             'comment
-                           item))
-                   (obj (lem-ui-item-to-alist-key item))
-                   (i (alist-get obj vote))
-                   (saved (alist-get 'saved i))
-                   (my-vote (alist-get 'my_vote i)))
-              (lem-ui-response-msg i ; no my_vote if we unliked in 0.19?
-                                   item :non-nil
-                                   (format "%s %s %s!" item id like-str))
-              (lem-ui--update-item-json i)
-              (lem-ui-update-item-from-json
-               'byline-bottom
-               (lambda (json)
-                 (lem-ui-bt-byline-replace json my-vote saved)))))))
+      (when (or (eq item 'post)
+                (eq item 'comment)
+                (eq item 'comment-reply))
+        (let* ((vote (funcall fun id score)) ; let-alist this junk:
+               (item (if (eq item 'comment-reply)
+                         'comment
+                       item))
+               (obj (lem-ui-item-to-alist-key item))
+               (i (alist-get obj vote))
+               (saved (alist-get 'saved i))
+               (my-vote (alist-get 'my_vote i)))
+          (lem-ui-response-msg i ; no my_vote if we unliked in 0.19?
+                               item :non-nil
+                               (format "%s %s %s!" item id like-str))
+          (lem-ui--update-item-json i)
+          (lem-ui-update-item-from-json
+           'byline-bottom
+           (lambda (json)
+             (lem-ui-bt-byline-replace json my-vote saved))))))
     :number))
 
 (defun lem-ui-dislike-item ()
