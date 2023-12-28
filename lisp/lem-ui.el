@@ -1119,25 +1119,6 @@ COMMUNITY means display the community posted to."
      'creator-id .creator.id
      'lem-type (caar json))))
 
-;; reload whole item if we need to do body, then its all cleanly done.
-;; (defun lem-ui-comment-body-replace (json &optional indent del rem)
-;;   "Return a rendered text body from JSON, a modified post or comment."
-;;   (let-alist json
-;;     (propertize
-;;      (lem-ui-render-body
-;;       (or .post.body .comment_view.comment.content)
-;;       .comment_view.comment
-;;       indent)
-;;      'display (lem-ui-format-display-prop del rem)
-;;      ;; props from `lem-ui-format-comment':
-;;      'json comment
-;;      'id .comment.id
-;;      'post-id .comment.post_id
-;;      'community-id .post.community_id
-;;      'creator-id .creator.id
-;;      'lem-type 'comment
-;;      'line-prefix indent-str)))
-
 (defun lem-ui-reload-view ()
   "Reload the current view."
   (let ((type (lem-ui-view-type))
