@@ -1109,23 +1109,24 @@ COMMUNITY means display the community posted to."
      'creator-id .creator.id
      'lem-type (caar json))))
 
-(defun lem-ui-comment-body-replace (json &optional indent del rem)
-  "Return a rendered text body from JSON, a modified post or comment."
-  (let-alist json
-    (propertize
-     (lem-ui-render-body
-      (or .post.body .comment_view.comment.content)
-      .comment_view.comment
-      indent)
-     'display (lem-ui-format-display-prop del rem)
-     ;; props from `lem-ui-format-comment':
-     'json comment
-     'id .comment.id
-     'post-id .comment.post_id
-     'community-id .post.community_id
-     'creator-id .creator.id
-     'lem-type 'comment
-     'line-prefix indent-str)))
+;; reload whole item if we need to do body, then its all cleanly done.
+;; (defun lem-ui-comment-body-replace (json &optional indent del rem)
+;;   "Return a rendered text body from JSON, a modified post or comment."
+;;   (let-alist json
+;;     (propertize
+;;      (lem-ui-render-body
+;;       (or .post.body .comment_view.comment.content)
+;;       .comment_view.comment
+;;       indent)
+;;      'display (lem-ui-format-display-prop del rem)
+;;      ;; props from `lem-ui-format-comment':
+;;      'json comment
+;;      'id .comment.id
+;;      'post-id .comment.post_id
+;;      'community-id .post.community_id
+;;      'creator-id .creator.id
+;;      'lem-type 'comment
+;;      'line-prefix indent-str)))
 
 (defun lem-ui-reload-view ()
   "Reload the current view."
@@ -2100,7 +2101,10 @@ If RESTORE, restore the item instead."
           (lem-ui-update-item-from-json
            'lem-type
            (lambda (json)
-             (lem-ui-format-comment json))))))))
+             (let ((item-resp (alist-get
+                               (lem-ui-item-to-alist-key item)
+                               json)))
+               (lem-ui-format-comment item-resp)))))))))
 
 (defun lem-ui-item-to-alist-key (item)
   "Given ITEM, a symbol, return a valid JSON key, item_view.
@@ -2329,10 +2333,10 @@ DETAILS means display what community and post the comment is linked to."
 DEL and REM are the values of the deleted and removed attributes
 in an item's data."
   (cond ((eq del t)
-         (propertize "[deleted by user]"
+         (propertize "[deleted by user]\n"
                      'face '(:slant italic)))
         ((eq rem t)
-         (propertize "[removed by mod]"
+         (propertize "[removed by mod]\n"
                      'face '(:slant italic)))
         (t nil)))
 
@@ -2577,10 +2581,8 @@ TYPE should be either :unlike, :dislike, or nil to like."
   ;; FIXME: this replaces a comment-reply obj with comment obj if a reply is liked!
   (let ((inhibit-read-only t)
         (region (fedi--find-property-range 'json (point) :backwards)))
-    (save-restriction
-      (narrow-to-region (car region) (cdr region))
-      (add-text-properties (car region) (cdr region)
-                           `(json ,new-json)))))
+    (add-text-properties (car region) (cdr region)
+                         `(json ,new-json))))
 
 ;;; USERS
 
