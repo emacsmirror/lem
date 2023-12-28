@@ -1071,15 +1071,25 @@ PREFIX is a \"line-prefix\" property to add."
 
 (defalias 'lem-ui--replace-region-contents 'fedi--replace-region-contents)
 
-(defun lem-ui-bt-byline-replace (json vote saved &optional prefix)
+(defun lem-ui-bt-byline-replace (json &optional vote saved prefix)
   "Call `lem-ui-bt-byline' to update the bottom byline.
 JSON is the item's json.
 VOTE, SAVED, and PREFIX are arguments for `lem-ui-bt-byline'."
   (let-alist json
-    (lem-ui-bt-byline .counts.score
-                      (or .counts.child_count
-                          .counts.comments)
-                      vote saved prefix)))
+    (let ((vote (or vote .my_vote))
+          (saved (or saved .saved))
+          (prefix (or prefix (lem-ui--property 'line-prefix))))
+      (propertize
+       (lem-ui-bt-byline .counts.score
+                         (or .counts.child_count
+                             .counts.comments)
+                         vote saved prefix)
+       ;; properties from render-post/comment (need to be checked):
+       'json json
+       'id (or .post.id .comment.id)
+       'community-id .post.community_id
+       'creator-id .creator.id
+       'lem-type (caar json)))))
 
 (defun lem-ui-top-byline-replace (json &optional community)
   "Call `lem-ui-top-byline' and add post properties to it.
