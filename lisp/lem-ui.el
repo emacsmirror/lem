@@ -1119,6 +1119,22 @@ COMMUNITY means display the community posted to."
      'creator-id .creator.id
      'lem-type (caar json))))
 
+(defun lem-ui-update-parent-post ()
+  "Go to buffer's first element, and reload its json data and bottom byline."
+  (save-restriction
+    (save-excursion
+      (widen)
+      (goto-char (point-min))
+      (forward-char)
+      (let* ((id (lem-ui--property 'id))
+             (post-view (lem-get-post id))
+             (post (alist-get 'post_view post-view)))
+        (lem-ui--update-item-json post)
+        (lem-ui-update-item-from-json
+         'byline-bottom
+         (lambda (json)
+           (lem-ui-bt-byline-replace json)))))))
+
 (defun lem-ui-reload-view ()
   "Reload the current view."
   (let ((type (lem-ui-view-type))
@@ -2121,22 +2137,6 @@ Item may be post, comment, community, etc."
   (intern
    (concat
     (symbol-name item) "_view")))
-
-(defun lem-ui-update-parent-post ()
-  "Go to buffer's first element, and reload its json data and bottom byline."
-  (save-restriction
-    (save-excursion
-      (widen)
-      (goto-char (point-min))
-      (forward-char)
-      (let* ((id (lem-ui--property 'id))
-             (post-view (lem-get-post id))
-             (post (alist-get 'post_view post-view)))
-        (lem-ui--update-item-json post)
-        (lem-ui-update-item-from-json
-         'byline-bottom
-         (lambda (json)
-           (lem-ui-bt-byline-replace json)))))))
 
 (defun lem-ui-delete-comment ()
   "Delete comment at point."
