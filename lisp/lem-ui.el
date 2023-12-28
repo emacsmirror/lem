@@ -261,6 +261,13 @@ Inserts images and sets relative timestamp timers."
                          (current-buffer)
                          nil)))))
 
+(defun lem-ui-item-to-alist-key (item)
+  "Given ITEM, a symbol, return a valid JSON key, item_view.
+Item may be post, comment, community, etc."
+  (intern
+   (concat
+    (symbol-name item) "_view")))
+
 ;;; MACROS
 
 (defmacro lem-ui-with-buffer (buffer mode-fun other-window bindings &rest body)
@@ -1162,6 +1169,7 @@ COMMUNITY means display the community posted to."
            (user-error "Unable to reload view type %s" type)))))
 
 ;; MARKDOWN BODY RENDERING
+
 (defun lem-ui-render-url (url &optional no-shorten)
   "Render URL, a plain non-html string.
 NO-SHORTEN means display full URL, else only the domain is shown."
@@ -2137,13 +2145,6 @@ If RESTORE, restore the item instead."
                    (lem-ui-format-comment (alist-get 'comment_view response)
                                           indent)))
                 (lem-ui-update-parent-post))))))))))
-
-(defun lem-ui-item-to-alist-key (item)
-  "Given ITEM, a symbol, return a valid JSON key, item_view.
-Item may be post, comment, community, etc."
-  (intern
-   (concat
-    (symbol-name item) "_view")))
 
 (defun lem-ui-delete-comment ()
   "Delete comment at point."
