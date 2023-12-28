@@ -1136,7 +1136,7 @@ COMMUNITY means display the community posted to."
           ((eq type 'inbox)
            (lem-ui-view-inbox))
           (t
-           (user-error "Unable to reload view type %s." type)))))
+           (user-error "Unable to reload view type %s" type)))))
 
 ;; MARKDOWN BODY RENDERING
 (defun lem-ui-render-url (url &optional no-shorten)
