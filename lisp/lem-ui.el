@@ -1067,9 +1067,16 @@ PREFIX is a \"line-prefix\" property to add."
 
 ;;; UPDATING ITEMS
 
+;; currently if we need to update something after an action we update that
+;; item's json, then update the item or part thereof from the updated json.
+;; because we always update the json prop for the whole item, but then
+;; sometimes only update a part of the item, e.g. bylines.
+
 (defalias 'lem-ui-update-item-from-json 'fedi-update-item-from-json)
 
 (defalias 'lem-ui--replace-region-contents 'fedi--replace-region-contents)
+
+(defalias 'lem-ui--update-item-json 'fedi--update-item-json)
 
 (defun lem-ui-bt-byline-replace (json &optional vote saved prefix)
   "Call `lem-ui-bt-byline' to update the bottom byline.
@@ -2599,14 +2606,6 @@ TYPE should be either :unlike, :dislike, or nil to like."
                 ((or (eq my-vote nil)
                      (eq my-vote 0))
                  (lem-ui-like-item)))))))
-
-(defun lem-ui--update-item-json (new-json)
-  "Replace the json property of item at point with NEW-JSON."
-  ;; FIXME: this replaces a comment-reply obj with comment obj if a reply is liked!
-  (let ((inhibit-read-only t)
-        (region (fedi--find-property-range 'json (point) :backwards)))
-    (add-text-properties (car region) (cdr region)
-                         `(json ,new-json))))
 
 ;;; USERS
 
