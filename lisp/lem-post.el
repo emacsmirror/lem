@@ -159,7 +159,8 @@ COMMENT means we are composing a comment."
 RESPONSE is the comment_view data returned by the server."
   (with-current-buffer lem-post-last-buffer
     (let-alist response
-      (let ((indent (length (lem-ui--property 'line-prefix))))
+      (let ((indent (length (lem-ui--property 'line-prefix)))
+            (view (lem-ui-view-type)))
         (lem-ui-response-msg
          response 'comment_view :non-nil
          (format "Comment edited: %s" .comment_view.comment.content))
@@ -167,9 +168,9 @@ RESPONSE is the comment_view data returned by the server."
         (lem-ui-update-item-from-json
          'lem-type
          (lambda (_response)
-           ;; TODO: respect details arg here
-           ;; (for comments in any non-post view):
-           (lem-ui-format-comment .comment_view indent)))))))
+           (lem-ui-format-comment .comment_view indent
+                                  nil (unless (eq view 'post)
+                                        :details))))))))
 
 (defun lem-ui-insert-comment-after-parent (response parent-id)
   "Insert new reply comment after its parent.
