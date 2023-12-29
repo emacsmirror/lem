@@ -167,6 +167,8 @@ RESPONSE is the comment_view data returned by the server."
         (lem-ui-update-item-from-json
          'lem-type
          (lambda (_response)
+           ;; TODO: respect details arg here
+           ;; (for comments in any non-post view):
            (lem-ui-format-comment .comment_view indent)))))))
 
 (defun lem-ui-insert-comment-after-parent (response parent-id)
