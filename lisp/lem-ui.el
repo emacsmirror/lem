@@ -1316,19 +1316,21 @@ community of the current post, with COMMUNITY-ID."
   "View post with ID.
 SORT must be a member of `lem-comment-sort-types.'
 LIMIT."
-  (let* ((post-view (lem-get-post id))
-         (post (alist-get 'post_view post-view))
-         (community-id (alist-get 'community_id
-                                  (alist-get 'post post)))
-         (sort (or sort lem-default-comment-sort-type))
-         (bindings (lem-ui-view-options 'post))
-         (buf (format "*lem-post-%s*" id)))
-    (lem-ui-with-buffer buf 'lem-mode nil bindings
-      (lem-ui--set-mods community-id)
-      (lem-ui-render-post post :community)
-      (lem-ui-render-post-comments id sort limit)
-      (lem-ui--init-view)
-      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)))) ; limit
+  (let ((post-view (lem-get-post id)))
+    (if (stringp post-view)
+        (user-error "%s" post-view)
+      (let* ((post (alist-get 'post_view post-view))
+             (community-id (alist-get 'community_id
+                                      (alist-get 'post post)))
+             (sort (or sort lem-default-comment-sort-type))
+             (bindings (lem-ui-view-options 'post))
+             (buf (format "*lem-post-%s*" id)))
+        (lem-ui-with-buffer buf 'lem-mode nil bindings
+          (lem-ui--set-mods community-id)
+          (lem-ui-render-post post :community)
+          (lem-ui-render-post-comments id sort limit)
+          (lem-ui--init-view)
+          (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)))))) ; limit
 
 (defun lem-ui-render-post (post &optional community trim)
   ;; NB trim in instance, community, and user views
