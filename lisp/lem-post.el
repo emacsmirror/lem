@@ -47,6 +47,8 @@
 (defvar-local lem-post-comment-post-id nil)
 (defvar-local lem-post-comment-comment-id nil)
 
+(defvar lem-post-last-buffer nil)
+
 (defgroup lem-post
   nil
   "Posting for lem.el."
@@ -127,6 +129,7 @@ EDIT means we are editing.
 MODE is the lem.el minor mode to enable in the compose buffer.
 COMMENT means we are composing a comment."
   (interactive)
+  (setq lem-post-last-buffer (buffer-name (current-buffer)))
   (fedi-post--compose-buffer edit
                              #'markdown-mode
                              (or mode #'lem-post-mode)
