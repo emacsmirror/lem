@@ -208,7 +208,7 @@ COMMENT means we are composing a comment."
   (interactive)
   (let* ((name (read-string "Post title: "))
          (communities (lem-list-communities "Subscribed"))
-         (list (lem-ui--communities-alist
+         (list (lem-ui--communities-list
                 (alist-get 'communities communities)))
          (choice (completing-read "Community: " ; TODO: default to current view
                                   list))
