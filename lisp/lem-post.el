@@ -154,8 +154,54 @@ COMMENT means we are composing a comment."
                                   (item-var . lem-post-community-name)
                                   (face . lem-post-community-face))))))
 
+(defun lem-ui-edit-edit-comment-response (response)
+  "Call response functions upon editing a comment.
+RESPONSE is the comment_view data returned by the server."
+  (with-current-buffer lem-post-last-buffer
+    (let-alist response
+      (let ((indent (length (lem-ui--property 'line-prefix))))
+        (lem-ui-response-msg
+         response 'comment_view :non-nil
+         (format "Comment edited: %s" .comment_view.comment.content))
+        (lem-ui--update-item-json .comment_view)
+        (lem-ui-update-item-from-json
+         'lem-type
+         (lambda (_response)
+           (lem-ui-format-comment .comment_view indent)))))))
+
+(defun lem-ui-insert-comment-after-parent (response parent-id)
+  "Insert new reply comment after its parent.
+RESPONSE is the JSON data of the newly created comment.
+PARENT-ID is that of its parent comment or post."
+  (with-current-buffer lem-post-last-buffer
+    (let* ((inhibit-read-only t)
+           (comment-view (alist-get 'comment_view response))
+           (comment (alist-get 'comment comment-view))
+           (indent (1+ (length (lem-ui--property 'line-prefix))))
+           (spot (next-single-property-change (point) 'id)))
+      ;; go to end of parent item:
+      (goto-char ; doesn't work, but returns right position:
+       spot)
+      (insert "\n"
+              (lem-ui-format-comment comment-view indent)
+              "\n"))))
+
+(defun lem-ui-create-comment-response (response)
+  "Call response functions upon editing a comment.
+RESPONSE is the comment_view data returned by the server."
+  (with-current-buffer lem-post-last-buffer
+    (let-alist response
+      (lem-ui-response-msg
+       response 'comment_view :non-nil
+       (format "Comment created: %s" .comment_view.comment.content))
+      (lem-ui--update-item-json .comment_view)
+      ;; its not clear if we should always dump new comment right after its
+      ;; parent, or somewhere else in the tree.
+      (lem-ui-insert-comment-after-parent response
+                                          lem-post-comment-comment-id))))
+
 (defun lem-post-submit ()
-  "Submit the post to lemmy."
+  "Submit the post to lemmy, then call response and update functions."
   (interactive)
   (let ((buf (buffer-name)))
     (if (and (string-suffix-p "post*" buf)
@@ -163,41 +209,40 @@ COMMENT means we are composing a comment."
                        lem-post-community-id)))
         (message "You need to set at least a post name and community.")
       (let* ((body (fedi-post--remove-docs))
-             (response (cond (lem-post-comment-post-id ; creating a comment
-                              (lem-create-comment lem-post-comment-post-id
-                                                  body
-                                                  lem-post-comment-comment-id))
-                             (lem-post-edit-id ; editing a post
-                              (lem-edit-post lem-post-edit-id lem-post-title body
-                                             lem-post-url fedi-post-content-nsfw fedi-post-language))
-                             (lem-post-comment-edit-id ; editing a comment
-                              (lem-edit-comment lem-post-comment-edit-id body))
-                             (t ; creating a post
-                              (lem-create-post lem-post-title lem-post-community-id body
-                                               lem-post-url fedi-post-content-nsfw
-                                               nil fedi-post-language))))) ; TODO: honeypot
+             (response
+              (cond
+               (lem-post-comment-post-id ; creating a comment
+                (lem-create-comment lem-post-comment-post-id
+                                    body
+                                    lem-post-comment-comment-id))
+               (lem-post-edit-id        ; editing a post
+                (lem-edit-post lem-post-edit-id lem-post-title body
+                               lem-post-url fedi-post-content-nsfw
+                               fedi-post-language))
+               (lem-post-comment-edit-id ; editing a comment
+                (lem-edit-comment lem-post-comment-edit-id body))
+               (t                       ; creating a post
+                (lem-create-post lem-post-title lem-post-community-id body
+                                 lem-post-url fedi-post-content-nsfw
+                                 nil fedi-post-language))))) ; TODO: honeypot
         (when response
           (let-alist response
-            (cond (lem-post-comment-post-id
-                   (lem-ui-response-msg
-                    response 'comment_view :non-nil
-                    (format "Comment created: %s" .comment_view.comment.content)))
-                  (lem-post-comment-edit-id
-                   (lem-ui-response-msg
-                    response 'comment_view :non-nil
-                    (format "Comment edited: %s" .comment_view.comment.content)))
-                  ;; FIXME: prev window config + reload instead, coz maybe in a diff view:
-                  ;; this breaks `fedi-post-kill'
-                  ;; (lem-ui-view-post (number-to-string lem-post-comment-post-id)))
-                  (lem-post-edit-id
-                   (lem-ui-response-msg
-                    response 'post_view :non-nil
-                    (format "Post %s edited!" .post_view.post.name)))
-                  (t
-                   (lem-ui-response-msg
-                    response 'post_view :non-nil
-                    (format "Post %s created!" .post_view.post.name)))))
-          ;; (message "Post %s created!" .post_view.post.name))))
+            (cond
+             (lem-post-comment-post-id  ; creating a comment
+              (lem-ui-create-comment-response response))
+             (lem-post-comment-edit-id  ; editing a comment
+              (lem-ui-edit-edit-comment-response response))
+             ;; FIXME: prev window config + reload instead, coz maybe in a diff view:
+             ;; this breaks `fedi-post-kill'
+             ;; (lem-ui-view-post (number-to-string lem-post-comment-post-id)))
+             (lem-post-edit-id          ; editing a post
+              (lem-ui-response-msg
+               response 'post_view :non-nil
+               (format "Post %s edited!" .post_view.post.name)))
+             (t                         ; creating a post
+              (lem-ui-response-msg
+               response 'post_view :non-nil
+               (format "Post %s created!" .post_view.post.name)))))
           (with-current-buffer buf
             ;; FIXME: we have to call this after using b-local
             ;; `lem-post-comment-post-id', but it baulks:
