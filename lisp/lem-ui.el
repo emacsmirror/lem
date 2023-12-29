@@ -2344,9 +2344,10 @@ DETAILS means display what community and post the comment is linked to."
                            nil op-p admin-p mod-p nil handle
                            post-title)
         "\n"
-        (propertize (or content "")
-                    'body t
-                    'display (lem-ui-format-display-prop deleted removed))
+        (if (or (eq t deleted) (eq t removed))
+            (lem-ui-format-display-prop deleted removed)
+          (propertize (or content "")
+                      'body t))
         "\n"
         (lem-ui-bt-byline .counts.score .counts.child_count .my_vote .saved)
         "\n"
