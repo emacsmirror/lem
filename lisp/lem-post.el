@@ -177,16 +177,14 @@ PARENT-ID is that of its parent comment or post."
     (let* ((inhibit-read-only t)
            (comment-view (alist-get 'comment_view response))
            (comment (alist-get 'comment comment-view))
-           (indent (1+ (length (lem-ui--property 'line-prefix))))
-           (spot (next-single-property-change (point) 'id)))
+           (indent (1+ (length (lem-ui--property 'line-prefix)))))
       ;; go to end of parent item:
-      (goto-char ; doesn't work, but returns right position:
-       spot)
+      (goto-char
+       (next-single-property-change (point) 'id))
       (insert "\n"
-              (lem-ui-format-comment comment-view indent)
-              "\n"))))
+              (lem-ui-format-comment comment-view indent)))))
 
-(defun lem-ui-create-comment-response (response)
+(defun lem-ui-create-comment-response (response parent-id)
   "Call response functions upon editing a comment.
 RESPONSE is the comment_view data returned by the server."
   (with-current-buffer lem-post-last-buffer
@@ -197,13 +195,18 @@ RESPONSE is the comment_view data returned by the server."
       (lem-ui--update-item-json .comment_view)
       ;; its not clear if we should always dump new comment right after its
       ;; parent, or somewhere else in the tree.
-      (lem-ui-insert-comment-after-parent response
-                                          lem-post-comment-comment-id))))
+      (lem-ui-insert-comment-after-parent response parent-id)
+      (lem-prev-item))))
 
 (defun lem-post-submit ()
   "Submit the post to lemmy, then call response and update functions."
   (interactive)
-  (let ((buf (buffer-name)))
+  (let ((buf (buffer-name))
+        (parent-id lem-post-comment-comment-id)
+        (type (cond (lem-post-comment-post-id 'new-comment)
+                    (lem-post-comment-edit-id 'edit-comment)
+                    (lem-post-edit-id 'edit-post)
+                    (t 'new-post))))
     (if (and (string-suffix-p "post*" buf)
              (not (and lem-post-title
                        lem-post-community-id)))
@@ -211,42 +214,43 @@ RESPONSE is the comment_view data returned by the server."
       (let* ((body (fedi-post--remove-docs))
              (response
               (cond
-               (lem-post-comment-post-id ; creating a comment
+               ((eq 'new-comment type)
                 (lem-create-comment lem-post-comment-post-id
                                     body
                                     lem-post-comment-comment-id))
-               (lem-post-edit-id        ; editing a post
+               ((eq 'edit-comment type)
+                (lem-edit-comment lem-post-comment-edit-id body))
+               ((eq 'edit-post type)
                 (lem-edit-post lem-post-edit-id lem-post-title body
                                lem-post-url fedi-post-content-nsfw
                                fedi-post-language))
-               (lem-post-comment-edit-id ; editing a comment
-                (lem-edit-comment lem-post-comment-edit-id body))
-               (t                       ; creating a post
+               (t ;; creating a post
                 (lem-create-post lem-post-title lem-post-community-id body
                                  lem-post-url fedi-post-content-nsfw
                                  nil fedi-post-language))))) ; TODO: honeypot
         (when response
+          (with-current-buffer buf
+            (fedi-post-kill))
           (let-alist response
             (cond
-             (lem-post-comment-post-id  ; creating a comment
-              (lem-ui-create-comment-response response))
-             (lem-post-comment-edit-id  ; editing a comment
+             ((eq type 'new-comment)
+              ;; after new comment: insert it into post view tree:
+              (lem-ui-create-comment-response response parent-id))
+             ((eq type 'edit-comment)
+              ;; after edit comment: replace with updated item:
               (lem-ui-edit-edit-comment-response response))
-             ;; FIXME: prev window config + reload instead, coz maybe in a diff view:
-             ;; this breaks `fedi-post-kill'
-             ;; (lem-ui-view-post (number-to-string lem-post-comment-post-id)))
-             (lem-post-edit-id          ; editing a post
+             ((eq type 'edit-post)
+              ;; after edit post: reload previous view:
               (lem-ui-response-msg
                response 'post_view :non-nil
-               (format "Post %s edited!" .post_view.post.name)))
-             (t                         ; creating a post
+               (format "Post %s edited!" .post_view.post.name))
+              (lem-ui-reload-view))
+             (t ;; creating a post
+              ;; after new post: view the post
               (lem-ui-response-msg
                response 'post_view :non-nil
-               (format "Post %s created!" .post_view.post.name)))))
-          (with-current-buffer buf
-            ;; FIXME: we have to call this after using b-local
-            ;; `lem-post-comment-post-id', but it baulks:
-            (fedi-post-kill)))))))
+               (format "Post %s created!" .post_view.post.name))
+              (lem-ui-view-post .post_view.post.id)))))))))
 
 (defun lem-post-compose-simple ()
   "Create and submit new post, reading strings in the minibuffer."
