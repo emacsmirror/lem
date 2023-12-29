@@ -1151,6 +1151,7 @@ COMMUNITY means display the community posted to."
 
 (defun lem-ui-reload-view ()
   "Reload the current view."
+  ;; FIXME: Respect current sort/type etc
   (let ((type (lem-ui-view-type))
         (id (save-excursion
               (goto-char (point-min))
