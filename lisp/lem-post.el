@@ -47,6 +47,8 @@
 (defvar-local lem-post-comment-post-id nil)
 (defvar-local lem-post-comment-comment-id nil)
 
+(defvar lem-post-last-buffer nil)
+
 (defgroup lem-post
   nil
   "Posting for lem.el."
@@ -111,12 +113,14 @@
 (defun lem-post-select-community ()
   "Select community to post to."
   (interactive)
-  (lem-ui-do-community-completing "Post to community: "
-                                  (lambda (id choice)
-                                    (setq lem-post-community-name choice)
-                                    (setq lem-post-community-id id)
-                                    (message "Posting to %s" choice))
-                                  #'lem-api-get-subscribed-communities)
+  (lem-ui-do-item-completing
+   #'lem-api-get-subscribed-communities
+   #'lem-ui--communities-list
+   "Post to community: "
+   (lambda (id choice)
+     (setq lem-post-community-name choice)
+     (setq lem-post-community-id id)
+     (message "Posting to %s" choice)))
   (fedi-post--update-status-fields))
 
 (defun lem-post-compose (&optional edit mode comment)
@@ -125,6 +129,7 @@ EDIT means we are editing.
 MODE is the lem.el minor mode to enable in the compose buffer.
 COMMENT means we are composing a comment."
   (interactive)
+  (setq lem-post-last-buffer (buffer-name (current-buffer)))
   (fedi-post--compose-buffer edit
                              #'markdown-mode
                              (or mode #'lem-post-mode)
@@ -149,52 +154,114 @@ COMMENT means we are composing a comment."
                                   (item-var . lem-post-community-name)
                                   (face . lem-post-community-face))))))
 
+(defun lem-ui-edit-comment-response (response)
+  "Call response functions upon editing a comment.
+RESPONSE is the comment_view data returned by the server."
+  (with-current-buffer lem-post-last-buffer
+    (let-alist response
+      (let ((indent (length (lem-ui--property 'line-prefix)))
+            (view (lem-ui-view-type)))
+        (lem-ui-response-msg
+         response 'comment_view :non-nil
+         (format "Comment edited: %s" .comment_view.comment.content))
+        (lem-ui--update-item-json .comment_view)
+        (lem-ui-update-item-from-json
+         'lem-type
+         (lambda (_response)
+           (lem-ui-format-comment .comment_view indent
+                                  nil (unless (or (eq view 'post)
+                                                  (eq view 'community))
+                                        :details))))))))
+
+(defun lem-ui-insert-comment-after-parent (response parent-id)
+  "Insert new reply comment after its parent.
+RESPONSE is the JSON data of the newly created comment.
+PARENT-ID is that of its parent comment or post."
+  (with-current-buffer lem-post-last-buffer
+    (let* ((inhibit-read-only t)
+           (comment-view (alist-get 'comment_view response))
+           (comment (alist-get 'comment comment-view))
+           (indent (1+ (length (lem-ui--property 'line-prefix)))))
+      ;; go to end of parent item:
+      (goto-char
+       (next-single-property-change (point) 'id))
+      (insert "\n"
+              (lem-ui-format-comment comment-view indent)))))
+
+(defun lem-ui-create-comment-response (response parent-id)
+  "Call response functions upon editing a comment.
+RESPONSE is the comment_view data returned by the server."
+  (with-current-buffer lem-post-last-buffer
+    (let-alist response
+      (lem-ui-response-msg
+       response 'comment_view :non-nil
+       (format "Comment created: %s" .comment_view.comment.content))
+      (lem-ui--update-item-json .comment_view)
+      ;; its not clear if we should always dump new comment right after its
+      ;; parent, or somewhere else in the tree.
+      (lem-ui-insert-comment-after-parent response parent-id)
+      (lem-prev-item))))
+
 (defun lem-post-submit ()
-  "Submit the post to lemmy."
+  "Submit the post to lemmy, then call response and update functions."
   (interactive)
-  (let ((buf (buffer-name)))
+  (let ((buf (buffer-name))
+        (parent-id lem-post-comment-comment-id)
+        (type (cond (lem-post-comment-post-id 'new-comment)
+                    (lem-post-comment-edit-id 'edit-comment)
+                    (lem-post-edit-id 'edit-post)
+                    (t 'new-post))))
     (if (and (string-suffix-p "post*" buf)
              (not (and lem-post-title
                        lem-post-community-id)))
         (message "You need to set at least a post name and community.")
       (let* ((body (fedi-post--remove-docs))
-             (response (cond (lem-post-comment-post-id ; creating a comment
-                              (lem-create-comment lem-post-comment-post-id
-                                                  body
-                                                  lem-post-comment-comment-id))
-                             (lem-post-edit-id ; editing a post
-                              (lem-edit-post lem-post-edit-id lem-post-title body
-                                             lem-post-url fedi-post-content-nsfw fedi-post-language))
-                             (lem-post-comment-edit-id ; editing a comment
-                              (lem-edit-comment lem-post-comment-edit-id body))
-                             (t ; creating a post
-                              (lem-create-post lem-post-title lem-post-community-id body
-                                               lem-post-url fedi-post-content-nsfw
-                                               nil fedi-post-language))))) ; TODO: honeypot
+             (response
+              (cond
+               ((eq 'new-comment type)
+                (lem-create-comment lem-post-comment-post-id
+                                    body
+                                    lem-post-comment-comment-id))
+               ((eq 'edit-comment type)
+                (lem-edit-comment lem-post-comment-edit-id body))
+               ((eq 'edit-post type)
+                (lem-edit-post lem-post-edit-id lem-post-title body
+                               lem-post-url fedi-post-content-nsfw
+                               fedi-post-language))
+               (t ;; creating a post
+                (lem-create-post lem-post-title lem-post-community-id body
+                                 lem-post-url fedi-post-content-nsfw
+                                 nil fedi-post-language))))) ; TODO: honeypot
         (when response
-          (let-alist response
-            (cond (lem-post-comment-post-id
-                   (message "Comment created: %s" .comment_view.comment.content))
-                  (lem-post-comment-edit-id
-                   (message "Comment edited: %s" .comment_view.comment.content))
-                  ;; FIXME: prev window config + reload instead, coz maybe in a diff view:
-                  ;; this breaks `fedi-post-kill'
-                  ;; (lem-ui-view-post (number-to-string lem-post-comment-post-id)))
-                  (lem-post-edit-id
-                   (message "Post %s edited!" .post_view.post.name))
-                  (t
-                   (message "Post %s created!" .post_view.post.name))))
           (with-current-buffer buf
-            ;; FIXME: we have to call this after using b-local
-            ;; `lem-post-comment-post-id', but it baulks:
-            (fedi-post-kill)))))))
+            (fedi-post-kill))
+          (let-alist response
+            (cond
+             ((eq type 'new-comment)
+              ;; after new comment: insert it into post view tree:
+              (lem-ui-create-comment-response response parent-id))
+             ((eq type 'edit-comment)
+              ;; after edit comment: replace with updated item:
+              (lem-ui-edit-comment-response response))
+             ((eq type 'edit-post)
+              ;; after edit post: reload previous view:
+              (lem-ui-response-msg
+               response 'post_view :non-nil
+               (format "Post %s edited!" .post_view.post.name))
+              (lem-ui-reload-view))
+             (t ;; creating a post
+              ;; after new post: view the post
+              (lem-ui-response-msg
+               response 'post_view :non-nil
+               (format "Post %s created!" .post_view.post.name))
+              (lem-ui-view-post .post_view.post.id)))))))))
 
 (defun lem-post-compose-simple ()
   "Create and submit new post, reading strings in the minibuffer."
   (interactive)
   (let* ((name (read-string "Post title: "))
          (communities (lem-list-communities "Subscribed"))
-         (list (lem-ui--communities-alist
+         (list (lem-ui--communities-list
                 (alist-get 'communities communities)))
          (choice (completing-read "Community: " ; TODO: default to current view
                                   list))

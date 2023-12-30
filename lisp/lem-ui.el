@@ -45,6 +45,7 @@
 (defvar lem-default-comment-sort-type)
 (defvar lem-sort-types)
 (defvar lem-default-sort-type)
+(defvar lem-default-listing-type)
 (defvar lem-user-items-types)
 (defvar lem-items-types)
 (defvar lem-search-types)
@@ -71,7 +72,13 @@
   "Return a function rendering LABELFN indented with INDENT-STRING.
 
 INDENT-STRING defaults to a 2-space string.  Indentation is
-multiplied by the depth of the displayed item."
+multiplied by the depth of the displayed item.
+PROP is a property name, a symbol.
+ATTRIB is the prop's attribute, a kw symbol.
+
+CYCLE-FUN is called with one argument, the current indent level
+inside the loop, and is used to return the color for that indentation.
+Currently it is always `lem-ui-cycle-colors'."
   (let ((indent-string (or indent-string "  ")))
     (lambda (item indent)
       (dotimes (index indent)
@@ -159,28 +166,7 @@ Used for pagination.")
   :prefix "lem-ui-"
   :group 'lem)
 
-(defcustom lem-ui-symbols
-  '((reply     . ("💬" . "R"))
-    (boost     . ("🔁" . "B"))
-    (favourite . ("⭐" . "F"))
-    (bookmark  . ("🔖" . "K"))
-    (media     . ("📹" . "[media]"))
-    (verified  . ("✓" . "V"))
-    (locked    . ("🔒" . "[locked]"))
-    (private   . ("🔒" . "[followers]"))
-    (direct    . ("✉" . "[direct]"))
-    (edited    . ("✍" . "[edited]"))
-    (upvote    . ("⬆" . "[upvotes]"))
-    (person    . ("👤" . "[people]"))
-    (pinned    . ("📌" . "[pinned]"))
-    (replied   . ("⬇" . "↓"))
-    (community . ("👪" . "[community]"))
-    (reply-bar . ("│" . "|")) ;┃
-    (deleted   . ("🗑" . "[deleted]")))
-  "A set of symbols (and fallback strings) to be used in timeline.
-If a symbol does not look right (tofu), it means your
-font settings do not support it."
-  :type '(alist :key-type symbol :value-type string))
+(defvar lem-ui-symbols fedi-symbols)
 
 ;;; UTILITIES
 
@@ -201,44 +187,17 @@ font settings do not support it."
       (make-string 12 ?―)
     (make-string 12 ?-)))
 
-(defun lem-ui-format-heading (name)
-  "Format a heading for NAME, a string."
-  (let* ((name (if (symbolp name)
-                  (symbol-name name)
-                name))
-        (name (string-replace "-" " " name)))
-    (propertize
-     (concat " " lem-ui-horiz-bar "\n "
-             (upcase name)
-             "\n " lem-ui-horiz-bar "\n")
-     'face 'success)))
+(defalias 'lem-ui-format-heading 'fedi-format-heading)
 
-(defun lem-ui-insert-heading (name)
-  "Insert heading for NAME, a string."
-  (insert (lem-ui-format-heading name)))
+(defalias 'lem-ui-insert-heading 'fedi-insert-heading)
 
-(defun lem-ui-symbol (name)
-  "Return the unicode symbol (as a string) corresponding to NAME.
-If symbol is not displayable, an ASCII equivalent is returned. If
-NAME is not part of the symbol table, '?' is returned."
-  (if-let* ((symbol (alist-get name lem-ui-symbols)))
-      (if (char-displayable-p (string-to-char (car symbol)))
-          (car symbol)
-        (cdr symbol))
-    "?"))
+(defalias 'lem-ui-symbol 'fedi-symbol)
 
-(defun lem-ui-font-lock-comment (&rest strs)
-  "Font lock comment face STRS."
-  (propertize (mapconcat #'identity strs "")
-              'face font-lock-comment-face))
+(defalias 'lem-ui-font-lock-comment 'fedi-font-lock-comment)
 
-(defun lem-ui-thing-json ()
-  "Get json of thing at point, comment, post, community or user."
-  (get-text-property (point) 'json))
+(defalias 'lem-ui-thing-json 'fedi-thing-json)
 
-(defun lem-ui--property (prop)
-  "Get text property PROP from item at point."
-  (get-text-property (point) prop))
+(defalias 'lem-ui--property 'fedi--property)
 
 (defun lem-ui--item-type ()
   "Return the type property of item at point."
@@ -264,12 +223,27 @@ If STRING, return the id as a string."
         (number-to-string id)
       id)))
 
+(defun lem-ui-handle-from-url (url &optional prefix)
+  "Format a handle, user or community, from a URL.
+PREFIX is a string, ! for community, @ for user."
+  (let* ((parsed (url-generic-parse-url url))
+         (domain (url-domain parsed))
+         (filename (url-filename parsed))
+         (item (car (last (split-string filename "/")))))
+    (concat (or prefix "")
+            item "@" domain)))
+
+(defalias 'lem-ui-response-msg 'fedi-response-msg)
+
 ;; TODO: add to `lem-ui-with-buffer'? we almost always call it
+;; TODO: factor out into fedi.el (just has 1 lem fn call)
 (defun lem-ui--init-view ()
   "Initialize a lemmy view.
 Inserts images and sets relative timestamp timers."
   (let ((inhibit-read-only t))
-    ;; load images
+    ;; don't wrap long verbatim text:
+    (setq truncate-lines t)
+    ;; load images:
     (lem-ui-insert-images)
     ;; relative timestamps:
     (setq
@@ -286,6 +260,13 @@ Inserts images and sets relative timestamp timers."
                          #'fedi--update-timestamps-callback
                          (current-buffer)
                          nil)))))
+
+(defun lem-ui-item-to-alist-key (item)
+  "Given ITEM, a symbol, return a valid JSON key, item_view.
+Item may be post, comment, community, etc."
+  (intern
+   (concat
+    (symbol-name item) "_view")))
 
 ;;; MACROS
 
@@ -326,6 +307,7 @@ BINDINGS is a list of variables for which to display bidings."
          (message
           (substitute-command-keys msg-str))))))
 
+;; consider adding a lem-type check arg
 (defmacro lem-ui-with-item (body &optional number)
   "Call BODY after fetching ID of thing (at point).
 Thing can be anything handled by `lem-ui-thing-json', currently:
@@ -333,7 +315,7 @@ comment, post, community or person.
 Within this macro call, arg ID is available.
 NUMBER means return ID as a number."
   (declare (debug t)
-           (indent 1))
+           (indent 0))
   `(let* ((id (lem-ui--id-from-prop (if ,number nil :string))))
      (if (not id)
          (message "Looks like there's no item at point?")
@@ -420,6 +402,8 @@ TYPE must be member of `lem-listing-types'.
 ITEM must be a member of `lem-items-types'."
   (interactive)
   (let* ((instance (lem-get-instance))
+         (sort (or sort lem-default-sort-type))
+         (type (or type lem-default-listing-type))
          (items (if (equal item "comments")
                     (progn
                       (unless (lem-comment-sort-type-p sort)
@@ -429,7 +413,6 @@ ITEM must be a member of `lem-items-types'."
          (items (if (equal item "comments")
                     (alist-get 'comments items)
                   (alist-get 'posts items)))
-         (sort (or sort lem-default-sort-type))
          (buf "*lem-instance*")
          (bindings (lem-ui-view-options 'instance)))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
@@ -771,10 +754,11 @@ STRING means ID should be a string."
 Or url at point, or text prop shr-url, or read a URL in the minibuffer.
 Lemmy supports lookups for users, posts, comments and communities."
   (interactive)
-  (let ((query (or url
-                   (thing-at-point-url-at-point)
-                   (lem-ui--property 'shr-url)
-                   (read-string "Lookup URL: "))))
+  (let ((query (or ; is this right? search fails if url wrongly contains uppercase term:
+                (downcase url)
+                (thing-at-point-url-at-point)
+                (lem-ui--property 'shr-url)
+                (read-string "Lookup URL: "))))
     (if (not (lem-fedilike-url-p query))
         (browse-url query)
       (message "Performing lookup...")
@@ -795,86 +779,68 @@ Lemmy supports lookups for users, posts, comments and communities."
                (message "unknown lookup response.")
                (browse-url query)))))))
 
-;;; POSTS
-
-(defun lem-ui-view-post-at-point ()
-  "View post at point."
-  (interactive)
-  (lem-ui-with-item
-      (lem-ui-view-post id)))
-
-(defun lem-ui-view-post (id &optional sort limit)
-  "View post with ID.
-SORT must be a member of `lem-comment-sort-types.'
-LIMIT."
-  (let* ((post-view (lem-get-post id))
-         (post (alist-get 'post_view post-view))
-         (community-id (alist-get 'community_id
-                                  (alist-get 'post post)))
-         (sort (or sort lem-default-comment-sort-type))
-         (bindings (lem-ui-view-options 'post))
-         (buf (format "*lem-post-%s*" id)))
-    (lem-ui-with-buffer buf 'lem-mode nil bindings
-      (lem-ui--set-mods community-id)
-      (lem-ui-render-post post :community)
-      (lem-ui-render-post-comments id sort limit)
-      (lem-ui--init-view)
-      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)))) ; limit
+;;; FEATURE (PIN) POSTS
 
 (defun lem-ui-do-feature (id arg type str)
   "Call `lem-feature-post' and handle the response.
 ID, ARG TYPE are for that function.
 STR is for message."
-  ;; TODO: we need a general response handler!
-  (let* ((resp (lem-feature-post id arg type)))
-    (if (stringp resp)
-        (message "%s" resp) ; TODO: actually handle server error
-      (when (alist-get 'post_view resp)
-        (message "Post %s!" str)))))
+  (let ((response (lem-feature-post id arg type))
+        (view (lem-ui-get-buffer-spec :view-fun)))
+    (lem-ui-response-msg
+     response
+     'post_view :non-nil
+     (format "Post %s!" str))
+    (lem-ui--update-item-json (alist-get 'post_view response))
+    (lem-ui-update-item-from-json
+     'byline-top
+     (lambda (json)
+       (lem-ui-top-byline-replace
+        json
+        (unless (eq view 'lem-ui-view-community)
+          :community))))))
 
 (defun lem-ui-feature-post (&optional unfeature)
   "Feature (pin) a post, either to its instance or community.
 UNFEATURE means we are unfeaturing a post."
   (interactive)
   (lem-ui-with-item
-      (let* ((json (lem-ui--property 'json))
-             (post (alist-get 'post json))
-             (id (lem-ui--property 'id))
-             (mod-p (alist-get 'creator_is_moderator json))
-             (admin-p (alist-get 'creator_is_admin json))
-             (feat-comm (alist-get 'featured_community post))
-             (feat-loc (alist-get 'featured_local post))
-             ;; TODO: annotate Local with "instance":
-             (feat-type
-              (if unfeature
-                  (cond ((eq t feat-comm)
-                         "Community")
-                        ((eq t feat-loc)
-                         "Local")
-                        (t
-                         (user-error "Post not featured?")))
-                (completing-read "Feature type: "
-                                 '("Local" "Community"))))
-             (feat-arg (if unfeature :json-false t))
-             (feat-str (if unfeature "unfeatured" "featured")))
-        (if (equal feat-type "Community")
-            ;; TODO: refactor conds:
-            (cond (unfeature
-                   (lem-ui-do-feature id feat-arg feat-type feat-str))
-                  ((not (eq t mod-p))
-                   (user-error "You need to be a mod to feature to community"))
-                  ((eq t feat-comm)
-                   (user-error "Post already featured?"))
-                  (t
-                   (lem-ui-do-feature id feat-arg feat-type feat-str)))
+    (let* ((json (lem-ui--property 'json))
+           (post (alist-get 'post json))
+           (id (lem-ui--property 'id))
+           (mod-p (alist-get 'creator_is_moderator json))
+           (admin-p (alist-get 'creator_is_admin json))
+           (feat-comm (alist-get 'featured_community post))
+           (feat-loc (alist-get 'featured_local post))
+           ;; TODO: annotate Local with "instance":
+           (feat-type
+            (if unfeature
+                (cond ((eq t feat-comm) "Community")
+                      ((eq t feat-loc) "Local")
+                      (t
+                       (user-error "Post not featured?")))
+              (completing-read "Feature type: "
+                               '("Local" "Community"))))
+           (feat-arg (if unfeature :json-false t))
+           (feat-str (if unfeature "unfeatured" "featured")))
+      (if (equal feat-type "Community")
+          ;; TODO: refactor conds:
           (cond (unfeature
                  (lem-ui-do-feature id feat-arg feat-type feat-str))
-                ((not (eq t admin-p))
-                 (user-error "You need to be an admin to feature to instance"))
-                ((eq t feat-loc)
+                ((not (eq t mod-p))
+                 (user-error "You need to be a mod to feature to community"))
+                ((eq t feat-comm)
                  (user-error "Post already featured?"))
                 (t
-                 (lem-ui-do-feature id feat-arg feat-type feat-str)))))
+                 (lem-ui-do-feature id feat-arg feat-type feat-str)))
+        (cond (unfeature
+               (lem-ui-do-feature id feat-arg feat-type feat-str))
+              ((not (eq t admin-p))
+               (user-error "You need to be an admin to feature to instance"))
+              ((eq t feat-loc)
+               (user-error "Post already featured?"))
+              (t
+               (lem-ui-do-feature id feat-arg feat-type feat-str)))))
     :number))
 
 (defun lem-ui-unfeature-post ()
@@ -917,6 +883,10 @@ etc.")
           ;; (type user, but id not creator-id)
           ((eq item-type 'user)
            (lem-ui-view-user id "overview"))
+          ((and (or (eq (lem-ui--property 'lem-type) 'comment)
+                    (eq (lem-ui--property 'lem-type) 'comment-reply))
+                (lem-ui--property 'title)) ; detailed comment
+           (lem-ui-view-comment-post (lem-ui--property 'post-id)))
           ((and (eq (lem-ui--property 'lem-type) 'post)
                 (lem-ui--property 'title))
            (lem-ui-view-post-at-point)))))
@@ -1005,7 +975,7 @@ START and END are the boundaries of the link in the post body."
               'face '(:weight bold)))
 
 (defun lem-ui-top-byline (title url username _score timestamp
-                                &optional community _community-url
+                                &optional community community-url
                                 featured-p op-p admin-p mod-p del-p handle
                                 post-title)
   "Format a top byline with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
@@ -1018,13 +988,14 @@ DEL-P means add icon for deleted item.
 HANDLE is a user handle as a string.
 POST-TITLE is the name of the parent post, used for details
 comment display."
-  (let ((url (lem-ui-render-url url))
+  (let ((url (ignore-errors (lem-ui-render-url url)))
         (parsed-time (date-to-time timestamp)))
     (propertize
      (concat
       (if title
-          (concat (lem-ui-propertize-title title)
-                  "\n")
+          ;; TODO: preserve shr-props and add bold?
+          (lem-ui-propertize-title
+           (lem-ui-render-body title))
         "")
       (if url
           (concat url "\n")
@@ -1048,7 +1019,8 @@ comment display."
          (propertize " to "
                      'face font-lock-comment-face)
          (lem-ui--propertize-link community nil 'community
-                                  nil 'lem-ui-community-face)))
+                                  nil 'lem-ui-community-face
+                                  community-url)))
       (propertize
        (concat
         " | "
@@ -1064,8 +1036,7 @@ comment display."
        'face font-lock-comment-face)
       (when post-title
         (concat "\n"
-                (propertize post-title
-                            'face '(:weight bold)))))
+                (lem-ui-propertize-title post-title))))
      'byline-top t)))
 
 (defun lem-ui-prop-score (my-vote score)
@@ -1083,12 +1054,13 @@ comment display."
         (t
          (number-to-string score))))
 
-(defun lem-ui-bt-byline (score comments &optional my-vote saved)
+(defun lem-ui-bt-byline (score comments &optional my-vote saved prefix)
   "Format a bottom byline for an item.
 SCORE is the item's score.
 COMMENTS is the comments count to render.
 MY-VOTE is a number, the current vote by the current user.
-SAVED means to add saved icon."
+SAVED means to add saved icon.
+PREFIX is a \"line-prefix\" property to add."
   (let* ((my-score (lem-ui-prop-score my-vote score))
          (str (concat (lem-ui-symbol 'upvote) " "
                       my-score " | "
@@ -1098,42 +1070,111 @@ SAVED means to add saved icon."
                         (concat " | "
                                 (lem-ui-symbol 'bookmark))))))
     (propertize str
-                'byline-bottom t)))
+                'byline-bottom t
+                'line-prefix prefix)))
 
-(defun lem-ui-update-bt-byline-from-json (&optional vote saved)
-  "Update the text of the bottom byline based on item JSON.
-Used to adjust counts after (un)liking.
-VOTE is a number, handed to `lem-ui-bt-byline'.
-SAVED means to add saved icon."
-  (let-alist (lem-ui--property 'json)
-    (let ((inhibit-read-only t)
-          (byline
-           (fedi--find-property-range 'byline-bottom (point)
-                                      (when (lem-ui--property 'byline-bottom)
-                                        :backwards))))
-      ;; `emojify-mode' doesn't work with display prop, so we replace byline
-      ;; string:
-      (lem-ui--replace-region-contents
-       (car byline) (cdr byline)
-       (lambda ()
-         (lem-ui-bt-byline .counts.score
-                           (or .counts.child_count
-                               .counts.comments)
-                           vote
-                           saved))))))
+;;; UPDATING ITEMS
 
-(defun lem-ui--replace-region-contents (beg end replace-fun)
-  "Replace buffer contents from BEG to END with REPLACE-FUN.
-We roll our own `replace-region-contents' because it is as
-non-destructive as possible, whereas we need to always replace
-the whole likes count in order to propertize it fully."
-  (save-excursion
-    (save-restriction
-      (narrow-to-region beg end)
+;; currently if we need to update something after an action we update that
+;; item's json, then update the item or part thereof from the updated json.
+;; because we always update the json prop for the whole item, but then
+;; sometimes only update a part of the item, e.g. bylines.
+
+(defalias 'lem-ui-update-item-from-json 'fedi-update-item-from-json)
+
+(defalias 'lem-ui--replace-region-contents 'fedi--replace-region-contents)
+
+(defalias 'lem-ui--update-item-json 'fedi--update-item-json)
+
+(defun lem-ui-bt-byline-replace (json &optional vote saved prefix)
+  "Call `lem-ui-bt-byline' to update the bottom byline.
+JSON is the item's json.
+VOTE, SAVED, and PREFIX are arguments for `lem-ui-bt-byline'."
+  (let-alist json
+    (let ((vote (or vote .my_vote))
+          (saved (or saved .saved))
+          (prefix (or prefix (lem-ui--property 'line-prefix))))
+      (propertize
+       (lem-ui-bt-byline .counts.score
+                         (or .counts.child_count
+                             .counts.comments)
+                         vote saved prefix)
+       ;; properties from render-post/comment (need to be checked):
+       'json json
+       'id (or .post.id .comment.id)
+       'community-id .post.community_id
+       'creator-id .creator.id
+       'lem-type (caar json)))))
+
+(defun lem-ui-top-byline-replace (json &optional community)
+  "Call `lem-ui-top-byline' and add post properties to it.
+JSON is the data to use.
+COMMUNITY means display the community posted to."
+  (let-alist json
+    (propertize
+     (lem-ui-top-byline .post.name
+                        (or .post.url "")
+                        (or .creator.display_name .creator.name)
+                        .counts.score
+                        .post.published
+                        (when community .community.name)
+                        (when community .community.actor_id)
+                        (or (eq t .post.featured_community) ; pinned community
+                            (eq t .post.featured_local)) ; pinned instance
+                        nil
+                        (eq t .creator_is_admin)
+                        (or (eq t .creator_is_moderator)
+                            (cl-member .creator.id lem-ui-post-community-mods-ids))
+                        (eq t .post.deleted)
+                        (lem-ui--handle-from-user-url .creator.actor_id))
+     ;; add render-post props:
+     'json json
+     'id .post.id
+     'community-id .post.community_id
+     'creator-id .creator.id
+     'lem-type (caar json))))
+
+(defun lem-ui-update-parent-post ()
+  "Go to buffer's first element, and reload its json data and bottom byline."
+  (save-restriction
+    (save-excursion
+      (widen)
       (goto-char (point-min))
-      (delete-region (point-min) (point-max))
-      (insert
-       (funcall replace-fun)))))
+      (forward-char)
+      (let* ((id (lem-ui--property 'id))
+             (post-view (lem-get-post id))
+             (post (alist-get 'post_view post-view)))
+        (lem-ui--update-item-json post)
+        (lem-ui-update-item-from-json
+         'byline-bottom
+         (lambda (json)
+           (lem-ui-bt-byline-replace json)))))))
+
+(defun lem-ui-reload-view ()
+  "Reload the current view."
+  (let ((type (lem-ui-view-type))
+        (item (lem-ui-get-buffer-spec :item))
+        (sort (lem-ui-get-buffer-spec :sort))
+        (listing (lem-ui-get-buffer-spec :listing-type))
+        (page (lem-ui-get-buffer-spec :page))
+        (limit (lem-ui-get-buffer-spec :limit))
+        (id (save-excursion
+              (goto-char (point-min))
+              (lem-ui--property 'id))))
+    (cond ((eq type 'post)
+           (lem-ui-view-post id sort limit))
+          ((eq type 'instance)
+           (lem-ui-view-instance listing sort limit page item))
+          ((eq type 'community)
+           (lem-ui-view-community id item sort limit page))
+          ((eq type 'user)
+           (lem-ui-view-user id item sort limit))
+          ((eq type 'inbox)
+           (lem-ui-view-inbox))
+          (t
+           (user-error "Unable to reload view type %s" type)))))
+
+;; MARKDOWN BODY RENDERING
 
 (defun lem-ui-render-url (url &optional no-shorten)
   "Render URL, a plain non-html string.
@@ -1254,16 +1295,48 @@ Communities are of the form \"!community@intance.com.\""
                                       keymap ,lem-ui--link-map)))))
     (buffer-string)))
 
+(defun lem-ui-mods-ids (mods)
+  "Return a list of the ids of MODS."
+  (cl-loop for mod in mods
+           collect (alist-get 'id
+                              (alist-get 'moderator mod))))
+
 (defun lem-ui--set-mods (community-id)
   "Set `lem-ui-post-community-mods-ids'.
 The variable contains the list of community moderator ids for the
 community of the current post, with COMMUNITY-ID."
   (let* ((community-json (lem-get-community community-id))
          (mods (alist-get 'moderators community-json))
-         (mods-ids (cl-loop for mod in mods
-                            collect (alist-get 'id
-                                               (alist-get 'moderator mod)))))
+         (mods-ids (lem-ui-mods-ids mods)))
     (setq lem-ui-post-community-mods-ids mods-ids)))
+
+;;; POSTS
+
+(defun lem-ui-view-post-at-point ()
+  "View post at point."
+  (interactive)
+  (lem-ui-with-item
+    (lem-ui-view-post id)))
+
+(defun lem-ui-view-post (id &optional sort limit)
+  "View post with ID.
+SORT must be a member of `lem-comment-sort-types.'
+LIMIT."
+  (let ((post-view (lem-get-post id)))
+    (if (stringp post-view)
+        (user-error "%s" post-view)
+      (let* ((post (alist-get 'post_view post-view))
+             (community-id (alist-get 'community_id
+                                      (alist-get 'post post)))
+             (sort (or sort lem-default-comment-sort-type))
+             (bindings (lem-ui-view-options 'post))
+             (buf (format "*lem-post-%s*" id)))
+        (lem-ui-with-buffer buf 'lem-mode nil bindings
+          (lem-ui--set-mods community-id)
+          (lem-ui-render-post post :community)
+          (lem-ui-render-post-comments id sort limit)
+          (lem-ui--init-view)
+          (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)))))) ; limit
 
 (defun lem-ui-render-post (post &optional community trim)
   ;; NB trim in instance, community, and user views
@@ -1289,7 +1362,8 @@ SORT must be a member of `lem-sort-types'."
                             (or .creator.display_name .creator.name)
                             .counts.score
                             .post.published
-                            (when community .community.name)
+                            (when community (or .community.title
+                                                .community.name))
                             (when community .community.actor_id)
                             (or (eq t .post.featured_community) ; pinned community
                                 (eq t .post.featured_local)) ; pinned instance
@@ -1297,7 +1371,8 @@ SORT must be a member of `lem-sort-types'."
          "\n"
          (if .post.body
              (if trim
-                 (string-limit body 400)
+                 (let ((width (* 5 (window-width))))
+                   (truncate-string-to-width body width nil nil "..."))
                body)
            "")
          (lem-ui-insert-post-image-maybe post)
@@ -1344,33 +1419,45 @@ TRIM means trim each post for length."
   (cl-loop for x in posts
            do (lem-ui-render-post x community trim)))
 
+;;; SAVING
+
 (defun lem-ui-save-item (&optional unsave)
   "Save item at point.
 Saved items can be viewed in your profile, like bookmarks.
 If UNSAVE, unsave the item instead."
   (interactive)
   (lem-ui-with-item
-      (let* ((type (lem-ui--item-type))
-             (s-str (if unsave "unsaved" "saved"))
-             (s-bool (if unsave :json-false t))
-             (json (lem-ui--property 'json))
-             (saved-p (alist-get 'saved json)))
-        (cond ((and unsave (eq saved-p :json-false))
-               (message "You can only unsave saved items."))
-              ((eq type 'post)
-               (let ((json (lem-save-post id s-bool))
-                     (my-vote (alist-get 'my_vote json)))
-                 (lem-ui--update-item-json (alist-get 'post_view json))
-                 (lem-ui-update-bt-byline-from-json my-vote s-bool)
-                 (message "%s %s %s!" type id s-str)))
-              ((eq type 'comment)
-               (let ((json (lem-save-comment id s-bool))
-                     (my-vote (alist-get 'my_vote json)))
-                 (lem-ui--update-item-json (alist-get 'comment_view json))
-                 (lem-ui-update-bt-byline-from-json my-vote s-bool)
-                 (message "%s %s %s!" type id s-str)))
-              (t
-               (message "You can only save posts and comments."))))
+    (let* ((type (lem-ui--item-type))
+           (s-str (if unsave "unsaved" "saved"))
+           (s-bool (if unsave :json-false t))
+           (json (lem-ui--property 'json))
+           (saved-p (alist-get 'saved json)))
+      (cond ((and unsave (eq saved-p :json-false))
+             (message "You can only unsave saved items."))
+            ((eq type 'post)
+             (let ((json (lem-save-post id s-bool))
+                   (my-vote (alist-get 'my_vote json)))
+               (lem-ui-response-msg json
+                                    'post_view :non-nil
+                                    (format "%s %s %s!" type id s-str))
+               (lem-ui--update-item-json (alist-get 'post_view json))
+               (lem-ui-update-item-from-json
+                'byline-bottom
+                (lambda (json)
+                  (lem-ui-bt-byline-replace json my-vote s-bool)))))
+            ((eq type 'comment)
+             (let ((json (lem-save-comment id s-bool))
+                   (my-vote (alist-get 'my_vote json)))
+               (lem-ui-response-msg json
+                                    'comment_view :non-nil
+                                    (format "%s %s %s!" type id s-str))
+               (lem-ui--update-item-json (alist-get 'comment_view json))
+               (lem-ui-update-item-from-json
+                'byline-bottom
+                (lambda (json)
+                  (lem-ui-bt-byline-replace json my-vote s-bool)))))
+            (t
+             (message "You can only save posts and comments."))))
     :number))
 
 (defun lem-ui-unsave-item ()
@@ -1405,6 +1492,35 @@ SORT. LIMIT. PAGE."
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil (or sort "Active")
                               #'lem-ui-view-saved-items))))
+
+;;; COMPLETION FOR ACTIONS
+
+(defalias 'lem-ui-do-item-completing 'fedi-do-item-completing)
+
+(defun lem-ui--communities-list (communities)
+  "Return an alist of name/description and ID from COMMUNITIES."
+  (cl-loop for item in communities
+           collect (let-alist item
+                     (list
+                      (lem-ui-handle-from-url .community.actor_id "!")
+                      .community.id
+                      .community.actor_id))))
+
+(defun lem-ui-users-list (users)
+  "For user in list USERS, return name, URL, and id."
+  (cl-loop for item in users
+           collect (let-alist item
+                     (list (lem-ui-handle-from-url .actor_id "@")
+                           ;; .name
+                           ;; .actor_id
+                           .id))))
+
+(defun lem-ui-blocks-list (blocks)
+  "For user in BLOCKS, return handle, and id."
+  (cl-loop for item in blocks
+           collect (let-alist (alist-get 'target item)
+                     (list (lem-ui-handle-from-url .actor_id "@")
+                           .id))))
 
 ;;; COMMUNITIES
 
@@ -1497,7 +1613,6 @@ LIMIT is the max results to return."
     (when column
       (vtable-goto-column column))))
 
-
 ;; unfuck vtable's case-sensitive sorting:
 (defun lem-ui-string> (s1 s2)
   "Case insensitive `string>', which compares S1 and S2."
@@ -1512,6 +1627,7 @@ LIMIT is the max results to return."
 
 ;; TODO: rename?
 (defun vtable--sort (table)
+  "TABLE."
   (pcase-dolist (`(,index . ,direction) (vtable-sort-by table))
     (let ((cache (vtable--cache table))
           (numerical (vtable-column--numerical
@@ -1636,7 +1752,7 @@ LIMIT is the max results to return."
   "Subscribe to a community, using ID or prompt for a handle."
   (interactive)
   (let* ((handle (unless id
-                   (read-string "Handle of community to subscribe to: ")))
+                   (read-string "Subscribe to community (by handle): ")))
          (community (unless id
                       (lem-get-community nil handle))))
     (if-let ((id (or id (lem-ui-get-community-id community)))
@@ -1645,74 +1761,79 @@ LIMIT is the max results to return."
                               (alist-get 'community_view fol)))
              (name (or (alist-get 'title comm)
                        (alist-get 'name comm))))
-        (message "Subscribed to community %s!" name)
-      (message "something went wrong."))))
+        (lem-ui-response-msg fol
+                             'community_view :non-nil
+                             (format "Subscribed to community %s!" name)))))
 
 (defun lem-ui-subscribe-to-community-at-point ()
   "Subscribe to community at point."
   (interactive)
   (lem-ui-with-item
-      (if (not (equal 'community (lem-ui--item-type)))
-          (message "no community at point?")
-        (lem-ui-subscribe-to-community id))
+    (if (not (equal 'community (lem-ui--item-type)))
+        (message "no community at point?")
+      (lem-ui-subscribe-to-community id))
     :number))
 
 (defun lem-ui-unsubscribe-from-community ()
   "Prompt for a subscribed community and unsubscribe from it."
   (interactive)
-  (lem-ui-do-community-completing
+  (lem-ui-do-item-completing
+   #'lem-api-get-subscribed-communities
+   #'lem-ui--communities-list
    "Unsubscribe from community: "
    (lambda (id choice)
-     (when (and (y-or-n-p (format "Unsubscribe from %s?" choice))
-                (lem-follow-community id :json-false))
-       (message "Community %s unsubscribed!" choice)))
-   #'lem-api-get-subscribed-communities))
+     (when (y-or-n-p (format "Unsubscribe from %s?" choice))
+       (lem-ui-response-msg
+        (lem-follow-community id :json-false)
+        'community_view :non-nil
+        (format "Community %s unsubscribed!" choice))))))
 
-(defun lem-ui--communities-alist (communities)
-  "Return an alist of name/description and ID from COMMUNITIES."
-  (cl-loop for item in communities
-           collect (let-alist item
-                     (list
-                      (format "%s@%s"
-                              .community.name
-                              (url-domain
-                               (url-generic-parse-url .community.actor_id)))
-                      .community.description
-                      .community.id))))
+(defun lem-ui-block-community-at-point ()
+  "Block community at point."
+  (interactive)
+  (lem-ui-with-item
+    (if (not (equal 'community (lem-ui--item-type)))
+        (message "no community at point?")
+      (let-alist (lem-ui--property 'json)
+        (when (y-or-n-p (format "Block community %s?" .community.name))
+          (lem-ui-response-msg
+           (lem-block-community .community.id t)
+           'blocked t
+           (format "Community %s blocked!" .community.name))))
+      :number)))
 
-(defun lem-ui-do-community-completing (prompt-str action-fun communities-fun)
-  "Fetch communities with COMMUNITIES-FUN and PROMPT-STR, then call ACTION-FUN."
-  (let* ((communities (funcall communities-fun))
-         (subs (lem-ui--communities-alist communities))
-         (completion-extra-properties
-          (list :annotation-function
-                (lambda (c)
-                  (let ((annot (nth 1 (assoc c subs #'equal))))
-                    (concat
-                     (propertize " " 'display
-                                 '(space :align-to (- right-margin 51)))
-                     (string-limit (car (string-lines annot)) 50))))))
-         (choice (completing-read prompt-str subs))
-         (id (nth 2 (assoc choice subs #'equal))))
-    (funcall action-fun id choice)))
+(defun lem-ui-unblock-community ()
+  "Prompt for a blocked community, and unblock it."
+  (interactive)
+  (lem-ui-do-item-completing
+   #'lem-api-get-blocked-communities
+   #'lem-ui--communities-list
+   "Unblock community: "
+   (lambda (id choice)
+     (lem-ui-response-msg
+      (lem-block-community id :json-false)
+      'blocked :json-false
+      (format "Community %s unblocked!" choice)))))
 
 (defun lem-ui-jump-to-subscribed ()
   "Prompt for a subscribed community and view it."
   (interactive)
-  (lem-ui-do-community-completing
+  (lem-ui-do-item-completing
+   #'lem-api-get-subscribed-communities
+   #'lem-ui--communities-list
    "Jump to community: "
    (lambda (id _choice)
-     (lem-ui-view-community id "posts"))
-   #'lem-api-get-subscribed-communities))
+     (lem-ui-view-community id "posts"))))
 
 (defun lem-ui-jump-to-moderated ()
-  "Prompt for a subscribed community and view it."
+  "Prompt for a community moderated by the current user and view it."
   (interactive)
-  (lem-ui-do-community-completing
+  (lem-ui-do-item-completing
+   #'lem-api-get-moderated-communities
+   #'lem-ui--communities-list
    "Jump to moderated community: "
    (lambda (id _choice)
-     (lem-ui-view-community id "posts"))
-   #'lem-api-get-moderated-communities))
+     (lem-ui-view-community id "posts"))))
 
 (defun lem-ui-view-community (id &optional item sort limit page)
   "View community with ID.
@@ -1741,11 +1862,11 @@ PAGE is the page number of items to display, a string."
       (if (equal item "comments")
           (progn
             (lem-ui-insert-heading "comments")
-            (lem-ui-render-comments items :details)) ; no type
+            (lem-ui-render-comments items)) ; no type
         (lem-ui-insert-heading (or item "posts"))
-        (if (equal item "comments")
-            (lem-ui-render-comments items :details)
-          (lem-ui-render-posts items nil :trim))) ; no children
+        ;; (if (equal item "comments")
+        ;; (lem-ui-render-comments items)
+        (lem-ui-render-posts items nil :trim)) ; no children
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-community
                               (or item "posts") page))))
@@ -1814,6 +1935,7 @@ profile page."
            (unless brief (concat "\n" desc "\n"
                                  lem-ui-horiz-bar "\n")))
           'json community
+          'mods mods-list
           'byline-top t ; next/prev hack
           'id .community.id
           'lem-type 'community)))
@@ -1851,12 +1973,12 @@ And optionally for instance COMMUNITIES."
   "View community of item at point."
   (interactive)
   (lem-ui-with-item
-      (let ((type (lem-ui--property 'lem-type))
-            (id (or (lem-ui--property 'community-id)
-                    (lem-ui--property 'id)))) ; community header
-        (if (eq type 'instance)
-            (user-error "Item has no community")
-          (lem-ui-view-community id)))))
+    (let ((type (lem-ui--property 'lem-type))
+          (id (or (lem-ui--property 'community-id)
+                  (lem-ui--property 'id)))) ; community header
+      (if (eq type 'instance)
+          (user-error "Item has no community")
+        (lem-ui-view-community id)))))
 
 (defun lem-ui-delete-community ()
   "Delete community at point."
@@ -1864,12 +1986,20 @@ And optionally for instance COMMUNITIES."
   (let* ((id (lem-ui--property 'id))
          (community (alist-get 'community
                                (lem-ui--property 'json)))
-         (name (alist-get 'name community)))
-    (if (not (eq 'community (lem-ui--property 'lem-type)))
-        (message "No community at point")
-      (when (y-or-n-p (format "Delete community %s?" name))
-        (lem-delete-community id t)
-        (message "Community %s deleted!" name)))))
+         (name (alist-get 'name community))
+         (mods (lem-ui--property 'mods))
+         (ids (lem-ui-mods-ids mods))
+         (own-p (member lem-user-id ids)))
+    (cond ((not (eq 'community (lem-ui--property 'lem-type)))
+           (user-error "No community at point"))
+          ((not own-p)
+           (user-error "Must be a mod to delete community"))
+          (t
+           (when (y-or-n-p (format "Delete community %s?" name))
+             (lem-ui-response-msg
+              (lem-delete-community id t)
+              'community_view :non-nil
+              (format "Community %s deleted!" name)))))))
 
 ;;; INBOX / REPLIES / MENTIONS / PMS
 
@@ -1887,7 +2017,7 @@ Optionally only view UNREAD items."
 (defun lem-ui-render-replies (replies)
   "Render REPLIES, reply comments to the current user."
   (cl-loop for reply in replies
-           do (lem-ui-render-comment reply :reply)))
+           do (lem-ui-render-comment reply :reply :details)))
 
 (defun lem-ui-mark-reply-comment-read ()
   "Mark the comment-reply at point as read."
@@ -1988,14 +2118,42 @@ Optionally set ITEMS to view."
   "Delete item of type ITEM at point, calling FUN.
 If RESTORE, restore the item instead."
   (lem-ui-with-own-item item
-    (let* ((id (lem-ui--property 'id)))
-      (when (y-or-n-p (format "%s %s?"
-                              (if restore "Restore" "Delete")
-                              item))
-        (progn
-          (funcall fun id (if restore :json-false t))
-          (message "%s %s %s!" item id
-                   (if restore "restored" "deleted")))))))
+    (let-alist (lem-ui--property 'json)
+      (let* ((id (lem-ui--property 'id))
+             (del-p (or (eq t .post.deleted)
+                        (eq t .comment.deleted))))
+        (cond
+         ((and del-p (not restore))
+          (user-error "Item already deleted?"))
+         ((and restore (not del-p))
+          (user-error "Item not deleted?"))
+         (t
+          (when (y-or-n-p (format "%s %s?"
+                                  (if restore "Restore" "Delete")
+                                  item))
+            (let ((response (funcall fun id (if restore :json-false t)))
+                  (view (lem-ui-get-buffer-spec :view-fun))
+                  (indent (length (lem-ui--property 'line-prefix))))
+              (lem-ui-response-msg
+               response
+               (lem-ui-item-to-alist-key item) :non-nil
+               (format "%s %s %s!" item id
+                       (if restore "restored" "deleted")))
+              (lem-ui--update-item-json response)
+              (if (eq item 'post)
+                  (lem-ui-update-item-from-json
+                   'byline-top
+                   (lambda (response)
+                     (lem-ui-top-byline-replace
+                      (alist-get 'post_view response)
+                      (unless (eq view 'lem-ui-view-community)
+                        :community))))
+                (lem-ui-update-item-from-json
+                 'lem-type
+                 (lambda (response)
+                   (lem-ui-format-comment (alist-get 'comment_view response)
+                                          indent)))
+                (lem-ui-update-parent-post))))))))))
 
 (defun lem-ui-delete-comment ()
   "Delete comment at point."
@@ -2011,6 +2169,11 @@ If RESTORE, restore the item instead."
   "Restore deleted post at point."
   (interactive)
   (lem-ui-delete-item 'post #'lem-delete-post :restore))
+
+(defun lem-ui-restore-comment ()
+  "Restore deleted comment at point."
+  (interactive)
+  (lem-ui-delete-item 'comment #'lem-delete-comment :restore))
 
 (defun lem-ui-delete-post-or-comment ()
   "Delete post or comment at point."
@@ -2172,10 +2335,13 @@ DETAILS means display what community and post the comment is linked to."
           (post-title (when details .post.name))
           (community-name (when details (or .community.title
                                             .community.name)))
+          (community-url (when details .community.actor_id))
           (admin-p (eq t .creator_is_admin))
           (mod-p (or (cl-member .creator.id lem-ui-post-community-mods-ids)
                      (eq t .creator_is_moderator)))
-          (op-p (eq .comment.creator_id .post.creator_id)))
+          (op-p (eq .comment.creator_id .post.creator_id))
+          (deleted .comment.deleted)
+          (removed .comment.removed))
       (push .comment.id lem-ui-current-items) ; pagination
       (propertize
        (concat
@@ -2183,11 +2349,14 @@ DETAILS means display what community and post the comment is linked to."
                            (or .creator.display_name .creator.name)
                            .counts.score
                            .comment.published
-                           community-name nil nil
-                           op-p admin-p mod-p nil handle
+                           community-name community-url
+                           nil op-p admin-p mod-p nil handle
                            post-title)
         "\n"
-        (or content "")
+        (if (or (eq t deleted) (eq t removed))
+            (lem-ui-format-display-prop deleted removed)
+          (propertize (or content "")
+                      'body t))
         "\n"
         (lem-ui-bt-byline .counts.score .counts.child_count .my_vote .saved)
         "\n"
@@ -2201,6 +2370,18 @@ DETAILS means display what community and post the comment is linked to."
        'creator-id .creator.id
        'lem-type (if reply 'comment-reply 'comment)
        'line-prefix indent-str))))
+
+(defun lem-ui-format-display-prop (del rem)
+  "Format a string for display property.
+DEL and REM are the values of the deleted and removed attributes
+in an item's data."
+  (cond ((eq del t)
+         (propertize "[deleted by user]\n"
+                     'face '(:slant italic)))
+        ((eq rem t)
+         (propertize "[removed by mod]\n"
+                     'face '(:slant italic)))
+        (t nil)))
 
 (defun lem-ui-format-private-message (private-message &optional indent)
   "Format PRIVATE-MESSAGE, optionally with INDENT amount of indent bars."
@@ -2237,6 +2418,8 @@ DETAILS means display what community and post the comment is linked to."
 POST-ID is the post's id.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of items to return."
+  ;; NB: max_depth, required for comment trees, breaks limit
+  ;; and that's why huge threads are slow to load :/
   (let* ((comments (lem-api-get-post-comments
                     post-id "All" sort (or limit lem-ui-comments-limit)
                     nil nil lem-api-comments-max-depth)))
@@ -2346,24 +2529,30 @@ RENDER-FUN is the name of a function to render them."
       (lem-ui--init-view)
       (message "Loading more items... [done]"))))
 
-(defun lem-ui-post-goto-comment (comment-id)
-  "Move point to comment with COMMENT-ID, a number, if possible."
+(defun lem-ui-post-goto-comment (comment-id post-id)
+  "Move point to comment with COMMENT-ID, a number, if possible.
+POST-ID is the post's id, used to fetch the right buffer."
   ;; TODO: implement forward-search/pagination
-  (with-current-buffer "*lem-post*"
+  (with-current-buffer (format "*lem-post-%s*" post-id)
     (when-let ((match (text-property-search-forward 'id comment-id t)))
-      (goto-char (prop-match-beginning match)))))
+      (goto-char (prop-match-beginning match))
+      (recenter-top-bottom '(4)))))
 
 (defun lem-ui-view-comment-post (&optional post-id comment-id)
   "View post of comment at point, or of POST-ID.
 If COMMENT-ID is provided, move point to that comment."
   (interactive)
-  (if (not (or post-id
-               (eq (lem-ui--item-type) 'comment)
-               (eq (lem-ui--item-type) 'comment-reply)))
-      (message "Not at a comment?")
-    (let* ((post (or post-id (lem-ui--property 'post-id))))
-      (lem-ui-view-post post)
-      (lem-ui-post-goto-comment comment-id))))
+  (let ((comment-p (or (eq (lem-ui--item-type) 'comment)
+                       (eq (lem-ui--item-type) 'comment-reply))))
+    (if (not (or post-id
+                 comment-p))
+        (message "Not at a comment?")
+      (let* ((post-id (or post-id (lem-ui--property 'post-id)))
+             (comment-id (or comment-id
+                             (when comment-p
+                               (lem-ui--property 'id)))))
+        (lem-ui-view-post post-id)
+        (lem-ui-post-goto-comment comment-id post-id)))))
 
 ;;; LIKES / VOTES
 
@@ -2373,36 +2562,35 @@ If COMMENT-ID is provided, move point to that comment."
 TYPE should be either :unlike, :dislike, or nil to like."
   (interactive)
   (lem-ui-with-item
-      (let* ((item (lem-ui--property 'lem-type))
-             (fun (if (eq item 'post)
-                      #'lem-like-post
-                    #'lem-like-comment))
-             (score (cond ((eq type :unlike)
-                           0)
-                          ((eq type :dislike)
-                           -1)
-                          (t 1)))
-             (like-str (cond ((eq type :unlike)
-                              "unliked")
-                             ((eq type :dislike)
-                              "disliked")
-                             (t "liked"))))
-        (if (or (eq item 'post)
+    (let* ((item (lem-ui--property 'lem-type))
+           (fun (if (eq item 'post)
+                    #'lem-like-post
+                  #'lem-like-comment))
+           (score (cond ((eq type :unlike) 0)
+                        ((eq type :dislike) -1)
+                        (t 1)))
+           (like-str (cond ((eq type :unlike) "unliked")
+                           ((eq type :dislike) "disliked")
+                           (t "liked"))))
+      (when (or (eq item 'post)
                 (eq item 'comment)
                 (eq item 'comment-reply))
-            (progn
-              (let* ((vote (funcall fun id score))
-                     (item (if (eq item 'comment-reply)
-                               'comment
-                             item))
-                     (obj (intern (concat (symbol-name item) "_view")))
-                     (i (alist-get obj vote))
-                     (saved (alist-get 'saved i))
-                     (my-vote (alist-get 'my_vote i)))
-                (when i ; no my_vote if we unliked in 0.19-rc5?
-                  (lem-ui--update-item-json i)
-                  (lem-ui-update-bt-byline-from-json my-vote saved)
-                  (message "%s %s %s!" item id like-str))))))
+        (let* ((vote (funcall fun id score)) ; let-alist this junk:
+               (item (if (eq item 'comment-reply)
+                         'comment
+                       item))
+               (obj (lem-ui-item-to-alist-key item))
+               (i (alist-get obj vote))
+               (saved (alist-get 'saved i))
+               (my-vote (alist-get 'my_vote i)))
+          (lem-ui-response-msg i ; no my_vote if we unliked in 0.19?
+                               item :non-nil
+                               (format "%s %s %s!" item id like-str))
+          (lem-ui--update-item-json i)
+          (lem-ui-update-item-from-json
+           'byline-bottom
+           (lambda (json)
+             (lem-ui-bt-byline-replace json my-vote saved))))))
     :number))
 
 (defun lem-ui-dislike-item ()
@@ -2419,24 +2607,16 @@ TYPE should be either :unlike, :dislike, or nil to like."
   "Toggle like status of item at point."
   (interactive)
   (lem-ui-with-item
-      (let* ((json (lem-ui--property 'json))
-             (my-vote (alist-get 'my_vote json)))
-        (if json
-            (cond ((eq my-vote -1)
-                   (lem-ui-unlike-item))
-                  ((eq my-vote 1)
-                   (lem-ui-dislike-item))
-                  ((or (eq my-vote nil)
-                       (eq my-vote 0))
-                   (lem-ui-like-item)))))))
-
-(defun lem-ui--update-item-json (new-json)
-  "Replace the json property of item at point with NEW-JSON."
-  ;; NB: this replaces a comment-reply obj with comment obj if a reply is liked!
-  (let ((inhibit-read-only t)
-        (region (fedi--find-property-range 'json (point) :backwards)))
-    (add-text-properties (car region) (cdr region)
-                         `(json ,new-json))))
+    (let* ((json (lem-ui--property 'json))
+           (my-vote (alist-get 'my_vote json)))
+      (if json
+          (cond ((eq my-vote -1)
+                 (lem-ui-unlike-item))
+                ((eq my-vote 1)
+                 (lem-ui-dislike-item))
+                ((or (eq my-vote nil)
+                     (eq my-vote 0))
+                 (lem-ui-like-item)))))))
 
 ;;; USERS
 
@@ -2536,42 +2716,50 @@ CURRENT-USER means we are displaying the current user's profile."
   "View user of item at point."
   (interactive)
   (lem-ui-with-item
-      (let ((user (lem-ui--property 'creator-id)))
-        (lem-ui-view-user user "overview"))))
+    (let ((user (lem-ui--property 'creator-id)))
+      (lem-ui-view-user user "overview"))))
 
 (defun lem-ui-view-user-at-point ()
   "View user at point."
   (interactive)
   (lem-ui-with-item
-      (lem-ui-view-user id "overview")))
+    (lem-ui-view-user id "overview")))
 
 (defun lem-ui-message-user-at-point ()
   "Send private message to user at point."
   (interactive)
   (lem-ui-with-item
-      (let ((message (read-string "Private message: ")))
-        (lem-send-private-message message id))))
+    (let ((message (read-string "Private message: ")))
+      (lem-send-private-message message id))))
 
-(defun lem-ui-block-user (&optional unblock)
-  "Block author of item at point.
-If UNBLOCK, unblock them instead."
+(defun lem-ui-block-user ()
+  "Block author of item at point."
   (interactive)
   (lem-ui-with-item
-      (let* ((id (lem-ui--property 'creator-id))
-             (json (lem-ui--property 'json))
-             (name (alist-get 'name
-                              (alist-get 'creator json)))
-             (b-str (if unblock "unblocked" "blocked")))
-        (if unblock
-            (lem-block-user id :json-false)
-          (when (y-or-n-p (format "Block %s?" name))
-            (lem-block-user id t)))
-        (message "User %s %s!" name b-str))))
+    (let* ((id (lem-ui--property 'creator-id))
+           (json (lem-ui--property 'json))
+           (name (alist-get 'name
+                            (alist-get 'creator json))))
+      (if (not name)
+          (user-error "Looks like no user at point?")
+        (when (y-or-n-p (format "Block %s?" name))
+          (lem-ui-response-msg
+           (lem-block-user id t)
+           'blocked 't
+           (format "User %s blocked!" name)))))))
 
 (defun lem-ui-unblock-user ()
-  "."
-  ;; TODO: completing-read blocks!
-  (lem-ui-block-user :unblock))
+  "Prompt for a blocked user, and unblock them."
+  (interactive)
+  (lem-ui-do-item-completing
+   #'lem-api-get-blocked-users
+   #'lem-ui-blocks-list
+   "Unlbock user: "
+   (lambda (id choice)
+     (lem-ui-response-msg
+      (lem-block-user id :json-false)
+      'blocked :json-false
+      (format "User %s unblocked!" choice)))))
 
 ;;; IMAGES
 
@@ -2613,19 +2801,19 @@ START and END mark the region to replace."
   "Copy the URL (ap_id) of the post or comment at point."
   (interactive)
   (lem-ui-with-item
-      (let* ((json (lem-ui--property 'json))
-             (item (or (alist-get 'comment json)
-                       (alist-get 'post json)))
-             (url (alist-get 'ap_id item)))
-        (if item
-            (progn (kill-new url)
-                   (message "url %s copied!" url))))))
+    (let* ((json (lem-ui--property 'json))
+           (item (or (alist-get 'comment json)
+                     (alist-get 'post json)))
+           (url (alist-get 'ap_id item)))
+      (if item
+          (progn (kill-new url)
+                 (message "url %s copied!" url))))))
 
 (defun lem-ui-print-json ()
   "Fetch the JSON of item at point and pretty print it in a new buffer."
   (interactive)
   (let ((json (lem-ui-with-item
-                  (lem-ui--property 'json)))
+                (lem-ui--property 'json)))
         (buf (get-buffer-create "*lem-json*")))
     (with-current-buffer buf
       (erase-buffer)

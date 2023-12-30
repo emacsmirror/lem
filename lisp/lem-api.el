@@ -172,16 +172,34 @@ person_blocks, and discussion_languages."
     (alist-get 'my_user site)))
 
 (defun lem-api-get-subscribed-communities ()
-  "Return the data of the current user's subscribed communities.
+  "Return the current user's subscribed communities.
 Returns follows data, from under my_user, from the site endpoint."
   (let* ((current-user (lem-api-get-current-user)))
     (alist-get 'follows current-user)))
 
 (defun lem-api-get-moderated-communities ()
-  "Return the data of the current user's subscribed communities.
+  "Return the current user's subscribed communities.
 Returns follows data, from under my_user, from the site endpoint."
   (let* ((current-user (lem-api-get-current-user)))
     (alist-get 'moderates current-user)))
+
+(defun lem-api-get-blocked-users ()
+  "Return the current user's blocked users.
+Returns data from my_user, from the site endpoint."
+  (let* ((current-user (lem-api-get-current-user)))
+    (alist-get 'person_blocks current-user)))
+
+(defun lem-api-get-blocked-communities ()
+  "Return the current user's blocked communities.
+Returns data from my_user, from the site endpoint."
+  (let* ((current-user (lem-api-get-current-user)))
+    (alist-get 'community_blocks current-user)))
+
+(defun lem-api-get-blocked-instances ()
+  "Return the current user's blocked instances.
+Returns data from my_user, from the site endpoint."
+  (let* ((current-user (lem-api-get-current-user)))
+    (alist-get 'instance_blocks current-user)))
 
 ;; no auth: because we call this before sending the instance our creds:
 (lem-def-request "get" "get-site" "site")
@@ -197,7 +215,9 @@ Returns follows data, from under my_user, from the site endpoint."
 
 ;; (setq lem-test-inst-posts (lem-api-get-instance-posts "Subscribed"))
 
-(lem-def-request "get" "get-federated-instances" "federated_instances")
+(lem-def-request "get" "get-federated-instances" "federated_instances"
+  ()
+  "Returns list of allowed, blocked, and linked instances.")
 
 ;; (lem-get-federated-instances)
 
