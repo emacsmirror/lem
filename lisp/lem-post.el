@@ -154,7 +154,7 @@ COMMENT means we are composing a comment."
                                   (item-var . lem-post-community-name)
                                   (face . lem-post-community-face))))))
 
-(defun lem-ui-edit-edit-comment-response (response)
+(defun lem-ui-edit-comment-response (response)
   "Call response functions upon editing a comment.
 RESPONSE is the comment_view data returned by the server."
   (with-current-buffer lem-post-last-buffer
@@ -169,7 +169,8 @@ RESPONSE is the comment_view data returned by the server."
          'lem-type
          (lambda (_response)
            (lem-ui-format-comment .comment_view indent
-                                  nil (unless (eq view 'post)
+                                  nil (unless (or (eq view 'post)
+                                                  (eq view 'community))
                                         :details))))))))
 
 (defun lem-ui-insert-comment-after-parent (response parent-id)
@@ -241,7 +242,7 @@ RESPONSE is the comment_view data returned by the server."
               (lem-ui-create-comment-response response parent-id))
              ((eq type 'edit-comment)
               ;; after edit comment: replace with updated item:
-              (lem-ui-edit-edit-comment-response response))
+              (lem-ui-edit-comment-response response))
              ((eq type 'edit-post)
               ;; after edit post: reload previous view:
               (lem-ui-response-msg
