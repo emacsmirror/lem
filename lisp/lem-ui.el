@@ -1361,7 +1361,8 @@ SORT must be a member of `lem-sort-types'."
                             (or .creator.display_name .creator.name)
                             .counts.score
                             .post.published
-                            (when community .community.name)
+                            (when community (or .community.title
+                                                .community.name))
                             (when community .community.actor_id)
                             (or (eq t .post.featured_community) ; pinned community
                                 (eq t .post.featured_local)) ; pinned instance
