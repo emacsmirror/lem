@@ -1151,19 +1151,23 @@ COMMUNITY means display the community posted to."
 
 (defun lem-ui-reload-view ()
   "Reload the current view."
-  ;; FIXME: Respect current sort/type etc
   (let ((type (lem-ui-view-type))
+        (item (lem-ui-get-buffer-spec :item))
+        (sort (lem-ui-get-buffer-spec :sort))
+        (listing (lem-ui-get-buffer-spec :listing-type))
+        (page (lem-ui-get-buffer-spec :page))
+        (limit (lem-ui-get-buffer-spec :limit))
         (id (save-excursion
               (goto-char (point-min))
               (lem-ui--property 'id))))
     (cond ((eq type 'post)
-           (lem-ui-view-post id))
+           (lem-ui-view-post id sort limit))
           ((eq type 'instance)
-           (lem-ui-view-instance))
+           (lem-ui-view-instance listing sort limit page item))
           ((eq type 'community)
-           (lem-ui-view-community id))
+           (lem-ui-view-community id item sort limit page))
           ((eq type 'user)
-           (lem-ui-view-user id))
+           (lem-ui-view-user id item sort limit))
           ((eq type 'inbox)
            (lem-ui-view-inbox))
           (t
