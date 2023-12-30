@@ -141,7 +141,7 @@ I don't have a tech worker's income, so even a small tip would help out.
 | C-c C-u   | lem-post-read-url                      | Read post URL.                                                       |
 | C-c C-o   | lem-post-select-community              | Select community to post to.                                         |
 | C-c C-l   | lem-post-set-post-language             | Prompt for a language and set `fedi-post-language'.                  |
-|           | lem-post-submit                        | Submit the post to lemmy.                                            |
+|           | lem-post-submit                        | Submit the post to lemmy, then call response and update functions.   |
 | C-c C-n   | lem-post-toggle-nsfw                   | Toggle `fedi-post-content-nsfw'.                                     |
 | p         | lem-prev-item                          | Move to prev item.                                                   |
 |           | lem-shr-insert-image                   | Insert the image under point into the buffer.                        |
