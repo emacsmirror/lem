@@ -103,7 +103,7 @@
 ;; listPostReports
 ;; listPrivateMessageReports
 ;; listRegistrationApplications
-;; lockPost
+;; lockPost TODO
 ;; login DONE
 ;; markAllAsRead DONE
 ;; markCommentReplyAsRead DONE
