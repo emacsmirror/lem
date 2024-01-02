@@ -117,9 +117,9 @@
 ;; purgePerson
 ;; purgePost
 ;; register
-;; removeComment TODO
-;; removeCommunity TODO
-;; removePost TODO
+;; removeComment DONE
+;; removeCommunity DONE
+;; removePost DONE
 ;; resolveCommentReport
 ;; resolveObject DONE
 ;; resolvePostReport
@@ -467,6 +467,15 @@ Returns a community_view plus a blocked boolean."
 
 ;; TODO: hide community
 
+
+(lem-def-request "post" "remove-community" "community/remove"
+  (community-id remove &optional reason)
+  "Remove community with COMMUNITY-ID, a number.
+Returns a community_view and discussion_languages.
+User must be a moderator to remove."
+  (community-id reason)
+  `(("removed" . ,remove)))
+
 ;;; POSTS
 (lem-def-request "get" "get-post" "post"
   (id)
@@ -580,6 +589,15 @@ To feature a post, a user must be either an instance admin or
 community mod."
   (post-id feature-type)
   `(("featured" . ,featured)))
+
+(lem-def-request "post" "remove-post" "post/remove"
+  (post-id removed &optional reason)
+  "Remove comment with POST-ID.
+Give REASON, a string.
+REMOVED is a boolean.
+User must be a moderator to remove"
+  (post-id reason)
+  `(("removed" . ,removed)))
 
 ;;; COMMENTS
 ;; <https://join-lemmy.org/api/interfaces/GetComments.html>
@@ -731,6 +749,14 @@ Returns comment_report_view."
   (comment-id reason))
 
 ;; (lem-report-comment 765662 "test") ; broken
+
+(lem-def-request "post" "remove-comment" "comment/remove"
+  (comment-id removed &optional reason)
+  "Remove comment with COMMENT-ID.
+Give REASON, a string.
+REMOVED is a boolean."
+  (comment-id reason)
+  `(("removed" . ,removed)))
 
 ;;; PRIVATE MESSAGES
 (lem-def-request "get" "get-private-messages" "private_message/list"
