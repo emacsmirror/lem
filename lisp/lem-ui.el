@@ -496,7 +496,10 @@ SIDEBAR."
     (insert "\n")))
 
 (defun lem-ui-block-item-instance ()
-  "Block instance of item at point."
+  "Block instance of item at point.
+Blocking an instance means you wont see content from that
+instance, but will still see content from its users if they are
+active on other instances."
   (interactive)
   (lem-ui-with-item
     (let-alist (lem-ui--property 'json)
