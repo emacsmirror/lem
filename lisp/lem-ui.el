@@ -495,6 +495,32 @@ SIDEBAR."
       (insert "\n" lem-ui-horiz-bar "\n"))
     (insert "\n")))
 
+(defun lem-ui-block-item-instance ()
+  "Block instance of item at point."
+  (interactive)
+  (lem-ui-with-item
+    (let-alist (lem-ui--property 'json)
+      (let ((instance (url-host (url-generic-parse-url .post.ap_id))))
+        (when (y-or-n-p (format "Block instance %s?" instance))
+          (lem-ui-response-msg
+           (lem-block-instance .community.instance_id t)
+           'blocked t
+           (format "Instance %s blocked!" instance)))))
+    :number))
+
+(defun lem-ui-unblock-instance ()
+  "Prompt for a blocked instance and unblock it."
+  (interactive)
+  (lem-ui-do-item-completing
+   #'lem-api-get-blocked-instances
+   #'lem-ui--instances-list
+   "Unblock instance:"
+   (lambda (id choice)
+     (lem-ui-response-msg
+      (lem-block-instance id :json-false)
+      'blocked :json-false
+      (format "Instance %s unblocked!" choice)))))
+
 ;;; CYCLE SORT, LISTING, and ITEMS TYPE
 
 (defun lem-ui-view-type ()
@@ -1498,7 +1524,7 @@ SORT. LIMIT. PAGE."
 (defalias 'lem-ui-do-item-completing 'fedi-do-item-completing)
 
 (defun lem-ui--communities-list (communities)
-  "Return an alist of name/description and ID from COMMUNITIES."
+  "Return a list of name/description and ID from COMMUNITIES."
   (cl-loop for item in communities
            collect (let-alist item
                      (list
@@ -1506,8 +1532,8 @@ SORT. LIMIT. PAGE."
                       .community.id
                       .community.actor_id))))
 
-(defun lem-ui-users-list (users)
-  "For user in list USERS, return name, URL, and id."
+(defun lem-ui--users-list (users)
+  "For user in USERS, return name, URL, and id."
   (cl-loop for item in users
            collect (let-alist item
                      (list (lem-ui-handle-from-url .actor_id "@")
@@ -1515,12 +1541,18 @@ SORT. LIMIT. PAGE."
                            ;; .actor_id
                            .id))))
 
-(defun lem-ui-blocks-list (blocks)
+(defun lem-ui--blocks-list (blocks)
   "For user in BLOCKS, return handle, and id."
   (cl-loop for item in blocks
            collect (let-alist (alist-get 'target item)
                      (list (lem-ui-handle-from-url .actor_id "@")
                            .id))))
+
+(defun lem-ui--instances-list (instances)
+  "For each item in (blocked) INSTANCES, return domain and id."
+  (cl-loop for i in instances
+           collect (let-alist (alist-get 'instance i)
+                     (list .domain .id))))
 
 ;;; COMMUNITIES
 
@@ -1801,6 +1833,8 @@ LIMIT is the max results to return."
            'blocked t
            (format "Community %s blocked!" .community.name))))
       :number)))
+
+;; TODO: block item-community
 
 (defun lem-ui-unblock-community ()
   "Prompt for a blocked community, and unblock it."
@@ -2753,7 +2787,7 @@ CURRENT-USER means we are displaying the current user's profile."
   (interactive)
   (lem-ui-do-item-completing
    #'lem-api-get-blocked-users
-   #'lem-ui-blocks-list
+   #'lem-ui--blocks-list
    "Unlbock user: "
    (lambda (id choice)
      (lem-ui-response-msg
