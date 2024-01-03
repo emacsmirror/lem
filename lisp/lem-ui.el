@@ -52,6 +52,8 @@
 (defvar lem-inbox-types)
 (defvar lem-user-id)
 
+(defvar lem-enable-relative-timestamps)
+
 (defvar-local lem-ui-post-community-mods-ids nil
   "A list of ids of the moderators of the community of the current post.")
 
@@ -252,7 +254,7 @@ Inserts images and sets relative timestamp timers."
      fedi-timestamp-next-update (time-add (current-time)
                                           (seconds-to-time 300)))
     (setq fedi-timestamp-update-timer
-          (when fedi-enable-relative-timestamps
+          (when lem-enable-relative-timestamps
             (run-at-time (time-to-seconds
                           (time-subtract fedi-timestamp-next-update
                                          (current-time)))
@@ -1057,7 +1059,7 @@ EDITED is a timestamp."
        (propertize
         timestamp
         'timestamp parsed-time
-        'display (if fedi-enable-relative-timestamps
+        'display (if lem-enable-relative-timestamps
                      (fedi--relative-time-description parsed-time)
                    parsed-time))
        (propertize
@@ -1069,7 +1071,7 @@ EDITED is a timestamp."
                       edited
                       'timestamp edited-parsed
                       'display
-                      (if fedi-enable-relative-timestamps
+                      (if lem-enable-relative-timestamps
                           (fedi--relative-time-description edited-parsed)
                         edited-parsed)))
            "")
