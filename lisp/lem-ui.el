@@ -1006,7 +1006,7 @@ START and END are the boundaries of the link in the post body."
 (defun lem-ui-top-byline (title url username _score timestamp
                                 &optional community community-url
                                 featured-p op-p admin-p mod-p del-p handle
-                                post-title)
+                                post-title edited)
   "Format a top byline with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
 COMMUNITY and COMMUNITY-URL are those of the community the item
 belongs to.
@@ -1015,10 +1015,12 @@ OP-P is a flag, meaning we add a boxed OP string to the byline.
 ADMIN-P means we add same for admins, MOD-P means add same for moderators.
 DEL-P means add icon for deleted item.
 HANDLE is a user handle as a string.
-POST-TITLE is the name of the parent post, used for details
-comment display."
+POST-TITLE is the name of the parent post, used for detailed
+comment display.
+EDITED is a timestamp."
   (let ((url (ignore-errors (lem-ui-render-url url)))
-        (parsed-time (date-to-time timestamp)))
+        (parsed-time (date-to-time timestamp))
+        (edited-parsed (when edited (date-to-time edited))))
     (propertize
      (concat
       (if title
@@ -1050,19 +1052,32 @@ comment display."
          (lem-ui--propertize-link community nil 'community
                                   nil 'lem-ui-community-face
                                   community-url)))
-      (propertize
-       (concat
-        " | "
-        (propertize timestamp
-                    'timestamp parsed-time
-                    'display (if fedi-enable-relative-timestamps
-                                 (fedi--relative-time-description parsed-time)
-                               parsed-time))
-        (if (eq featured-p t)
-            (concat " | "
-                    (lem-ui-symbol 'pinned))
-          ""))
-       'face font-lock-comment-face)
+      (concat
+       " | "
+       (propertize
+        timestamp
+        'timestamp parsed-time
+        'display (if fedi-enable-relative-timestamps
+                     (fedi--relative-time-description parsed-time)
+                   parsed-time))
+       (propertize
+        (concat
+         (if edited
+             (concat " " (lem-ui-symbol 'edited)
+                     " "
+                     (propertize
+                      edited
+                      'timestamp edited-parsed
+                      'display
+                      (if fedi-enable-relative-timestamps
+                          (fedi--relative-time-description edited-parsed)
+                        edited-parsed)))
+           "")
+         (if (eq featured-p t)
+             (concat " | "
+                     (lem-ui-symbol 'pinned))
+           ""))
+        'face font-lock-comment-face))
       (when post-title
         (concat "\n"
                 (lem-ui-propertize-title post-title))))
@@ -1396,7 +1411,7 @@ SORT must be a member of `lem-sort-types'."
                             (when community .community.actor_id)
                             (or (eq t .post.featured_community) ; pinned community
                                 (eq t .post.featured_local)) ; pinned instance
-                            nil admin-p mod-p del-p handle)
+                            nil admin-p mod-p del-p handle nil .post.updated)
          "\n"
          (if .post.body
              (if trim
@@ -2388,7 +2403,7 @@ DETAILS means display what community and post the comment is linked to."
                            .comment.published
                            community-name community-url
                            nil op-p admin-p mod-p nil handle
-                           post-title)
+                           post-title .comment.updated)
         "\n"
         (if (or (eq t deleted) (eq t removed))
             (lem-ui-format-display-prop deleted removed)
