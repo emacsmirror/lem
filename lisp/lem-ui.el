@@ -2834,8 +2834,7 @@ It's a cheap hack, alas."
 (defun lem-shr-insert-image (start end)
   "Insert the image under point into the buffer.
 START and END mark the region to replace."
-  ;; we don't assume we have a * to replace
-  (interactive) ; does this need to be a cmd? (only if we make image display optional like in shr.el?)
+  (interactive) ; cmd (bound to i) if images optional
   (let ((url (get-text-property (point) 'image-url))
         (shr-max-image-proportion 0.4 ))
     (if (not url)
@@ -2845,10 +2844,8 @@ START and END mark the region to replace."
         ;; in case of bad URL, e.g. relative link
         (url-retrieve url #'shr-image-fetched
 		      (list (current-buffer)
-                            start end) ;) ; don't assume we have *
-                      ;; `(:width 400
-                      ;; :height 400)) ; if ever needed?
-                      ;; (1- (point)) (point-marker)) ; old value
+                            start end) ; don't assume we are replacing "*"
+                      `(:max-width 400 :max-height 400) ; max size
                       t)))))
 
 (defun lem-ui-copy-item-url ()
