@@ -130,6 +130,12 @@
   "Whether to enable `emojify-mode' in lem buffers."
   :type 'boolean)
 
+(defcustom lem-enable-relative-timestamps t
+  "Whether to show relative (to the current time) timestamps.
+This will require periodic updates of a timeline buffer to
+keep the timestamps current as time progresses."
+  :type '(boolean :tag "Enable relative timestamps and background updater task"))
+
 (defcustom lem-highlight-current-post-title nil
   "Whether to highlight the current post's title.
 Uses `cursor-face-highlight-mode'."

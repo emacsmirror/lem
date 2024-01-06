@@ -47,6 +47,8 @@
 (defvar-local lem-post-comment-post-id nil)
 (defvar-local lem-post-comment-comment-id nil)
 
+(defvar-local lem-post-recipient-id nil)
+
 (defvar lem-post-last-buffer nil)
 
 (defgroup lem-post
@@ -123,21 +125,22 @@
      (message "Posting to %s" choice)))
   (fedi-post--update-status-fields))
 
-(defun lem-post-compose (&optional edit mode comment)
+(defun lem-post-compose (&optional edit mode type)
   "Compose a new post.
 EDIT means we are editing.
 MODE is the lem.el minor mode to enable in the compose buffer.
-COMMENT means we are composing a comment."
+TYPE is a symbol of what we are composing, it may be comment or
+message."
   (interactive)
   (setq lem-post-last-buffer (buffer-name (current-buffer)))
   (fedi-post--compose-buffer edit
                              #'markdown-mode
                              (or mode #'lem-post-mode)
                              (when mode "lem-post")
-                             (or comment 'post)
+                             (or type 'post)
                              (list #'lem-post--mentions-capf
                                    #'lem-post--comms-capf)
-                             (unless comment
+                             (unless type ; post
                                '(((name . "title")
                                   (no-label . t)
                                   (prop . post-title)
@@ -173,14 +176,14 @@ RESPONSE is the comment_view data returned by the server."
                                                   (eq view 'community))
                                         :details))))))))
 
-(defun lem-ui-insert-comment-after-parent (response parent-id)
+(defun lem-ui-insert-comment-after-parent (response) ; parent-id)
   "Insert new reply comment after its parent.
 RESPONSE is the JSON data of the newly created comment.
 PARENT-ID is that of its parent comment or post."
   (with-current-buffer lem-post-last-buffer
     (let* ((inhibit-read-only t)
            (comment-view (alist-get 'comment_view response))
-           (comment (alist-get 'comment comment-view))
+           ;; (comment (alist-get 'comment comment-view))
            (indent (1+ (length (lem-ui--property 'line-prefix)))))
       ;; go to end of parent item:
       (goto-char
@@ -188,7 +191,7 @@ PARENT-ID is that of its parent comment or post."
       (insert "\n"
               (lem-ui-format-comment comment-view indent)))))
 
-(defun lem-ui-create-comment-response (response parent-id)
+(defun lem-ui-create-comment-response (response) ; parent-id)
   "Call response functions upon editing a comment.
 RESPONSE is the comment_view data returned by the server."
   (with-current-buffer lem-post-last-buffer
@@ -199,17 +202,18 @@ RESPONSE is the comment_view data returned by the server."
       (lem-ui--update-item-json .comment_view)
       ;; its not clear if we should always dump new comment right after its
       ;; parent, or somewhere else in the tree.
-      (lem-ui-insert-comment-after-parent response parent-id)
+      (lem-ui-insert-comment-after-parent response) ; parent-id)
       (lem-prev-item))))
 
 (defun lem-post-submit ()
   "Submit the post to lemmy, then call response and update functions."
   (interactive)
   (let ((buf (buffer-name))
-        (parent-id lem-post-comment-comment-id)
+        ;; (parent-id lem-post-comment-comment-id)
         (type (cond (lem-post-comment-post-id 'new-comment)
                     (lem-post-comment-edit-id 'edit-comment)
                     (lem-post-edit-id 'edit-post)
+                    (lem-post-recipient-id 'message)
                     (t 'new-post))))
     (if (and (string-suffix-p "post*" buf)
              (not (and lem-post-title
@@ -228,6 +232,8 @@ RESPONSE is the comment_view data returned by the server."
                 (lem-edit-post lem-post-edit-id lem-post-title body
                                lem-post-url fedi-post-content-nsfw
                                fedi-post-language))
+               ((eq 'message type)
+                (lem-send-private-message body lem-post-recipient-id))
                (t ;; creating a post
                 (lem-create-post lem-post-title lem-post-community-id body
                                  lem-post-url fedi-post-content-nsfw
@@ -239,7 +245,7 @@ RESPONSE is the comment_view data returned by the server."
             (cond
              ((eq type 'new-comment)
               ;; after new comment: insert it into post view tree:
-              (lem-ui-create-comment-response response parent-id))
+              (lem-ui-create-comment-response response)) ; parent-id))
              ((eq type 'edit-comment)
               ;; after edit comment: replace with updated item:
               (lem-ui-edit-comment-response response))
@@ -249,6 +255,11 @@ RESPONSE is the comment_view data returned by the server."
                response 'post_view :non-nil
                (format "Post %s edited!" .post_view.post.name))
               (lem-ui-reload-view))
+             ((eq type 'message)
+              (lem-ui-response-msg
+               response 'private_message_view :non-nil
+               (format "Private message sent to %s!"
+                       .private_message_view.recipient.name)))
              (t ;; creating a post
               ;; after new post: view the post
               (lem-ui-response-msg
@@ -312,6 +323,31 @@ Simple means we just read a string."
       (let-alist response
         (message "Comment created: %s" .comment_view.comment.content)
         (lem-ui-view-post (number-to-string post-id))))))
+
+;;; PRIVATE MESSAGE
+
+(defun lem-post-private-message (&optional recipient-id)
+  "Send a private message to a user.
+Optionally, message user with RECIPIENT-ID."
+  (interactive)
+  (let* ((json (unless recipient-id
+                 (save-excursion
+                   (goto-char (point-min))
+                   (lem-ui-thing-json))))
+         (person (unless recipient-id (alist-get 'person json)))
+         (id (or recipient-id (alist-get 'id person))))
+    (lem-post-compose nil #'lem-post-comment-mode 'message)
+    (setq lem-post-recipient-id id)))
+
+(defun lem-post-item-author-private-message ()
+  "Send a private message to the author of item at point."
+  (interactive)
+  (lem-ui-with-item
+    (let* ((item (lem-ui-thing-json))
+           (obj (or (alist-get 'post item)
+                    (alist-get 'comment item)))
+           (recipient-id (alist-get 'creator_id obj)))
+      (lem-post-private-message recipient-id))))
 
 ;;; EDITING POSTS/COMMENTS
 

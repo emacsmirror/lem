@@ -52,6 +52,8 @@
 (defvar lem-inbox-types)
 (defvar lem-user-id)
 
+(defvar lem-enable-relative-timestamps)
+
 (defvar-local lem-ui-post-community-mods-ids nil
   "A list of ids of the moderators of the community of the current post.")
 
@@ -252,7 +254,7 @@ Inserts images and sets relative timestamp timers."
      fedi-timestamp-next-update (time-add (current-time)
                                           (seconds-to-time 300)))
     (setq fedi-timestamp-update-timer
-          (when fedi-enable-relative-timestamps
+          (when lem-enable-relative-timestamps
             (run-at-time (time-to-seconds
                           (time-subtract fedi-timestamp-next-update
                                          (current-time)))
@@ -494,6 +496,35 @@ SIDEBAR."
       (lem-ui-insert-people admins "admins: ")
       (insert "\n" lem-ui-horiz-bar "\n"))
     (insert "\n")))
+
+(defun lem-ui-block-item-instance ()
+  "Block instance of item at point.
+Blocking an instance means you wont see content from that
+instance, but will still see content from its users if they are
+active on other instances."
+  (interactive)
+  (lem-ui-with-item
+    (let-alist (lem-ui--property 'json)
+      (let ((instance (url-host (url-generic-parse-url .post.ap_id))))
+        (when (y-or-n-p (format "Block instance %s?" instance))
+          (lem-ui-response-msg
+           (lem-block-instance .community.instance_id t)
+           'blocked t
+           (format "Instance %s blocked!" instance)))))
+    :number))
+
+(defun lem-ui-unblock-instance ()
+  "Prompt for a blocked instance and unblock it."
+  (interactive)
+  (lem-ui-do-item-completing
+   #'lem-api-get-blocked-instances
+   #'lem-ui--instances-list
+   "Unblock instance:"
+   (lambda (id choice)
+     (lem-ui-response-msg
+      (lem-block-instance id :json-false)
+      'blocked :json-false
+      (format "Instance %s unblocked!" choice)))))
 
 ;;; CYCLE SORT, LISTING, and ITEMS TYPE
 
@@ -977,7 +1008,7 @@ START and END are the boundaries of the link in the post body."
 (defun lem-ui-top-byline (title url username _score timestamp
                                 &optional community community-url
                                 featured-p op-p admin-p mod-p del-p handle
-                                post-title)
+                                post-title edited)
   "Format a top byline with TITLE, URL, USERNAME, SCORE and TIMESTAMP.
 COMMUNITY and COMMUNITY-URL are those of the community the item
 belongs to.
@@ -986,10 +1017,12 @@ OP-P is a flag, meaning we add a boxed OP string to the byline.
 ADMIN-P means we add same for admins, MOD-P means add same for moderators.
 DEL-P means add icon for deleted item.
 HANDLE is a user handle as a string.
-POST-TITLE is the name of the parent post, used for details
-comment display."
+POST-TITLE is the name of the parent post, used for detailed
+comment display.
+EDITED is a timestamp."
   (let ((url (ignore-errors (lem-ui-render-url url)))
-        (parsed-time (date-to-time timestamp)))
+        (parsed-time (date-to-time timestamp))
+        (edited-parsed (when edited (date-to-time edited))))
     (propertize
      (concat
       (if title
@@ -1021,19 +1054,32 @@ comment display."
          (lem-ui--propertize-link community nil 'community
                                   nil 'lem-ui-community-face
                                   community-url)))
-      (propertize
-       (concat
-        " | "
-        (propertize timestamp
-                    'timestamp parsed-time
-                    'display (if fedi-enable-relative-timestamps
-                                 (fedi--relative-time-description parsed-time)
-                               parsed-time))
-        (if (eq featured-p t)
-            (concat " | "
-                    (lem-ui-symbol 'pinned))
-          ""))
-       'face font-lock-comment-face)
+      (concat
+       " | "
+       (propertize
+        timestamp
+        'timestamp parsed-time
+        'display (if lem-enable-relative-timestamps
+                     (fedi--relative-time-description parsed-time)
+                   parsed-time))
+       (propertize
+        (concat
+         (if edited
+             (concat " " (lem-ui-symbol 'edited)
+                     " "
+                     (propertize
+                      edited
+                      'timestamp edited-parsed
+                      'display
+                      (if lem-enable-relative-timestamps
+                          (fedi--relative-time-description edited-parsed)
+                        edited-parsed)))
+           "")
+         (if (eq featured-p t)
+             (concat " | "
+                     (lem-ui-symbol 'pinned))
+           ""))
+        'face font-lock-comment-face))
       (when post-title
         (concat "\n"
                 (lem-ui-propertize-title post-title))))
@@ -1367,7 +1413,7 @@ SORT must be a member of `lem-sort-types'."
                             (when community .community.actor_id)
                             (or (eq t .post.featured_community) ; pinned community
                                 (eq t .post.featured_local)) ; pinned instance
-                            nil admin-p mod-p del-p handle)
+                            nil admin-p mod-p del-p handle nil .post.updated)
          "\n"
          (if .post.body
              (if trim
@@ -1498,7 +1544,7 @@ SORT. LIMIT. PAGE."
 (defalias 'lem-ui-do-item-completing 'fedi-do-item-completing)
 
 (defun lem-ui--communities-list (communities)
-  "Return an alist of name/description and ID from COMMUNITIES."
+  "Return a list of name/description and ID from COMMUNITIES."
   (cl-loop for item in communities
            collect (let-alist item
                      (list
@@ -1506,8 +1552,8 @@ SORT. LIMIT. PAGE."
                       .community.id
                       .community.actor_id))))
 
-(defun lem-ui-users-list (users)
-  "For user in list USERS, return name, URL, and id."
+(defun lem-ui--users-list (users)
+  "For user in USERS, return name, URL, and id."
   (cl-loop for item in users
            collect (let-alist item
                      (list (lem-ui-handle-from-url .actor_id "@")
@@ -1515,12 +1561,18 @@ SORT. LIMIT. PAGE."
                            ;; .actor_id
                            .id))))
 
-(defun lem-ui-blocks-list (blocks)
+(defun lem-ui--blocks-list (blocks)
   "For user in BLOCKS, return handle, and id."
   (cl-loop for item in blocks
            collect (let-alist (alist-get 'target item)
                      (list (lem-ui-handle-from-url .actor_id "@")
                            .id))))
+
+(defun lem-ui--instances-list (instances)
+  "For each item in (blocked) INSTANCES, return domain and id."
+  (cl-loop for i in instances
+           collect (let-alist (alist-get 'instance i)
+                     (list .domain .id))))
 
 ;;; COMMUNITIES
 
@@ -1802,6 +1854,8 @@ LIMIT is the max results to return."
            (format "Community %s blocked!" .community.name))))
       :number)))
 
+;; TODO: block item-community
+
 (defun lem-ui-unblock-community ()
   "Prompt for a blocked community, and unblock it."
   (interactive)
@@ -2076,8 +2130,7 @@ Optionally set ITEMS to view."
          (buf "*lem-inbox*")
          (bindings (lem-ui-view-options 'inbox)))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
-      (lem-ui-insert-heading "inbox")
-      (lem-ui-insert-heading items)
+      (lem-ui-insert-heading (format "inbox: %s" items))
       (funcall render-fun list)
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil nil #'lem-ui-view-inbox
@@ -2351,7 +2404,7 @@ DETAILS means display what community and post the comment is linked to."
                            .comment.published
                            community-name community-url
                            nil op-p admin-p mod-p nil handle
-                           post-title)
+                           post-title .comment.updated)
         "\n"
         (if (or (eq t deleted) (eq t removed))
             (lem-ui-format-display-prop deleted removed)
@@ -2403,7 +2456,7 @@ in an item's data."
                            .private_message.published)
         "\n"
         (or content "")
-        "\n"
+        ;; "\n"
         "\n"
         lem-ui-horiz-bar
         "\n")
@@ -2753,7 +2806,7 @@ CURRENT-USER means we are displaying the current user's profile."
   (interactive)
   (lem-ui-do-item-completing
    #'lem-api-get-blocked-users
-   #'lem-ui-blocks-list
+   #'lem-ui--blocks-list
    "Unlbock user: "
    (lambda (id choice)
      (lem-ui-response-msg
@@ -2780,8 +2833,7 @@ It's a cheap hack, alas."
 (defun lem-shr-insert-image (start end)
   "Insert the image under point into the buffer.
 START and END mark the region to replace."
-  ;; we don't assume we have a * to replace
-  (interactive) ; does this need to be a cmd? (only if we make image display optional like in shr.el?)
+  (interactive) ; cmd (bound to i) if images optional
   (let ((url (get-text-property (point) 'image-url))
         (shr-max-image-proportion 0.4 ))
     (if (not url)
@@ -2791,10 +2843,8 @@ START and END mark the region to replace."
         ;; in case of bad URL, e.g. relative link
         (url-retrieve url #'shr-image-fetched
 		      (list (current-buffer)
-                            start end) ;) ; don't assume we have *
-                      ;; `(:width 400
-                      ;; :height 400)) ; if ever needed?
-                      ;; (1- (point)) (point-marker)) ; old value
+                            start end) ; don't assume we are replacing "*"
+                      `(:max-width 400 :max-height 400) ; max size
                       t)))))
 
 (defun lem-ui-copy-item-url ()
