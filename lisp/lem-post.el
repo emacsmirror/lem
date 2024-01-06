@@ -326,17 +326,28 @@ Simple means we just read a string."
 
 ;;; PRIVATE MESSAGE
 
-(defun lem-post-private-message ()
+(defun lem-post-private-message (&optional recipient-id)
   "Send a private message to a user.
-Must be called from the user's profile page."
+Optionally, message user with RECIPIENT-ID."
   (interactive)
-  (let* ((json (save-excursion
-                 (goto-char (point-min))
-                 (lem-ui-thing-json)))
-         (person (alist-get 'person json))
-         (id (alist-get 'id person)))
+  (let* ((json (unless recipient-id
+                 (save-excursion
+                   (goto-char (point-min))
+                   (lem-ui-thing-json))))
+         (person (unless recipient-id (alist-get 'person json)))
+         (id (or recipient-id (alist-get 'id person))))
     (lem-post-compose nil #'lem-post-comment-mode 'message)
     (setq lem-post-recipient-id id)))
+
+(defun lem-post-item-author-private-message ()
+  "Send a private message to the author of item at point."
+  (interactive)
+  (lem-ui-with-item
+    (let* ((item (lem-ui-thing-json))
+           (obj (or (alist-get 'post item)
+                    (alist-get 'comment item)))
+           (recipient-id (alist-get 'creator_id obj)))
+      (lem-post-private-message recipient-id))))
 
 ;;; EDITING POSTS/COMMENTS
 
