@@ -47,6 +47,8 @@
 (defvar-local lem-post-comment-post-id nil)
 (defvar-local lem-post-comment-comment-id nil)
 
+(defvar-local lem-post-recipient-id nil)
+
 (defvar lem-post-last-buffer nil)
 
 (defgroup lem-post
@@ -123,21 +125,22 @@
      (message "Posting to %s" choice)))
   (fedi-post--update-status-fields))
 
-(defun lem-post-compose (&optional edit mode comment)
+(defun lem-post-compose (&optional edit mode type)
   "Compose a new post.
 EDIT means we are editing.
 MODE is the lem.el minor mode to enable in the compose buffer.
-COMMENT means we are composing a comment."
+TYPE is a symbol of what we are composing, it may be comment or
+message."
   (interactive)
   (setq lem-post-last-buffer (buffer-name (current-buffer)))
   (fedi-post--compose-buffer edit
                              #'markdown-mode
                              (or mode #'lem-post-mode)
                              (when mode "lem-post")
-                             (or comment 'post)
+                             (or type 'post)
                              (list #'lem-post--mentions-capf
                                    #'lem-post--comms-capf)
-                             (unless comment
+                             (unless type ; post
                                '(((name . "title")
                                   (no-label . t)
                                   (prop . post-title)
@@ -210,6 +213,7 @@ RESPONSE is the comment_view data returned by the server."
         (type (cond (lem-post-comment-post-id 'new-comment)
                     (lem-post-comment-edit-id 'edit-comment)
                     (lem-post-edit-id 'edit-post)
+                    (lem-post-recipient-id 'message)
                     (t 'new-post))))
     (if (and (string-suffix-p "post*" buf)
              (not (and lem-post-title
@@ -228,6 +232,8 @@ RESPONSE is the comment_view data returned by the server."
                 (lem-edit-post lem-post-edit-id lem-post-title body
                                lem-post-url fedi-post-content-nsfw
                                fedi-post-language))
+               ((eq 'message type)
+                (lem-send-private-message body lem-post-recipient-id))
                (t ;; creating a post
                 (lem-create-post lem-post-title lem-post-community-id body
                                  lem-post-url fedi-post-content-nsfw
@@ -249,6 +255,11 @@ RESPONSE is the comment_view data returned by the server."
                response 'post_view :non-nil
                (format "Post %s edited!" .post_view.post.name))
               (lem-ui-reload-view))
+             ((eq type 'message)
+              (lem-ui-response-msg
+               response 'private_message_view :non-nil
+               (format "Private message sent to %s!"
+                       .private_message_view.recipient.name)))
              (t ;; creating a post
               ;; after new post: view the post
               (lem-ui-response-msg
@@ -312,6 +323,20 @@ Simple means we just read a string."
       (let-alist response
         (message "Comment created: %s" .comment_view.comment.content)
         (lem-ui-view-post (number-to-string post-id))))))
+
+;;; PRIVATE MESSAGE
+
+(defun lem-post-private-message ()
+  "Send a private message to a user.
+Must be called from the user's profile page."
+  (interactive)
+  (let* ((json (save-excursion
+                 (goto-char (point-min))
+                 (lem-ui-thing-json)))
+         (person (alist-get 'person json))
+         (id (alist-get 'id person)))
+    (lem-post-compose nil #'lem-post-comment-mode 'message)
+    (setq lem-post-recipient-id id)))
 
 ;;; EDITING POSTS/COMMENTS
 
