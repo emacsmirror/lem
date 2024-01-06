@@ -2334,7 +2334,7 @@ Parent-fun for `hierarchy-add-tree'."
       (when (string-match "^/u/[_[:alnum:]]+$" file)
         (let ((split (split-string file "/" t)))
           (propertize
-           (concat (cadr split) "@" host)
+           (concat "@" (cadr split) "@" host)
            ;; props
            ))))))
 
@@ -2691,6 +2691,8 @@ TYPE should be either :unlike, :dislike, or nil to like."
        " "
        (when (eq t .is_admin)
          (lem-ui-propertize-admin-box))
+       (propertize (lem-ui--handle-from-user-url .person.actor_id)
+                   'face 'font-lock-comment-face)
        ;; .person.actor_id
        (if .person.bio
            (concat "\n"
