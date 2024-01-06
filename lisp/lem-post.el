@@ -176,14 +176,14 @@ RESPONSE is the comment_view data returned by the server."
                                                   (eq view 'community))
                                         :details))))))))
 
-(defun lem-ui-insert-comment-after-parent (response parent-id)
+(defun lem-ui-insert-comment-after-parent (response) ; parent-id)
   "Insert new reply comment after its parent.
 RESPONSE is the JSON data of the newly created comment.
 PARENT-ID is that of its parent comment or post."
   (with-current-buffer lem-post-last-buffer
     (let* ((inhibit-read-only t)
            (comment-view (alist-get 'comment_view response))
-           (comment (alist-get 'comment comment-view))
+           ;; (comment (alist-get 'comment comment-view))
            (indent (1+ (length (lem-ui--property 'line-prefix)))))
       ;; go to end of parent item:
       (goto-char
@@ -191,7 +191,7 @@ PARENT-ID is that of its parent comment or post."
       (insert "\n"
               (lem-ui-format-comment comment-view indent)))))
 
-(defun lem-ui-create-comment-response (response parent-id)
+(defun lem-ui-create-comment-response (response) ; parent-id)
   "Call response functions upon editing a comment.
 RESPONSE is the comment_view data returned by the server."
   (with-current-buffer lem-post-last-buffer
@@ -202,14 +202,14 @@ RESPONSE is the comment_view data returned by the server."
       (lem-ui--update-item-json .comment_view)
       ;; its not clear if we should always dump new comment right after its
       ;; parent, or somewhere else in the tree.
-      (lem-ui-insert-comment-after-parent response parent-id)
+      (lem-ui-insert-comment-after-parent response) ; parent-id)
       (lem-prev-item))))
 
 (defun lem-post-submit ()
   "Submit the post to lemmy, then call response and update functions."
   (interactive)
   (let ((buf (buffer-name))
-        (parent-id lem-post-comment-comment-id)
+        ;; (parent-id lem-post-comment-comment-id)
         (type (cond (lem-post-comment-post-id 'new-comment)
                     (lem-post-comment-edit-id 'edit-comment)
                     (lem-post-edit-id 'edit-post)
@@ -245,7 +245,7 @@ RESPONSE is the comment_view data returned by the server."
             (cond
              ((eq type 'new-comment)
               ;; after new comment: insert it into post view tree:
-              (lem-ui-create-comment-response response parent-id))
+              (lem-ui-create-comment-response response)) ; parent-id))
              ((eq type 'edit-comment)
               ;; after edit comment: replace with updated item:
               (lem-ui-edit-comment-response response))
