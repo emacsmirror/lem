@@ -136,7 +136,9 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-post-edit                          | Edit the post at point if possible.                                  |
 |           | lem-post-edit-comment                  | Edit comment at point if possible.                                   |
 | e         | lem-post-edit-post-or-comment          | Try to edit item at point.                                           |
+|           | lem-post-item-author-private-message   | Send a private message to the author of item at point.               |
 |           | lem-post-mode                          | Minor mode for submitting posts to lemmy.                            |
+|           | lem-post-private-message               | Send a private message to a user.                                    |
 | C-c C-t   | lem-post-read-title                    | Read post title.                                                     |
 | C-c C-u   | lem-post-read-url                      | Read post URL.                                                       |
 | C-c C-o   | lem-post-select-community              | Select community to post to.                                         |
