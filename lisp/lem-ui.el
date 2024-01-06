@@ -2130,8 +2130,7 @@ Optionally set ITEMS to view."
          (buf "*lem-inbox*")
          (bindings (lem-ui-view-options 'inbox)))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
-      (lem-ui-insert-heading "inbox")
-      (lem-ui-insert-heading items)
+      (lem-ui-insert-heading (format "inbox: %s" items))
       (funcall render-fun list)
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil nil #'lem-ui-view-inbox
@@ -2457,7 +2456,7 @@ in an item's data."
                            .private_message.published)
         "\n"
         (or content "")
-        "\n"
+        ;; "\n"
         "\n"
         lem-ui-horiz-bar
         "\n")
