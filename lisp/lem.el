@@ -107,6 +107,10 @@
   :prefix "lem-"
   :group 'external)
 
+(defcustom lem-auth-file (concat user-emacs-directory "lem.plstore")
+  "File path where Lemmy access tokens are stored."
+  :type 'file)
+
 (defun lem-map-customize-options (list)
   "Return a choice/const list from LIST, for customize options."
   (append '(choice)
@@ -190,11 +194,6 @@ Load current user's instance posts."
   (unless lem-auth-token
     (lem-login-set-token))
   (lem-ui-view-instance lem-default-listing-type lem-default-sort-type))
-
-(defcustom lem-auth-file (concat user-emacs-directory "lem.plstore")
-  "File path where Lemmy access tokens are stored."
-  :group 'mastodon
-  :type 'file)
 
 (defun lem-auth-store-token (username token)
   "Store lemmy jwt TOKEN for USERNAME."
