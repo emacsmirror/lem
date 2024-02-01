@@ -276,7 +276,7 @@ Item may be post, comment, community, etc."
   "Evaluate BODY in a new or existing buffer called BUFFER.
 MODE-FUN is called to set the major mode.
 OTHER-WINDOW means call `switch-to-buffer-other-window' rather
-than `switch-to-buffer'.
+than `pop-to-buffer'.
 BINDINGS is a list of variables for which to display bidings."
   (declare (debug t)
            (indent 4))
@@ -299,7 +299,8 @@ BINDINGS is a list of variables for which to display bidings."
        (funcall ,mode-fun)
        (if ,other-window
            (switch-to-buffer-other-window ,buffer)
-         (switch-to-buffer ,buffer))
+         ;; (switch-to-buffer ,buffer))
+         (pop-to-buffer ,buffer '(display-buffer-same-window)))
        ,@body
        (goto-char (point-min))
        (when ,bindings
@@ -1307,7 +1308,7 @@ INDENT is a number, the level of indent for the item."
 Type is a symbol, either handle or community.
 Communities are of the form \"!community@intance.com.\""
   (with-temp-buffer
-    (switch-to-buffer (current-buffer))
+    ;; (switch-to-buffer (current-buffer))
     (insert str)
     (goto-char (point-min))
     (save-match-data
@@ -2334,7 +2335,7 @@ Parent-fun for `hierarchy-add-tree'."
       (when (string-match "^/u/[_[:alnum:]]+$" file)
         (let ((split (split-string file "/" t)))
           (propertize
-           (concat (cadr split) "@" host)
+           (concat "@" (cadr split) "@" host)
            ;; props
            ))))))
 
@@ -2691,6 +2692,8 @@ TYPE should be either :unlike, :dislike, or nil to like."
        " "
        (when (eq t .is_admin)
          (lem-ui-propertize-admin-box))
+       (propertize (lem-ui--handle-from-user-url .person.actor_id)
+                   'face 'font-lock-comment-face)
        ;; .person.actor_id
        (if .person.bio
            (concat "\n"
