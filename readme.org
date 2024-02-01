@@ -21,7 +21,7 @@ Update and install:
 
 =M-x package-install RET lem RET=
 
-Otherwise you can pull from this repo, main or develop branch, add to load-path, and require..
+Otherwise you can pull from this repo, main or develop branch, add to load-path, and require.
 
 * logging in
 
@@ -39,7 +39,7 @@ want to have to provide your username, add =(setq lem-current-user
 - [[https://codeberg.org/martianh/fedi.el][fedi.el]], a library to make writing a library of API requests easier.
 
 - [[https://github.com/jrblevin/markdown-mode][markdown-mode]], which as per the =markdown-mode= docs also requires that you have a markdown command installed and available in your path in order to render HTML output.
-   - =markdown-mode= and =lem.el= will not install this for you! You must do it yourself. Examples include =markdown= and =pandoc=. Currently =lem.el= recommends =markdown=, as its  HTML output is slightly easier for =shr.el= to render, but =pandoc= should also be fine. Once you have one installed, customize the variable =markdown-command= and point it to the exectuable. See =markdown-mode='s installation instructions for more details: [[https://github.com/jrblevin/markdown-mode#installation][jrblevin/markdown-mode#installation]].
+   - =markdown-mode= and =lem.el= will not install this for you, you must do it yourself. Examples include =markdown= and =pandoc=. Currently =lem.el= recommends =markdown=, as its  HTML output is slightly easier for =shr.el= to render, but =pandoc= should also be fine. Once you have one installed, customize the variable =markdown-command= and point it to the exectuable. See =markdown-mode='s installation instructions for more details: [[https://github.com/jrblevin/markdown-mode#installation][jrblevin/markdown-mode#installation]].
 
 - =hierarchy.el= and =vtable.el= which should be included in your emacs.
 
@@ -50,12 +50,12 @@ JSON data pased into Elisp.
 
 The idea is that it's then possible to write different frontends so users can
 read lemmy posts in whatever forms they like. Possibilities are notmuch, gnus,
-md4rd, elfeed, or a standalone rendering option more like =mastodon.el=.
+md4rd, or elfeed.
 
 Most endpoints are implemented, as are most parameters for each endpoint.
 There is an active todo list in =lem-api.el=.
 
-New endpoints are trivial to add with the =lem-def-request= macro.
+New endpoints are trivial to implement with the =lem-def-request= macro.
 
 =lem-ui.el= is our own interface layer. It takes inspiration and code from
 =mastodon.el=, as that's what I know, and a lot of work has gone into it.
