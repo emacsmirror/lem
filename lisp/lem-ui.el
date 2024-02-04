@@ -727,7 +727,7 @@ Optionally, use SORT."
   "Choose a search type from `lem-search-types' and repeat current query."
   (interactive)
   (if (not (eq (lem-ui-view-type) 'search))
-      (user-error "You can only choose search type in a search.")
+      (user-error "You can only choose search type in a search")
     (let* ((types (remove "Url"
                           (remove "All" lem-search-types)))
            (choice (lem-ui-read-type "Search type:" types))
@@ -736,10 +736,17 @@ Optionally, use SORT."
            (listing-type (lem-ui-get-buffer-spec :listing-type)))
       (lem-ui-search query choice listing-type sort))))
 
+(defun lem-ui-search-type-fun (search-type)
+  "Given SEARCH-TYPE, return a render function."
+  (intern (concat "lem-ui-render-" search-type)))
+
 (defun lem-ui-search (&optional query search-type
                                 listing-type sort limit page)
-  "Do a search for objects of one of the types in `lem-search-types'.
-LIMIT is the max results to return."
+  "Search for QUERY, of SEARCH-TYPE, one of the types in `lem-search-types'.
+LISTING-TYPE is one of `lem-listing-types'.
+SORT is one of `lem-sort-types'.
+LIMIT is the max results to return.
+PAGE is the page number."
   (interactive)
   (let* ((types ; remove not-yet-implemented search types:
           (remove "Url"
@@ -752,7 +759,7 @@ LIMIT is the max results to return."
          ;; (listing-type (lem-ui-read-type "Listing type: " lem-listing-types))
          ;; (sort (lem-ui-read-type "Sort by: " lem-sort-types))
          (query (or query (read-string "Query: ")))
-         (type-fun (intern (concat "lem-ui-render-" type)))
+         (type-fun (lem-ui-search-type-fun type))
          (buf (format "*lem-search-%s*" type))
          ;; TODO: handle community
          (response (lem-search query (capitalize type) listing-type sort
@@ -2529,10 +2536,22 @@ ITEMS should be an alist of the form '\=(plural-name ((items-list)))'."
    (alist-get (lem-ui-plural-symbol type)
               items)))
 
+(defun lem-ui-search-type-symbol (type)
+  "Make TYPE, a string, singular and a symbol."
+  (cond ((equal type "communities")
+         'community)
+        ((equal type "posts")
+         'post)
+        ((equal type "users")
+         'user)
+        ((equal type "comments")
+         'comment)))
+
 (defun lem-ui-more ()
   "Append more items to the current view."
   (interactive)
   (let ((item (lem-ui-get-buffer-spec :item))
+        ;; TODO: use `lem-ui-view-type' instead
         (view-fun (lem-ui-get-buffer-spec :view-fun)))
     (cond ((eq view-fun 'lem-ui-view-post)
            ;; nb max-depth doesn't work with pagination yet:
@@ -2558,6 +2577,11 @@ ITEMS should be an alist of the form '\=(plural-name ((items-list)))'."
           ((eq item 'lem-ui-view-communities)
            (lem-ui-more-items 'community 'lem-list-communities
                               'lem-ui-render-communities))
+          ((eq view-fun 'lem-ui-search)
+           (let* ((search-type (lem-ui-get-buffer-spec :item))
+                  (render-fun (lem-ui-search-type-fun search-type))
+                  (search-type-symbol (lem-ui-search-type-symbol search-type)))
+             (lem-ui-more-items search-type-symbol 'lem-search render-fun)))
           (t (message "More type not implemented yet")))))
 
 (defun lem-ui-more-items (type get-fun render-fun)
@@ -2565,39 +2589,49 @@ ITEMS should be an alist of the form '\=(plural-name ((items-list)))'."
 GET-FUN is the name of a function to fetch more items.
 RENDER-FUN is the name of a function to render them."
   (message "Loading more items...")
-  (let* ((page (1+ (lem-ui-get-buffer-spec :page)))
+  (let* ((listing (lem-ui-get-buffer-spec :listing-type))
+         (view-fun (lem-ui-get-buffer-spec :view-fun))
+         (page (1+ (lem-ui-get-buffer-spec :page)))
+         (item (lem-ui-get-buffer-spec :item))
+         (sort (lem-ui-get-buffer-spec :sort))
+         (query (lem-ui-get-buffer-spec :query))
          (id (save-excursion
                (goto-char (point-min))
                (lem-ui--property 'id)))
-         (sort (lem-ui-get-buffer-spec :sort))
          (all-items
           ;; get-instance-posts have no need of id arg:
           (cond ((or (eq get-fun 'lem-api-get-instance-posts)
                      (eq get-fun 'lem-list-communities))
                  (funcall get-fun
-                          (or (lem-ui-get-buffer-spec :listing-type) "All")
+                          (or listing "All")
                           sort
                           lem-ui-comments-limit
                           page))
                 ;; user funs have no list-type arg:
-                ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-user)
+                ((eq view-fun 'lem-ui-view-user)
                  (funcall get-fun id sort
                           lem-ui-comments-limit page))
+                ((eq view-fun 'lem-ui-search)
+                 (funcall get-fun query (capitalize item) listing sort
+                          lem-ui-comments-limit
+                          page))
                 (t
                  (funcall get-fun
                           id
-                          (or (lem-ui-get-buffer-spec :listing-type) "All")
+                          (or listing "All")
                           sort
                           lem-ui-comments-limit
                           page))))
          (no-duplicates (lem-ui-remove-displayed-items all-items type)))
     (setf (alist-get (lem-ui-plural-symbol type) all-items)
           no-duplicates)
-    (lem-ui-set-buffer-spec (lem-ui-get-buffer-spec :listing-type)
-                            (lem-ui-get-buffer-spec :sort)
-                            (lem-ui-get-buffer-spec :view-fun)
-                            (lem-ui-get-buffer-spec :item)
-                            page)
+    (lem-ui-set-buffer-spec listing
+                            sort
+                            view-fun
+                            item
+                            page
+                            nil
+                            query)
     (goto-char (point-max))
     (let ((old-max (point))
           (inhibit-read-only t))
