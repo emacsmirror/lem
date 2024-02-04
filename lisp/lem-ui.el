@@ -723,6 +723,19 @@ Optionally, use SORT."
   (completing-read prompt
                    types-list nil :match))
 
+(defun lem-ui-choose-search-type ()
+  "Choose a search type from `lem-search-types' and repeat current query."
+  (interactive)
+  (if (not (eq (lem-ui-view-type) 'search))
+      (user-error "You can only choose search type in a search.")
+    (let* ((types (remove "Url"
+                          (remove "All" lem-search-types)))
+           (choice (lem-ui-read-type "Search type:" types))
+           (sort (lem-ui-get-buffer-spec :sort))
+           (query (lem-ui-get-buffer-spec :query))
+           (listing-type (lem-ui-get-buffer-spec :listing-type)))
+      (lem-ui-search query choice listing-type sort))))
+
 (defun lem-ui-search (&optional query search-type
                                 listing-type sort limit page)
   "Do a search for objects of one of the types in `lem-search-types'.
