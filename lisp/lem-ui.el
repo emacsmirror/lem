@@ -330,7 +330,7 @@ NUMBER means return ID as a number."
   "A plist containing details about the current lem buffer.")
 
 (defun lem-ui-set-buffer-spec (&optional listing-type sort
-                                         view-fun item page unread)
+                                         view-fun item page unread query)
   "Set `lem-ui-buffer-spec' for the current buffer.
 SORT must be a member of `lem-sort-types'.
 LISTING-TYPE must be member of `lem-listing-types'.
@@ -338,7 +338,8 @@ ITEM is a symbol, either posts or comments."
   ;; TODO: allow us to set a single element:
   (setq lem-ui-buffer-spec
         `(:listing-type ,listing-type :sort ,sort :view-fun ,view-fun
-                        :item ,item :page ,(or page 1) :unread ,unread)))
+                        :item ,item :page ,(or page 1) :unread ,unread
+                        :query ,query)))
 
 (defun lem-ui-get-buffer-spec (key)
   "Return value of KEY in `lem-ui-buffer-spec'."
@@ -635,6 +636,7 @@ It must be a member of the same list."
          (view-fun (lem-ui-get-buffer-spec :view-fun))
          (view (lem-ui-view-type))
          (item (lem-ui-get-buffer-spec :item))
+         (query (lem-ui-get-buffer-spec :query))
          (listing-type (or type (lem-ui-next-listing-type type-last))))
     (cond ((or (eq view 'user)
                (eq view 'current-user)
@@ -650,6 +652,8 @@ It must be a member of the same list."
            (message "listing: %s" listing-type))
           ((eq view 'inbox)
            (lem-ui-cycle-inbox))
+          ((eq view 'search)
+           (lem-ui-search query item listing-type sort))
           (t ;; TODO: search / communities
            (message "Not implemented yet")))))
 
@@ -679,6 +683,7 @@ Optionally, use SORT."
          (view (lem-ui-view-type))
          (item (lem-ui-get-buffer-spec :item))
          (id (lem-ui-get-view-id))
+         (query (lem-ui-get-buffer-spec :query))
          (sort-types (unless sort
                        (lem-ui-get-sort-types view item)))
          (sort-next (or sort
@@ -696,6 +701,8 @@ Optionally, use SORT."
            (lem-ui-view-saved-items nil sort-next))
           ((eq view 'communities)
            (lem-ui-view-communities-tl type sort-next))
+          ((eq view 'search)
+           (lem-ui-search query item type sort-next))
           (t
            ;; TODO: communities / search
            (message "Not implemented yet.")))))
@@ -716,24 +723,28 @@ Optionally, use SORT."
   (completing-read prompt
                    types-list nil :match))
 
-(defun lem-ui-search (&optional limit)
+(defun lem-ui-search (&optional query search-type
+                                listing-type sort limit page)
   "Do a search for objects of one of the types in `lem-search-types'.
 LIMIT is the max results to return."
   (interactive)
   (let* ((types ; remove not-yet-implemented search types:
           (remove "Url"
                   (remove "All" lem-search-types)))
-         (type (downcase (lem-ui-read-type "Search type: " types)))
+         (type (downcase
+                (or search-type
+                    (lem-ui-read-type "Search type: " types))))
          ;; LISTING/SORT doesn't make sense for all search types, eg users,
          ;; lets just cycle in results:
          ;; (listing-type (lem-ui-read-type "Listing type: " lem-listing-types))
          ;; (sort (lem-ui-read-type "Sort by: " lem-sort-types))
-         (query (read-string "Query: "))
+         (query (or query (read-string "Query: ")))
          (type-fun (intern (concat "lem-ui-render-" type)))
          (buf (format "*lem-search-%s*" type))
-         ;; TODO: handle all search args: community, page, limit
-         (response (lem-search query (capitalize type) nil nil ; listing-type sort
-                               (or limit lem-ui-comments-limit)))
+         ;; TODO: handle community
+         (response (lem-search query (capitalize type) listing-type sort
+                               (or limit lem-ui-comments-limit)
+                               page))
          (data (alist-get (intern type) response)))
     ;; TODO: render other responses:
     ;; ("All" TODO
@@ -744,7 +755,10 @@ LIMIT is the max results to return."
     ;; "Url") TODO
     (lem-ui-with-buffer buf 'lem-mode nil nil
       ;; and say a prayer to the function signature gods:
-      (funcall type-fun data))))
+      (funcall type-fun data)
+      (lem-ui-set-buffer-spec listing-type sort
+                              #'lem-ui-search
+                              type page nil query))))
 
 (defun lem-ui-lookup-call (type data fun &optional string)
   "Call FUN on ID of item of TYPE, from DATA.
