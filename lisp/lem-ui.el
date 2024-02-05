@@ -1340,40 +1340,43 @@ INDENT is a number, the level of indent for the item."
 (defun lem-ui-propertize-items (str json type)
   "Propertize any items of TYPE in STR as links using JSON.
 Type is a symbol, either handle or community.
-Communities are of the form \"!community@intance.com.\""
+Communities are of the form \"!community@instance.com.\""
   (with-temp-buffer
     ;; (switch-to-buffer (current-buffer))
     (insert str)
     (goto-char (point-min))
     (save-match-data
-      (while (re-search-forward (if (eq type 'community)
-                                    lem-ui-community-regex
-                                  lem-ui-handle-regex)
-                                nil :no-error)
-        (let* ((item (buffer-substring-no-properties (match-beginning 2)
-                                                     (match-end 2)))
-               (beg (match-beginning 1))
-               (end (match-end 1))
-               (domain (if (match-beginning 3)
-                           (buffer-substring-no-properties (match-beginning 3)
-                                                           (match-end 3))))
-               (ap-link (url-generic-parse-url (alist-get 'ap_id json)))
-               (instance (or domain (url-domain ap-link)))
-               (link (concat "https://" instance
-                             (if (eq type 'community) "/c/" "/u/")
-                             item)))
-          (add-text-properties beg
-                               end
-                               `(face '(shr-text shr-link)
-                                      lem-tab-stop ,type
-                                      mouse-face highlight
-                                      shr-tabstop t
-                                      shr-url ,link
-                                      button t
-                                      category shr
-                                      follow-link t
-                                      help-echo ,link
-                                      keymap ,lem-ui--link-map)))))
+      ;; ideally we'd work errors out, but we don't want to ruin
+      ;; our caller, which might make a page load fail:
+      (ignore-errors
+        (while (re-search-forward (if (eq type 'community)
+                                      lem-ui-community-regex
+                                    lem-ui-handle-regex)
+                                  nil :no-error)
+          (let* ((item (buffer-substring-no-properties (match-beginning 2)
+                                                       (match-end 2)))
+                 (beg (match-beginning 1))
+                 (end (match-end 1))
+                 (domain (if (match-beginning 3)
+                             (buffer-substring-no-properties (match-beginning 3)
+                                                             (match-end 3))))
+                 (ap-link (url-generic-parse-url (alist-get 'ap_id json)))
+                 (instance (or domain (url-domain ap-link)))
+                 (link (concat "https://" instance
+                               (if (eq type 'community) "/c/" "/u/")
+                               item)))
+            (add-text-properties beg
+                                 end
+                                 `(face '(shr-text shr-link)
+                                        lem-tab-stop ,type
+                                        mouse-face highlight
+                                        shr-tabstop t
+                                        shr-url ,link
+                                        button t
+                                        category shr
+                                        follow-link t
+                                        help-echo ,link
+                                        keymap ,lem-ui--link-map))))))
     (buffer-string)))
 
 (defun lem-ui-mods-ids (mods)
