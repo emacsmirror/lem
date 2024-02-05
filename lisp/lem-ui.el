@@ -330,7 +330,7 @@ NUMBER means return ID as a number."
   "A plist containing details about the current lem buffer.")
 
 (defun lem-ui-set-buffer-spec (&optional listing-type sort
-                                         view-fun item page unread)
+                                         view-fun item page unread query)
   "Set `lem-ui-buffer-spec' for the current buffer.
 SORT must be a member of `lem-sort-types'.
 LISTING-TYPE must be member of `lem-listing-types'.
@@ -338,7 +338,8 @@ ITEM is a symbol, either posts or comments."
   ;; TODO: allow us to set a single element:
   (setq lem-ui-buffer-spec
         `(:listing-type ,listing-type :sort ,sort :view-fun ,view-fun
-                        :item ,item :page ,(or page 1) :unread ,unread)))
+                        :item ,item :page ,(or page 1) :unread ,unread
+                        :query ,query)))
 
 (defun lem-ui-get-buffer-spec (key)
   "Return value of KEY in `lem-ui-buffer-spec'."
@@ -635,6 +636,7 @@ It must be a member of the same list."
          (view-fun (lem-ui-get-buffer-spec :view-fun))
          (view (lem-ui-view-type))
          (item (lem-ui-get-buffer-spec :item))
+         (query (lem-ui-get-buffer-spec :query))
          (listing-type (or type (lem-ui-next-listing-type type-last))))
     (cond ((or (eq view 'user)
                (eq view 'current-user)
@@ -650,6 +652,8 @@ It must be a member of the same list."
            (message "listing: %s" listing-type))
           ((eq view 'inbox)
            (lem-ui-cycle-inbox))
+          ((eq view 'search)
+           (lem-ui-search query item listing-type sort))
           (t ;; TODO: search / communities
            (message "Not implemented yet")))))
 
@@ -679,6 +683,7 @@ Optionally, use SORT."
          (view (lem-ui-view-type))
          (item (lem-ui-get-buffer-spec :item))
          (id (lem-ui-get-view-id))
+         (query (lem-ui-get-buffer-spec :query))
          (sort-types (unless sort
                        (lem-ui-get-sort-types view item)))
          (sort-next (or sort
@@ -696,6 +701,8 @@ Optionally, use SORT."
            (lem-ui-view-saved-items nil sort-next))
           ((eq view 'communities)
            (lem-ui-view-communities-tl type sort-next))
+          ((eq view 'search)
+           (lem-ui-search query item type sort-next))
           (t
            ;; TODO: communities / search
            (message "Not implemented yet.")))))
@@ -716,24 +723,48 @@ Optionally, use SORT."
   (completing-read prompt
                    types-list nil :match))
 
-(defun lem-ui-search (&optional limit)
-  "Do a search for objects of one of the types in `lem-search-types'.
-LIMIT is the max results to return."
+(defun lem-ui-choose-search-type ()
+  "Choose a search type from `lem-search-types' and repeat current query."
+  (interactive)
+  (if (not (eq (lem-ui-view-type) 'search))
+      (user-error "You can only choose search type in a search")
+    (let* ((types (remove "Url"
+                          (remove "All" lem-search-types)))
+           (choice (lem-ui-read-type "Search type:" types))
+           (sort (lem-ui-get-buffer-spec :sort))
+           (query (lem-ui-get-buffer-spec :query))
+           (listing-type (lem-ui-get-buffer-spec :listing-type)))
+      (lem-ui-search query choice listing-type sort))))
+
+(defun lem-ui-search-type-fun (search-type)
+  "Given SEARCH-TYPE, return a render function."
+  (intern (concat "lem-ui-render-" search-type)))
+
+(defun lem-ui-search (&optional query search-type
+                                listing-type sort limit page)
+  "Search for QUERY, of SEARCH-TYPE, one of the types in `lem-search-types'.
+LISTING-TYPE is one of `lem-listing-types'.
+SORT is one of `lem-sort-types'.
+LIMIT is the max results to return.
+PAGE is the page number."
   (interactive)
   (let* ((types ; remove not-yet-implemented search types:
           (remove "Url"
                   (remove "All" lem-search-types)))
-         (type (downcase (lem-ui-read-type "Search type: " types)))
+         (type (downcase
+                (or search-type
+                    (lem-ui-read-type "Search type: " types))))
          ;; LISTING/SORT doesn't make sense for all search types, eg users,
          ;; lets just cycle in results:
          ;; (listing-type (lem-ui-read-type "Listing type: " lem-listing-types))
          ;; (sort (lem-ui-read-type "Sort by: " lem-sort-types))
-         (query (read-string "Query: "))
-         (type-fun (intern (concat "lem-ui-render-" type)))
+         (query (or query (read-string "Query: ")))
+         (type-fun (lem-ui-search-type-fun type))
          (buf (format "*lem-search-%s*" type))
-         ;; TODO: handle all search args: community, page, limit
-         (response (lem-search query (capitalize type) nil nil ; listing-type sort
-                               (or limit lem-ui-comments-limit)))
+         ;; TODO: handle community
+         (response (lem-search query (capitalize type) listing-type sort
+                               (or limit lem-ui-comments-limit)
+                               page))
          (data (alist-get (intern type) response)))
     ;; TODO: render other responses:
     ;; ("All" TODO
@@ -744,7 +775,10 @@ LIMIT is the max results to return."
     ;; "Url") TODO
     (lem-ui-with-buffer buf 'lem-mode nil nil
       ;; and say a prayer to the function signature gods:
-      (funcall type-fun data))))
+      (funcall type-fun data)
+      (lem-ui-set-buffer-spec listing-type sort
+                              #'lem-ui-search
+                              type page nil query))))
 
 (defun lem-ui-lookup-call (type data fun &optional string)
   "Call FUN on ID of item of TYPE, from DATA.
@@ -787,7 +821,7 @@ Or url at point, or text prop shr-url, or read a URL in the minibuffer.
 Lemmy supports lookups for users, posts, comments and communities."
   (interactive)
   (let ((query (or ; is this right? search fails if url wrongly contains uppercase term:
-                (downcase url)
+                (when url (downcase url))
                 (thing-at-point-url-at-point)
                 (lem-ui--property 'shr-url)
                 (read-string "Lookup URL: "))))
@@ -1306,40 +1340,43 @@ INDENT is a number, the level of indent for the item."
 (defun lem-ui-propertize-items (str json type)
   "Propertize any items of TYPE in STR as links using JSON.
 Type is a symbol, either handle or community.
-Communities are of the form \"!community@intance.com.\""
+Communities are of the form \"!community@instance.com.\""
   (with-temp-buffer
     ;; (switch-to-buffer (current-buffer))
     (insert str)
     (goto-char (point-min))
     (save-match-data
-      (while (re-search-forward (if (eq type 'community)
-                                    lem-ui-community-regex
-                                  lem-ui-handle-regex)
-                                nil :no-error)
-        (let* ((item (buffer-substring-no-properties (match-beginning 2)
-                                                     (match-end 2)))
-               (beg (match-beginning 1))
-               (end (match-end 1))
-               (domain (if (match-beginning 3)
-                           (buffer-substring-no-properties (match-beginning 3)
-                                                           (match-end 3))))
-               (ap-link (url-generic-parse-url (alist-get 'ap_id json)))
-               (instance (or domain (url-domain ap-link)))
-               (link (concat "https://" instance
-                             (if (eq type 'community) "/c/" "/u/")
-                             item)))
-          (add-text-properties beg
-                               end
-                               `(face '(shr-text shr-link)
-                                      lem-tab-stop ,type
-                                      mouse-face highlight
-                                      shr-tabstop t
-                                      shr-url ,link
-                                      button t
-                                      category shr
-                                      follow-link t
-                                      help-echo ,link
-                                      keymap ,lem-ui--link-map)))))
+      ;; ideally we'd work errors out, but we don't want to ruin
+      ;; our caller, which might make a page load fail:
+      (ignore-errors
+        (while (re-search-forward (if (eq type 'community)
+                                      lem-ui-community-regex
+                                    lem-ui-handle-regex)
+                                  nil :no-error)
+          (let* ((item (buffer-substring-no-properties (match-beginning 2)
+                                                       (match-end 2)))
+                 (beg (match-beginning 1))
+                 (end (match-end 1))
+                 (domain (if (match-beginning 3)
+                             (buffer-substring-no-properties (match-beginning 3)
+                                                             (match-end 3))))
+                 (ap-link (url-generic-parse-url (alist-get 'ap_id json)))
+                 (instance (or domain (url-domain ap-link)))
+                 (link (concat "https://" instance
+                               (if (eq type 'community) "/c/" "/u/")
+                               item)))
+            (add-text-properties beg
+                                 end
+                                 `(face '(shr-text shr-link)
+                                        lem-tab-stop ,type
+                                        mouse-face highlight
+                                        shr-tabstop t
+                                        shr-url ,link
+                                        button t
+                                        category shr
+                                        follow-link t
+                                        help-echo ,link
+                                        keymap ,lem-ui--link-map))))))
     (buffer-string)))
 
 (defun lem-ui-mods-ids (mods)
@@ -2502,10 +2539,22 @@ ITEMS should be an alist of the form '\=(plural-name ((items-list)))'."
    (alist-get (lem-ui-plural-symbol type)
               items)))
 
+(defun lem-ui-search-type-symbol (type)
+  "Make TYPE, a string, singular and a symbol."
+  (cond ((equal type "communities")
+         'community)
+        ((equal type "posts")
+         'post)
+        ((equal type "users")
+         'user)
+        ((equal type "comments")
+         'comment)))
+
 (defun lem-ui-more ()
   "Append more items to the current view."
   (interactive)
   (let ((item (lem-ui-get-buffer-spec :item))
+        ;; TODO: use `lem-ui-view-type' instead
         (view-fun (lem-ui-get-buffer-spec :view-fun)))
     (cond ((eq view-fun 'lem-ui-view-post)
            ;; nb max-depth doesn't work with pagination yet:
@@ -2531,6 +2580,11 @@ ITEMS should be an alist of the form '\=(plural-name ((items-list)))'."
           ((eq item 'lem-ui-view-communities)
            (lem-ui-more-items 'community 'lem-list-communities
                               'lem-ui-render-communities))
+          ((eq view-fun 'lem-ui-search)
+           (let* ((search-type (lem-ui-get-buffer-spec :item))
+                  (render-fun (lem-ui-search-type-fun search-type))
+                  (search-type-symbol (lem-ui-search-type-symbol search-type)))
+             (lem-ui-more-items search-type-symbol 'lem-search render-fun)))
           (t (message "More type not implemented yet")))))
 
 (defun lem-ui-more-items (type get-fun render-fun)
@@ -2538,39 +2592,49 @@ ITEMS should be an alist of the form '\=(plural-name ((items-list)))'."
 GET-FUN is the name of a function to fetch more items.
 RENDER-FUN is the name of a function to render them."
   (message "Loading more items...")
-  (let* ((page (1+ (lem-ui-get-buffer-spec :page)))
+  (let* ((listing (lem-ui-get-buffer-spec :listing-type))
+         (view-fun (lem-ui-get-buffer-spec :view-fun))
+         (page (1+ (lem-ui-get-buffer-spec :page)))
+         (item (lem-ui-get-buffer-spec :item))
+         (sort (lem-ui-get-buffer-spec :sort))
+         (query (lem-ui-get-buffer-spec :query))
          (id (save-excursion
                (goto-char (point-min))
                (lem-ui--property 'id)))
-         (sort (lem-ui-get-buffer-spec :sort))
          (all-items
           ;; get-instance-posts have no need of id arg:
           (cond ((or (eq get-fun 'lem-api-get-instance-posts)
                      (eq get-fun 'lem-list-communities))
                  (funcall get-fun
-                          (or (lem-ui-get-buffer-spec :listing-type) "All")
+                          (or listing "All")
                           sort
                           lem-ui-comments-limit
                           page))
                 ;; user funs have no list-type arg:
-                ((eq (lem-ui-get-buffer-spec :view-fun) 'lem-ui-view-user)
+                ((eq view-fun 'lem-ui-view-user)
                  (funcall get-fun id sort
                           lem-ui-comments-limit page))
+                ((eq view-fun 'lem-ui-search)
+                 (funcall get-fun query (capitalize item) listing sort
+                          lem-ui-comments-limit
+                          page))
                 (t
                  (funcall get-fun
                           id
-                          (or (lem-ui-get-buffer-spec :listing-type) "All")
+                          (or listing "All")
                           sort
                           lem-ui-comments-limit
                           page))))
          (no-duplicates (lem-ui-remove-displayed-items all-items type)))
     (setf (alist-get (lem-ui-plural-symbol type) all-items)
           no-duplicates)
-    (lem-ui-set-buffer-spec (lem-ui-get-buffer-spec :listing-type)
-                            (lem-ui-get-buffer-spec :sort)
-                            (lem-ui-get-buffer-spec :view-fun)
-                            (lem-ui-get-buffer-spec :item)
-                            page)
+    (lem-ui-set-buffer-spec listing
+                            sort
+                            view-fun
+                            item
+                            page
+                            nil
+                            query)
     (goto-char (point-max))
     (let ((old-max (point))
           (inhibit-read-only t))
