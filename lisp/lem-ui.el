@@ -821,7 +821,7 @@ Or url at point, or text prop shr-url, or read a URL in the minibuffer.
 Lemmy supports lookups for users, posts, comments and communities."
   (interactive)
   (let ((query (or ; is this right? search fails if url wrongly contains uppercase term:
-                (downcase url)
+                (when url (downcase url))
                 (thing-at-point-url-at-point)
                 (lem-ui--property 'shr-url)
                 (read-string "Lookup URL: "))))
