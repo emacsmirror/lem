@@ -2366,10 +2366,11 @@ Parent-fun for `hierarchy-add-tree'."
   "Return a formatted user handle from user URL."
   (let* ((parsed (url-generic-parse-url url))
          (host (url-host parsed))
-         (file (url-filename parsed)))
+         (file (url-filename parsed))
+         (case-fold-search t))
     (save-match-data
       ;; TODO: add further legit urls:
-      (when (string-match "^/u/[_[:alnum:]]+$" file)
+      (when (string-match "^/u\\(sers\\)?/[_[:alnum:]]+$" file)
         (let ((split (split-string file "/" t)))
           (propertize
            (concat "@" (cadr split) "@" host)
