@@ -30,9 +30,14 @@ First set =lem-instance-url= to your lemmy instance.
 Then the first time you call =lem= you'll be asked for your username and
 password. Upon logging in, your authentication details will be saved in a
 plstore under your emacs directory. You "shouldn't" have to provide your
-password again (unless server-side updates require new login). If you don't
-want to have to provide your username, add =(setq lem-current-user
+password again (unless server-side updates require new login).
+
+If you don't want to have to provide your username, add =(setq lem-current-user
 "yourusername")= to your init file.
+
+* encrypted authentication tokens
+
+If you'd like to encrypt your authentication token in the plstore, set =lem-encrypt-auth-tokens= to non-nil, delete the  file =~/.emacs.d/lem.plstore=, and log in again. For this to work you probably need to set =plstore-encrypt-to= to a valid GPG key.
 
 * dependencies
 
