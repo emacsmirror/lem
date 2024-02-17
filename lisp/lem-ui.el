@@ -2523,10 +2523,16 @@ LIMIT is the amount of items to return."
 
 (defun lem-ui-plural-symbol (symbol)
   "Return a plural of SYMBOL."
-  (if (eq symbol 'community)
-      'communities
-    (intern
-     (concat (symbol-name symbol) "s"))))
+  (cond ((eq symbol 'community)
+         'communities)
+        ((or (eq symbol 'replies)
+             (eq symbol 'replies)
+             (eq symbol 'mentions)
+             (eq symbol 'private-messages))
+         symbol)
+        (t
+         (intern
+          (concat (symbol-name symbol) "s")))))
 
 (defun lem-ui-remove-displayed-items (items type)
   "Remove item from ITEMS if it is in `lem-ui-current-items'.
@@ -2586,6 +2592,11 @@ ITEMS should be an alist of the form '\=(plural-name ((items-list)))'."
                   (render-fun (lem-ui-search-type-fun search-type))
                   (search-type-symbol (lem-ui-search-type-symbol search-type)))
              (lem-ui-more-items search-type-symbol 'lem-search render-fun)))
+          ((eq view-fun 'lem-ui-view-inbox)
+           (let* ((items (lem-ui-get-buffer-spec :item))
+                  (get-fun (lem-ui-make-fun "lem-get-" items))
+                  (render-fun (lem-ui-make-fun "lem-ui-render-" items)))
+             (lem-ui-more-items items get-fun render-fun)))
           (t (message "More type not implemented yet")))))
 
 (defun lem-ui-more-items (type get-fun render-fun)
@@ -2619,6 +2630,8 @@ RENDER-FUN is the name of a function to render them."
                  (funcall get-fun query (capitalize item) listing sort
                           lem-ui-comments-limit
                           page))
+                ((eq view-fun 'lem-ui-view-inbox)
+                 (funcall get-fun nil page))
                 (t
                  (funcall get-fun
                           id
