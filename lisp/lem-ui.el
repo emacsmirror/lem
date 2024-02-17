@@ -2743,7 +2743,8 @@ TYPE should be either :unlike, :dislike, or nil to like."
   "JSON."
   ;; (let ((users (alist-get 'users json)))
   (cl-loop for user in json
-           do (lem-ui-render-user user)))
+           do (progn (lem-ui-render-user user)
+                     (insert "\n"))))
 
 (defun lem-ui-render-user (json)
   "Render user with data JSON."
@@ -2751,14 +2752,17 @@ TYPE should be either :unlike, :dislike, or nil to like."
     (insert
      (propertize
       (concat
-       (propertize (or .person.display_name
-                       .person.name)
-                   'face '(:weight bold))
-       " "
-       (when (eq t .is_admin)
-         (lem-ui-propertize-admin-box))
-       (propertize (lem-ui--handle-from-user-url .person.actor_id)
-                   'face 'font-lock-comment-face)
+       (propertize (concat
+                    (propertize (or .person.display_name
+                                    .person.name)
+                                'face '(:weight bold))
+                    " "
+                    (when (eq t .is_admin)
+                      (lem-ui-propertize-admin-box))
+                    (propertize
+                     (lem-ui--handle-from-user-url .person.actor_id)
+                     'face 'font-lock-comment-face))
+                   'byline-top t) ; for prev/next cmds
        ;; .person.actor_id
        (if .person.bio
            (concat "\n"
