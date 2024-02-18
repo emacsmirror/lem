@@ -2163,7 +2163,14 @@ Optionally set ITEMS to view."
   (let* ((items (or items 'replies))
          (item-fun (lem-ui-make-fun "lem-get-" items))
          (render-fun (lem-ui-make-fun "lem-ui-render-" items))
-         (items-data (funcall item-fun (if unread "true" nil)))
+         (items-data (if (eq item-fun 'lem-get-private-messages)
+                         ;; pms: unread-only page limit creator-id:
+                         (funcall item-fun (if unread "true" nil))
+                       ;; mentions/replies: sort page limit unread-only
+                       (funcall item-fun lem-default-comment-sort-type
+                                nil ; page
+                                nil ;limit
+                                (if unread "true" nil))))
          (list (alist-get (lem-ui-hyphen-to-underscore items) items-data))
          (buf "*lem-inbox*")
          (bindings (lem-ui-view-options 'inbox)))
@@ -2631,6 +2638,8 @@ RENDER-FUN is the name of a function to render them."
                           lem-ui-comments-limit
                           page))
                 ((eq view-fun 'lem-ui-view-inbox)
+                 ;; mentions/replies: sort page limit unread-only
+                 ;; pms: unread-only page limit creator-id
                  (funcall get-fun nil page))
                 (t
                  (funcall get-fun
