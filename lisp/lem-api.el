@@ -364,11 +364,11 @@ Returns a person_view plus a blocked boolean."
 ;;; NOTIFS
 
 (lem-def-request "get" "get-mentions" "user/mention"
-  (&optional unread-only page)
+  (&optional sort page limit unread-only)
   "Get mentions for the current user.
 Returns a mentions list.
 UNREAD-ONLY means to only return unread items."
-  (page)
+  (sort page limit)
   (when unread-only
     '(("unread_only" . "true"))))
 
@@ -376,11 +376,11 @@ UNREAD-ONLY means to only return unread items."
 ;; (lem-get-mentions)
 
 (lem-def-request "get" "get-replies" "user/replies"
-  (&optional unread-only page)
+  (&optional sort page limit unread-only)
   "Get replies for the current user.
 Returns a list of comment_reply objects.
 UNREAD-ONLY means to only return unread items."
-  (page)
+  (sort page limit)
   (when unread-only
     '(("unread_only" . "true"))))
 
@@ -760,11 +760,13 @@ REMOVED is a boolean."
 
 ;;; PRIVATE MESSAGES
 (lem-def-request "get" "get-private-messages" "private_message/list"
-  (&optional unread-only page)
+  (&optional unread-only page limit creator-id) ; no sort!
   "Get private messages for the current user.
 UNREAD-ONLY means only return unread messages.
 Returns private_messages."
-  (unread-only page))
+  (unread-only page limit creator-id)
+  (when unread-only
+    '(("unread_only" . "true"))))
 
 ;; (lem-get-private-messages "true")
 ;; (lem-get-private-messages)
