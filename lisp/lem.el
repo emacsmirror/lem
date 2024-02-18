@@ -166,7 +166,9 @@ Uses `cursor-face-highlight-mode'."
     (define-key map (kbd "I") #'lem-ui-view-instance)
     (define-key map (kbd "C") #'lem-ui-view-communities-tl)
     (define-key map (kbd "s") #'lem-ui-jump-to-subscribed)
-    (define-key map (kbd "P") #'lem-ui-view-user-at-point)
+    (define-key map (kbd "P") #'lem-ui-view-item-user)
+    (define-key map (kbd "u") #'lem-ui-view-item-user)
+    (define-key map (kbd "c") #'lem-ui-view-item-community)
     (define-key map (kbd "O") #'lem-ui-view-own-profile)
     (define-key map (kbd "A") #'lem-ui-view-saved-items)
     (define-key map (kbd "h") #'lem-ui-search)
@@ -177,8 +179,6 @@ Uses `cursor-face-highlight-mode'."
     (define-key map (kbd "r") #'lem-post-comment) ; Reply
     (define-key map (kbd "N") #'lem-post-compose) ; New
     (define-key map (kbd "l") #'lem-ui-like-item-toggle)
-    (define-key map (kbd "u") #'lem-ui-view-item-user)
-    (define-key map (kbd "c") #'lem-ui-view-item-community)
     (define-key map (kbd "d") #'lem-ui-delete-post-or-comment)
     (define-key map (kbd "e") #'lem-post-edit-post-or-comment)
     (define-key map (kbd "/") #'lem-switch-to-buffer)

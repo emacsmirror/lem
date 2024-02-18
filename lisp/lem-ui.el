@@ -2163,7 +2163,14 @@ Optionally set ITEMS to view."
   (let* ((items (or items 'replies))
          (item-fun (lem-ui-make-fun "lem-get-" items))
          (render-fun (lem-ui-make-fun "lem-ui-render-" items))
-         (items-data (funcall item-fun (if unread "true" nil)))
+         (items-data (if (eq item-fun 'lem-get-private-messages)
+                         ;; pms: unread-only page limit creator-id:
+                         (funcall item-fun (if unread "true" nil))
+                       ;; mentions/replies: sort page limit unread-only
+                       (funcall item-fun lem-default-comment-sort-type
+                                nil ; page
+                                nil ;limit
+                                (if unread "true" nil))))
          (list (alist-get (lem-ui-hyphen-to-underscore items) items-data))
          (buf "*lem-inbox*")
          (bindings (lem-ui-view-options 'inbox)))
@@ -2523,10 +2530,16 @@ LIMIT is the amount of items to return."
 
 (defun lem-ui-plural-symbol (symbol)
   "Return a plural of SYMBOL."
-  (if (eq symbol 'community)
-      'communities
-    (intern
-     (concat (symbol-name symbol) "s"))))
+  (cond ((eq symbol 'community)
+         'communities)
+        ((or (eq symbol 'replies)
+             (eq symbol 'replies)
+             (eq symbol 'mentions)
+             (eq symbol 'private-messages))
+         symbol)
+        (t
+         (intern
+          (concat (symbol-name symbol) "s")))))
 
 (defun lem-ui-remove-displayed-items (items type)
   "Remove item from ITEMS if it is in `lem-ui-current-items'.
@@ -2586,6 +2599,11 @@ ITEMS should be an alist of the form '\=(plural-name ((items-list)))'."
                   (render-fun (lem-ui-search-type-fun search-type))
                   (search-type-symbol (lem-ui-search-type-symbol search-type)))
              (lem-ui-more-items search-type-symbol 'lem-search render-fun)))
+          ((eq view-fun 'lem-ui-view-inbox)
+           (let* ((items (lem-ui-get-buffer-spec :item))
+                  (get-fun (lem-ui-make-fun "lem-get-" items))
+                  (render-fun (lem-ui-make-fun "lem-ui-render-" items)))
+             (lem-ui-more-items items get-fun render-fun)))
           (t (message "More type not implemented yet")))))
 
 (defun lem-ui-more-items (type get-fun render-fun)
@@ -2619,6 +2637,10 @@ RENDER-FUN is the name of a function to render them."
                  (funcall get-fun query (capitalize item) listing sort
                           lem-ui-comments-limit
                           page))
+                ((eq view-fun 'lem-ui-view-inbox)
+                 ;; mentions/replies: sort page limit unread-only
+                 ;; pms: unread-only page limit creator-id
+                 (funcall get-fun nil page))
                 (t
                  (funcall get-fun
                           id
@@ -2743,7 +2765,8 @@ TYPE should be either :unlike, :dislike, or nil to like."
   "JSON."
   ;; (let ((users (alist-get 'users json)))
   (cl-loop for user in json
-           do (lem-ui-render-user user)))
+           do (progn (lem-ui-render-user user)
+                     (insert "\n"))))
 
 (defun lem-ui-render-user (json)
   "Render user with data JSON."
@@ -2751,14 +2774,17 @@ TYPE should be either :unlike, :dislike, or nil to like."
     (insert
      (propertize
       (concat
-       (propertize (or .person.display_name
-                       .person.name)
-                   'face '(:weight bold))
-       " "
-       (when (eq t .is_admin)
-         (lem-ui-propertize-admin-box))
-       (propertize (lem-ui--handle-from-user-url .person.actor_id)
-                   'face 'font-lock-comment-face)
+       (propertize (concat
+                    (propertize (or .person.display_name
+                                    .person.name)
+                                'face '(:weight bold))
+                    " "
+                    (when (eq t .is_admin)
+                      (lem-ui-propertize-admin-box))
+                    (propertize
+                     (lem-ui--handle-from-user-url .person.actor_id)
+                     'face 'font-lock-comment-face))
+                   'byline-top t) ; for prev/next cmds
        ;; .person.actor_id
        (if .person.bio
            (concat "\n"
@@ -2837,14 +2863,27 @@ CURRENT-USER means we are displaying the current user's profile."
   "View user of item at point."
   (interactive)
   (lem-ui-with-item
-    (let ((user (lem-ui--property 'creator-id)))
-      (lem-ui-view-user user "overview"))))
+    (let* ((type (lem-ui--item-type))
+           (id (cond ((or (eq type 'user)
+                          (eq type 'person))
+                      (lem-ui--property 'id))
+                     ((or (eq type 'post)
+                          (eq type 'comment)
+                          (eq type 'comment-reply)
+                          (eq type 'private-message))
+                      (lem-ui--property 'creator-id))
+                     (t
+                      (user-error "Item has no user?")))))
+      (lem-ui-view-user id "overview"))))
 
-(defun lem-ui-view-user-at-point ()
-  "View user at point."
-  (interactive)
-  (lem-ui-with-item
-    (lem-ui-view-user id "overview")))
+;; (defun lem-ui-view-user-at-point ()
+;;   "View user at point."
+;;   (interactive)
+;;   (let ((type (lem-ui--item-type)))
+;;     (cond ((eq type 'user)
+;;            (lem-ui-with-item
+;;              (lem-ui-view-user id "overview")))
+;;           ((eq type '))))
 
 (defun lem-ui-message-user-at-point ()
   "Send private message to user at point."
