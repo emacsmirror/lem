@@ -53,6 +53,10 @@
 
 (defvar lem-post-last-buffer nil)
 
+(defvar-local lem-post-community-title nil)
+(defvar-local lem-post-community-name nil)
+(defvar-local lem-post-community-restricted-to-mods nil)
+
 (defgroup lem-post
   nil
   "Posting for lem.el."
@@ -94,6 +98,19 @@
     (define-key map (kbd "C-c C-c") #'lem-post-submit)
     map)
   "Keymap for `lem-post-comment-mode'.")
+
+(defvar lem-post-create-community-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-k") #'lem-post-cancel)
+    (define-key map (kbd "C-c C-n") #'lem-post-toggle-nsfw)
+    (define-key map (kbd "C-c C-t") #'lem-post-read-community-display-name)
+    (define-key map (kbd "C-c C-m") #'lem-post-read-community-name)
+    (define-key map (kbd "C-c C-r") #'lem-post-toggle-restricted-to-mods)
+    (define-key map (kbd "C-c C-c") #'lem-post-submit)
+    map)
+  "Keymap for `lem-post-create-community-mode'.")
+
+;;; COMPOSING POSTS
 
 (defun lem-post-read-title ()
   "Read post title."
@@ -244,6 +261,7 @@ Call response and update functions."
                     (lem-post-comment-edit-id 'edit-comment)
                     (lem-post-edit-id 'edit-post)
                     (lem-post-recipient-id 'message)
+                    ((eq lem-post-item-type 'community) 'community)
                     (t 'new-post))))
     (if (and (or (eq type 'new-post)
                  (eq type 'edit-post))
@@ -265,6 +283,15 @@ Call response and update functions."
                                fedi-post-language))
                ((eq 'message type)
                 (lem-send-private-message body lem-post-recipient-id))
+               ((eq 'community type)
+                (lem-create-community lem-post-community-name
+                                      lem-post-community-title
+                                      nil ; banner
+                                      body ; description
+                                      nil ; langs
+                                      nil ; icon
+                                      fedi-post-content-nsfw
+                                      lem-post-community-restricted-to-mods))
                (t ;; creating a post
                 (lem-create-post lem-post-title lem-post-community-id body
                                  lem-post-url fedi-post-content-nsfw
@@ -291,6 +318,12 @@ Call response and update functions."
                response 'private_message_view :non-nil
                (format "Private message sent to %s!"
                        .private_message_view.recipient.name)))
+             ((eq type 'community)
+              ;; after create community: view community + message?
+              (lem-ui-response-msg
+               response 'community_view :non-nil
+               (format "Community %s created!" .community_view.community.name))
+              (lem-ui-view-community .community_view.community.id))
              (t ;; creating a post
               ;; after new post: view the post
               (lem-ui-response-msg
@@ -425,6 +458,61 @@ Should be either comment or post, and owned by the current user."
       (lem-post-edit-comment)
     (lem-post-edit)))
 
+;;; CREATING COMMUNITIES
+
+(defun lem-post-read-community-display-name ()
+  "Read community display name (title - can be changed later)."
+  (interactive)
+  (setq lem-post-community-title
+        (read-string "Display name (can be changed): "
+                     lem-post-community-title))
+  (fedi-post--update-status-fields))
+
+(defun lem-post-read-community-name ()
+  "Read community name (identifier - cannot be changed later)."
+  (interactive)
+  (setq lem-post-community-name
+        (read-string "Name (cannot be changed): "
+                     lem-post-community-name))
+  (fedi-post--update-status-fields))
+
+(defun lem-post-toggle-restricted-to-mods ()
+  "Toggle `lem-post-community-restricted-to-mods'."
+  (interactive)
+  (setq lem-post-community-restricted-to-mods
+        (not lem-post-community-restricted-to-mods))
+  (message "Posting restricted to mods is now %s"
+           (if lem-post-community-restricted-to-mods "on" "off"))
+  (fedi-post--update-status-fields))
+
+(defun lem-post-create-community (&optional edit mode)
+  "Create a new community.
+EDIT means we are editing it.
+MODE is the lem.el minor mode to enable in the compose buffer."
+  ;; TODO: add icon/banner as per mastodon.el attachments
+  (interactive)
+  (setq lem-post-last-buffer (buffer-name (current-buffer)))
+  (fedi-post--compose-buffer edit
+                             #'markdown-mode
+                             'lem-post-create-community-mode
+                             "lem-post"
+                             'community
+                             (list #'lem-post--mentions-capf
+                                   #'lem-post--comms-capf)
+                             '(((name . "display-name")
+                                (prop . post-display-name)
+                                (item-var . lem-post-community-title)
+                                (face . lem-post-title-face))
+                               ((name . "name")
+                                (prop . post-name)
+                                (item-var . lem-post-community-name)
+                                (face . lem-post-community-face))
+                               ((name . "restricted")
+                                (prop . post-restricted)
+                                (item-var . lem-post-community-restricted-to-mods)
+                                (face . lem-post-community-face))))
+  (setq lem-post-item-type 'community))
+
 ;;; COMPLETION
 
 (defun lem-post--items-alist (items type prefix)
@@ -519,6 +607,14 @@ Prefix is either \"@\" or \"!\"."
 (define-minor-mode lem-post-comment-mode
   "Minor mode for submitting comments to lemmy."
   :keymap lem-post-comment-mode-map
+  :global nil
+  :after-hook ; disable auto-fill-mode:
+  (lambda ()
+    (auto-fill-mode -1)))
+
+(define-minor-mode lem-post-create-community-mode
+  "Minor mode for creating new communities on lemmy."
+  :keymap lem-post-create-community-mode-map
   :global nil
   :after-hook ; disable auto-fill-mode:
   (lambda ()
