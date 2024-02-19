@@ -37,6 +37,8 @@
 
 (defvar lem-user-id)
 
+(defvar-local lem-post-item-type nil)
+
 (defvar-local lem-post-title nil)
 (defvar-local lem-post-url nil)
 (defvar-local lem-post-community-id nil)
@@ -155,7 +157,32 @@ message."
                                   (no-label . t)
                                   (prop . post-community)
                                   (item-var . lem-post-community-name)
-                                  (face . lem-post-community-face))))))
+                                  (face . lem-post-community-face)))))
+  (setq lem-post-item-type 'post))
+
+(defun lem-post-compose-simple ()
+  "Create and submit new post, reading strings in the minibuffer."
+  (interactive)
+  (let* ((name (read-string "Post title: "))
+         (communities (lem-list-communities "Subscribed"))
+         (list (lem-ui--communities-list
+                (alist-get 'communities communities)))
+         (choice (completing-read "Community: " ; TODO: default to current view
+                                  list))
+         (community-id (string-to-number
+                        (alist-get choice list nil nil #'equal)))
+         (body (read-string "Post body [optional]: "))
+         (url (read-string "URL [optional]: "))
+         (response
+          (lem-create-post name community-id body
+                           (when (not (equal "" url))
+                             url))))
+    ;; TODO: nsfw, etc.
+    (when response
+      (let-alist response
+        (message "Post %s created!" .post_view.post.name)))))
+
+;;; RESPONSE FUNCTIONS
 
 (defun lem-ui-edit-comment-response (response)
   "Call response functions upon editing a comment.
@@ -205,8 +232,11 @@ RESPONSE is the comment_view data returned by the server."
       (lem-ui-insert-comment-after-parent response) ; parent-id)
       (lem-prev-item))))
 
+;;; SUBMITTING ITEMS
+
 (defun lem-post-submit ()
-  "Submit the post to lemmy, then call response and update functions."
+  "Submit the post, comment, or community to lemmy.
+Call response and update functions."
   (interactive)
   (let ((buf (buffer-name))
         ;; (parent-id lem-post-comment-comment-id)
@@ -215,7 +245,8 @@ RESPONSE is the comment_view data returned by the server."
                     (lem-post-edit-id 'edit-post)
                     (lem-post-recipient-id 'message)
                     (t 'new-post))))
-    (if (and (string-suffix-p "post*" buf)
+    (if (and (or (eq type 'new-post)
+                 (eq type 'edit-post))
              (not (and lem-post-title
                        lem-post-community-id)))
         (message "You need to set at least a post name and community.")
@@ -267,27 +298,7 @@ RESPONSE is the comment_view data returned by the server."
                (format "Post %s created!" .post_view.post.name))
               (lem-ui-view-post .post_view.post.id)))))))))
 
-(defun lem-post-compose-simple ()
-  "Create and submit new post, reading strings in the minibuffer."
-  (interactive)
-  (let* ((name (read-string "Post title: "))
-         (communities (lem-list-communities "Subscribed"))
-         (list (lem-ui--communities-list
-                (alist-get 'communities communities)))
-         (choice (completing-read "Community: " ; TODO: default to current view
-                                  list))
-         (community-id (string-to-number
-                        (alist-get choice list nil nil #'equal)))
-         (body (read-string "Post body [optional]: "))
-         (url (read-string "URL [optional]: "))
-         (response
-          (lem-create-post name community-id body
-                           (when (not (equal "" url))
-                             url))))
-    ;; TODO: nsfw, etc.
-    (when response
-      (let-alist response
-        (message "Post %s created!" .post_view.post.name)))))
+;;; POSTING COMMENTS
 
 (defun lem-post-comment ()
   "Reply to a post or comment."
@@ -303,6 +314,7 @@ RESPONSE is the comment_view data returned by the server."
              (comment-id (when (equal type 'comment)
                            (lem-ui--id-from-json json 'comment))))
         (lem-post-compose nil #'lem-post-comment-mode 'comment)
+        (setq lem-post-item-type 'comment)
         (setq lem-post-comment-post-id post-id)
         (setq lem-post-comment-comment-id comment-id)))))
 
@@ -324,7 +336,7 @@ Simple means we just read a string."
         (message "Comment created: %s" .comment_view.comment.content)
         (lem-ui-view-post (number-to-string post-id))))))
 
-;;; PRIVATE MESSAGE
+;;; PRIVATE MESSAGES
 
 (defun lem-post-private-message (&optional recipient-id)
   "Send a private message to a user.
@@ -493,6 +505,8 @@ Prefix is either \"@\" or \"!\"."
                           #'lem-post--mentions-annot-fun
                           nil ; #'lem-post--mentions-affix-fun
                           #'lem-post--md-link-exit-fun))
+
+;;; MINOR MODES
 
 (define-minor-mode lem-post-mode
   "Minor mode for submitting posts to lemmy."
