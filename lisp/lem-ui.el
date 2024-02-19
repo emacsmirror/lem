@@ -2022,6 +2022,8 @@ profile page."
            " | "
            (lem-ui-font-lock-comment
             (concat "!" .community.name))
+           (when (eq t .community.posting_restricted_to_mods)
+             (concat " " (lem-ui-symbol 'locked)))
            "\n"
            (lem-ui-font-lock-comment .community.actor_id)
            (unless brief (concat "\n" desc "\n"
@@ -2037,7 +2039,12 @@ profile page."
                              .counts.posts
                              .counts.comments))
       (unless brief
-        (insert .subscribed "\n")))
+        (insert (concat ;" "
+                 (when (eq .community.nsfw 't)
+                   (concat (propertize "NSFW"
+                                       'face 'success)
+                           " | "))
+                 .subscribed "\n"))))
     ;; mods:
     (when mods
       (lem-ui-insert-people mods "mods: ")
