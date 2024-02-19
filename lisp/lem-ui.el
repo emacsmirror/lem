@@ -2167,7 +2167,8 @@ Optionally set ITEMS to view."
                          ;; pms: unread-only page limit creator-id:
                          (funcall item-fun (if unread "true" nil))
                        ;; mentions/replies: sort page limit unread-only
-                       (funcall item-fun lem-default-comment-sort-type
+                       (funcall item-fun
+                                nil ; lem-default-comment-sort-type
                                 nil ; page
                                 nil ;limit
                                 (if unread "true" nil))))
