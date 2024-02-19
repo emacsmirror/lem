@@ -375,7 +375,7 @@ Optionally start from POS."
                (eq type 'comment-reply))
            (lem-ui-view-comment-post))
           ((eq type 'person)
-           (lem-ui-view-user-at-point)))))
+           (lem-ui-view-item-user)))))
 
 (defun lem-ui-scroll-up-command ()
   "Call `scroll-up-command', loading more toots if necessary.
@@ -2897,15 +2897,6 @@ CURRENT-USER means we are displaying the current user's profile."
                      (t
                       (user-error "Item has no user?")))))
       (lem-ui-view-user id "overview"))))
-
-;; (defun lem-ui-view-user-at-point ()
-;;   "View user at point."
-;;   (interactive)
-;;   (let ((type (lem-ui--item-type)))
-;;     (cond ((eq type 'user)
-;;            (lem-ui-with-item
-;;              (lem-ui-view-user id "overview")))
-;;           ((eq type '))))
 
 (defun lem-ui-message-user-at-point ()
   "Send private message to user at point."
