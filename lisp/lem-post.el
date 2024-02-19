@@ -485,7 +485,7 @@ Should be either comment or post, and owned by the current user."
            (if lem-post-community-restricted-to-mods "on" "off"))
   (fedi-post--update-status-fields))
 
-(defun lem-post-create-community (&optional edit mode)
+(defun lem-post-create-community (&optional edit)
   "Create a new community.
 EDIT means we are editing it.
 MODE is the lem.el minor mode to enable in the compose buffer."
