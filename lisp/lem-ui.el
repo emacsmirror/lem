@@ -2080,6 +2080,24 @@ And optionally for instance COMMUNITIES."
         (lem-ui-view-community id)))))
 
 (defun lem-ui-delete-community ()
+  "Prompt for a community moderated by the current user and delete it."
+  (interactive)
+  (lem-ui-do-item-completing
+   #'lem-api-get-moderated-communities
+   #'lem-ui--communities-list
+   "Delete community: "
+   (lambda (id choice)
+     (lem-ui-delete-community-do id choice))))
+
+(defun lem-ui-delete-community-do (id name)
+  "Delete community with ID and NAME, after confirmation."
+  (when (y-or-n-p (format "Delete community %s?" name))
+    (lem-ui-response-msg
+     (lem-delete-community id t)
+     'community_view :non-nil
+     (format "Community %s deleted!" name))))
+
+(defun lem-ui-delete-community-at-point ()
   "Delete community at point."
   (interactive)
   (let* ((id (lem-ui--property 'id))
@@ -2094,11 +2112,7 @@ And optionally for instance COMMUNITIES."
           ((not own-p)
            (user-error "Must be a mod to delete community"))
           (t
-           (when (y-or-n-p (format "Delete community %s?" name))
-             (lem-ui-response-msg
-              (lem-delete-community id t)
-              'community_view :non-nil
-              (format "Community %s deleted!" name)))))))
+           (lem-ui-delete-community-do id name)))))
 
 ;;; INBOX / REPLIES / MENTIONS / PMS
 
