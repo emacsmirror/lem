@@ -41,6 +41,45 @@ If you don't want to have to provide your username, add =(setq lem-current-user
 
 If you'd like to encrypt your authentication token in the plstore, set =lem-encrypt-auth-tokens= to non-nil, delete the  file =~/.emacs.d/lem.plstore=, and log in again. For this to work you probably need to set =plstore-encrypt-to= to a valid GPG key.
 
+* usage
+
+** basic commands
+
+A full command index is available at the end of this readme, but here are a few commands to get you going. You can also view the keybindings of =lem-mode-map= by hitting =?= from a =lem.el= buffer.
+
+- =I= - =lem-ui-view-instance= - load the instance view.
+- =s= - jump to one of your subscribed communities.
+- =C= - =lem-ui-browse-communities= - browse communities in a sortable table.
+- =/= - switch between live =lem.el= buffers.
+
+- =N= - =lem-post-compose= - compose a new post.
+- =r= - =lem-post-comment= - reply to post or comment at point.
+
+- =c= - jump to current item's community
+- =u= - jump to current item's user
+
+- =RET= - =lem-ui-view-item-at-point= - load view of item at point, e.g. on a post, view its full thread.
+- =n= / =p= - next/previous item
+- =TAB= / =<backtab>= - next/previous tab item (hyperlink, etc.)
+- =h= - search, for communities, posts, comments, users.
+
+- =B= - view your inbox (mentions, replies, private messages)
+- =O= - view your own profile
+- =A= - view your saved (bookmarked) items
+
+- =l= - like item at point
+- =a= - save item at point
+- =d= - delete item at point
+- =e= - edit item at point
+
+** sorting views
+
+Lemmy makes heavy use of sorting. Item (posts, comments, users, communities) views can be ordered according to various factors. =lem.el= implements this sorting in three main cycling commands, which work in most views:
+
+- =C-c C-c= - =lem-ui-cycle-listing-type= - cycle between results from local/subscribed/all/moderated communities. To directly set a listing type, call =lem-ui-choose-listing-type=. In your inbox view, cycle between replies, mentions, and private messages.
+- =C-c C-s= - =lem-ui-cycle-sort= - cycle between sort types (new, hot, active, top, old, etc.). To directly set sort, call =o=, or =lem-ui-choose-sort=. Full sort type lists are found in =lem-sort-types= and =lem-comment-sort-types=, the list is chosen according to the present view.
+- =C-c C-v= - =lem-ui-toggle-posts-comments= - toggle between posts or comments, or optionally overview if the view supports it (e.g. for user views).
+
 * dependencies
 
 - [[https://codeberg.org/martianh/fedi.el][fedi.el]], a library to make writing a library of API requests easier.
