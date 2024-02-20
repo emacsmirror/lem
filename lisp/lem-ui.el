@@ -776,7 +776,10 @@ PAGE is the page number."
     ;; "Url") TODO
     (lem-ui-with-buffer buf 'lem-mode nil nil
       ;; and say a prayer to the function signature gods:
-      (funcall type-fun data)
+      (if (or (equal type "posts")
+              (equal type "comments"))
+          (funcall type-fun data t)
+        (funcall type-fun data))
       (lem-ui-set-buffer-spec listing-type sort
                               #'lem-ui-search
                               type page nil query))))
