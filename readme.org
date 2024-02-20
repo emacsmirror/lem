@@ -1,3 +1,5 @@
+ @@html: <a href="https://melpa.org/#/lem"><img alt="MELPA" src="https://melpa.org/packages/lem-badge.svg"/></a>@@
+
 * lem.el
 
 =lem.el= is an Emacs client library and interface for Lemmy, the federated
