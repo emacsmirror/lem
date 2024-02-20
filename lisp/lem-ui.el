@@ -741,7 +741,7 @@ Optionally, use SORT."
   (intern (concat "lem-ui-render-" search-type)))
 
 (defun lem-ui-search (&optional query search-type
-                                listing-type sort limit page)
+                                listing-type sort limit page community-id)
   "Search for QUERY, of SEARCH-TYPE, one of the types in `lem-search-types'.
 LISTING-TYPE is one of `lem-listing-types'.
 SORT is one of `lem-sort-types'.
@@ -764,7 +764,8 @@ PAGE is the page number."
          ;; TODO: handle community
          (response (lem-search query (capitalize type) listing-type sort
                                (or limit lem-ui-comments-limit)
-                               page))
+                               page nil
+                               community-id))
          (data (alist-get (intern type) response)))
     ;; TODO: render other responses:
     ;; ("All" TODO
@@ -779,6 +780,17 @@ PAGE is the page number."
       (lem-ui-set-buffer-spec listing-type sort
                               #'lem-ui-search
                               type page nil query))))
+
+(defun lem-ui-search-in-community ()
+  "Search in the current community."
+  (interactive)
+  (if (not (eq (lem-ui-view-type) 'community))
+      (user-error "Not in a community view.")
+    (let ((id (save-excursion
+                (goto-char (point-min))
+                (lem-ui--property 'id)))
+          (type (lem-ui-read-type "Search type: " '("posts" "comments"))))
+      (lem-ui-search nil type nil nil nil nil id))))
 
 (defun lem-ui-lookup-call (type data fun &optional string)
   "Call FUN on ID of item of TYPE, from DATA.
