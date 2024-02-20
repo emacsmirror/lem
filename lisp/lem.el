@@ -3,7 +3,7 @@
 ;; Copyright (C) 2023  martian hiatus and mastodon.el authors
 ;; Author: martian hiatus <martianhiatus [a t] riseup [d o t] net>
 ;; Version: 0.6
-;; Package-Requires: ((emacs "29.1") (fedi "0.1") (markdown-mode "2.5"))
+;; Package-Requires: ((emacs "29.1") (fedi "0.2") (markdown-mode "2.5"))
 ;; URL: https://codeberg.org/martianh/lem.el
 ;; Keywords: multimedia, comm, web, fediverse
 
@@ -25,9 +25,11 @@
 ;; Lem.el is a client library and interface for Lemmy, the federated
 ;; link-aggregator. For information about Lemmy, see <https://joinlemmy.org>.
 
-;; lem-api.el is the API requests layer. All functions make requests and
-;; return JSON data pased into Elisp. This can be used to make other kinds of
-;; interfaces, such as gnus or notmuch.
+;; lem-api.el is the API requests layer. All functions return parsed JSON
+;; data. This can be used to make other kinds of interfaces, such as for gnus or
+;; notmuch.
+
+;; lem-ui.el and lem-post.el contain the main parts of the interface.
 
 ;; For set up and usage details, see the readme at <https://codeberg.org/martianh/lem.el>.
 
@@ -164,7 +166,7 @@ Uses `cursor-face-highlight-mode'."
     (define-key map (kbd "RET") #'lem-ui-view-thing-at-point)
     ;; views:
     (define-key map (kbd "I") #'lem-ui-view-instance)
-    (define-key map (kbd "C") #'lem-ui-view-communities-tl)
+    (define-key map (kbd "C") #'lem-ui-browse-communities)
     (define-key map (kbd "s") #'lem-ui-jump-to-subscribed)
     (define-key map (kbd "P") #'lem-ui-view-item-user)
     (define-key map (kbd "u") #'lem-ui-view-item-user)

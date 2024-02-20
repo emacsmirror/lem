@@ -539,7 +539,7 @@ active on other instances."
           ((eq view-fun 'lem-ui-view-community)
            'community)
           ((or (eq view-fun 'lem-ui-view-communities)
-               (eq view-fun 'lem-ui-view-communities-tl))
+               (eq view-fun 'lem-ui-browse-communities))
            'communities)
           ((eq view-fun 'lem-ui-view-user)
            'user)
@@ -648,7 +648,7 @@ It must be a member of the same list."
            (funcall view-fun listing-type sort nil nil item)
            (message "listing: %s" listing-type))
           ((eq view 'communities)
-           (lem-ui-view-communities-tl listing-type sort)
+           (lem-ui-browse-communities listing-type sort)
            (message "listing: %s" listing-type))
           ((eq view 'inbox)
            (lem-ui-cycle-inbox))
@@ -700,7 +700,7 @@ Optionally, use SORT."
           ((eq view 'saved-items)
            (lem-ui-view-saved-items nil sort-next))
           ((eq view 'communities)
-           (lem-ui-view-communities-tl type sort-next))
+           (lem-ui-browse-communities type sort-next))
           ((eq view 'search)
            (lem-ui-search query item type sort-next))
           (t
@@ -1792,8 +1792,8 @@ LIMIT is the max results to return."
                                      'lem-type 'community)
                        i))))
 
-(defun lem-ui-view-communities-tl (&optional type sort limit)
-  "View Lemmy communities in a tabulated list.
+(defun lem-ui-browse-communities (&optional type sort limit)
+  "View Lemmy communities in a sortable tabulated list.
 TYPE must be one of `lem-listing-types'.
 SORT must be one of `lem-sort-types'.
 LIMIT is the max results to return."
@@ -1824,7 +1824,7 @@ LIMIT is the max results to return."
       ;; :actions '("RET" lem-ui-view-community-at-point-tl
       ;; "s" lem-ui-subscribe-to-community-at-point-tl))
       (lem-ui-set-buffer-spec
-       type sort #'lem-ui-view-communities-tl 'communities))))
+       type sort #'lem-ui-browse-communities 'communities))))
 
 ;; actions are called on the column's object, but we use text props instead,
 ;; so we have to reimplement these for tl:

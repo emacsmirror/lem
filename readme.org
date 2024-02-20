@@ -163,6 +163,7 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-block-community-at-point             | Block community at point.                                                 |
 |           | lem-ui-block-item-instance                  | Block instance of item at point.                                          |
 |           | lem-ui-block-user                           | Block author of item at point.                                            |
+| C         | lem-ui-browse-communities                   | View Lemmy communities in a sortable tabulated list.                      |
 |           | lem-ui-choose-listing-type                  | Prompt for a listing type, and use it to reload current view.             |
 |           | lem-ui-choose-search-type                   | Choose a search type from `lem-search-types' and repeat current query.    |
 | o         | lem-ui-choose-sort                          | Prompt for a sort type, and use it to reload the current view.            |
@@ -209,7 +210,6 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-url-lookup                           | Perform a webfinger lookup on URL and load the result in `lem.el'.        |
 |           | lem-ui-view-comment-post                    | View post of comment at point, or of POST-ID.                             |
 |           | lem-ui-view-communities                     | View Lemmy communities.                                                   |
-| C         | lem-ui-view-communities-tl                  | View Lemmy communities in a tabulated list.                               |
 | B         | lem-ui-view-inbox                           | View user inbox, for replies, mentions, and PMs to the current user.      |
 | I         | lem-ui-view-instance                        | View posts of current user's home instance.                               |
 |           | lem-ui-view-instance-full                   | View full instance details.                                               |
