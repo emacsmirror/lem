@@ -238,6 +238,8 @@ I don't have a tech worker's income, so even a small tip would help out.
 | a         | lem-ui-save-item-toggle                     | Toggle saved status of item at point.                                     |
 | SPC       | lem-ui-scroll-up-command                    | Call `scroll-up-command', loading more toots if necessary.                |
 | h         | lem-ui-search                               | Search for QUERY, of SEARCH-TYPE, one of the types in `lem-search-types'. |
+|           | lem-ui-search-in-community                  | Search in the current community.                                          |
+|           | lem-ui-search-in-user                       | Search in the user currently viewed.                                      |
 |           | lem-ui-subscribe-to-community               | Subscribe to a community, using ID or prompt for a handle.                |
 | S         | lem-ui-subscribe-to-community-at-point      | Subscribe to community at point.                                          |
 | C-c C-v   | lem-ui-toggle-posts-comments                | Switch between displaying posts or comments.                              |
