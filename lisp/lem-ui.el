@@ -1835,10 +1835,10 @@ LIMIT is the max results to return."
                                      'lem-type 'community)
                        i))))
 
-(defun lem-ui-return-widgets (list)
+(defun lem-ui-return-item-widgets (list)
   "Return a list of item widgets for each item, a string, in LIST."
   (cl-loop for x in list
-           collect `(item :tag ,x :value ,x)))
+           collect `(item :value ,x)))
 
 (defun lem-ui-widget-notify-fun (type)
   "Return a widget notify function.
@@ -1875,14 +1875,14 @@ LIMIT is the max results to return."
       (widget-create 'menu-choice
                      :tag "Listing"
                      :value type
-                     :args (lem-ui-return-widgets lem-listing-types)
+                     :args (lem-ui-return-item-widgets lem-listing-types)
                      :help-echo "Select a listing type"
                      :format (lem-ui-widget-format "Listing") ; "C-c C-c")
                      :notify (lem-ui-widget-notify-fun :sort))
       (widget-create 'menu-choice
                      :tag "Sort"
                      :value sort
-                     :args (lem-ui-return-widgets lem-sort-types)
+                     :args (lem-ui-return-item-widgets lem-sort-types)
                      :help-echo "Select a sort type"
                      :format (lem-ui-widget-format "Sort") ; "C-c C-s")
                      :notify (lem-ui-widget-notify-fun :listing-type))
