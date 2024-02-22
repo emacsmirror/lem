@@ -1852,10 +1852,11 @@ either :sort or :listing-type."
           `(lem-ui-browse-communities (widget-value widget)
                                       item)))))
 
-(defun lem-ui-widget-format (str binding)
+(defun lem-ui-widget-format (str &optional binding)
   "Return a widget format string for STR, its name."
   (concat "%[" (propertize str 'face 'lem-ui-widget-face)
-          "%]: %v"))
+          "%]: %v"
+          binding))
 
 (defun lem-ui-browse-communities (&optional type sort limit)
   "View Lemmy communities in a sortable tabulated list.
