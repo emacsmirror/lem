@@ -1877,14 +1877,14 @@ LIMIT is the max results to return."
                      :value type
                      :args (lem-ui-return-widgets lem-listing-types)
                      :help-echo "Select a listing type"
-                     :format (lem-ui-widget-format "Listing" "C-c C-c")
+                     :format (lem-ui-widget-format "Listing") ; "C-c C-c")
                      :notify (lem-ui-widget-notify-fun :sort))
       (widget-create 'menu-choice
                      :tag "Sort"
                      :value sort
                      :args (lem-ui-return-widgets lem-sort-types)
                      :help-echo "Select a sort type"
-                     :format (lem-ui-widget-format "Sort" "C-c C-s")
+                     :format (lem-ui-widget-format "Sort") ; "C-c C-s")
                      :notify (lem-ui-widget-notify-fun :listing-type))
       (insert "\n")
       (make-vtable
