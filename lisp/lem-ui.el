@@ -1,4 +1,4 @@
-;;; lem-ui.el --- Basics for a lemmy interface -*- lexical-binding: t; -*-
+;;; lem-ui.el --- An interface for lemmy instances -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2023  martian hiatus
 ;; Author: martian hiatus <martianhiatus [a t] riseup [d o t] net>
@@ -24,8 +24,7 @@
 
 ;;; Commentary:
 
-;; Some simple, unadorned, primitive, humble, basic, dashed-off functions for
-;; an interface to Lemmy, the federated link-aggregator and forum software.
+;; An interface to Lemmy, the federated link-aggregator and forum software.
 ;; See <https://joinlemmy.org>.
 
 ;;; Code:
