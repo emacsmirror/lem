@@ -33,9 +33,16 @@
 ;; (require 'hierarchy)
 (require 'cl-lib)
 (require 'shr)
-(require 'markdown-mode)
 (require 'hierarchy)
 (require 'vtable)
+
+(require 'widget)
+
+(eval-when-compile
+  (require 'wid-edit))
+
+(require 'markdown-mode)
+
 (require 'fedi-post) ; handle regex
 
 (require 'lem-api)
@@ -66,6 +73,10 @@
 
 (defface lem-ui-community-face '((t :inherit success :underline t))
   "Face for displaying communities.")
+
+(defface lem-ui-widget-face
+  '((t :inherit font-lock-function-name-face :weight bold :underline t))
+  "Face used for widgets.")
 
 ;;; HIERARCHY PATCHES
 
@@ -1346,24 +1357,28 @@ INDENT is a number, the level of indent for the item."
       (let ((replaced (string-replace "@" "\\@" (buffer-string))))
         (erase-buffer)
         (insert replaced)
-        (markdown-standalone buf))
-      (with-current-buffer buf
-        (let ((shr-width (when indent
-                           (- (window-width) (+ 1 indent))))
-              (shr-discard-aria-hidden t)) ; for pandoc md image output
-          ;; shr render:
-          (shr-render-buffer (current-buffer))))
-      (with-current-buffer "*html*" ; created by shr
-        ;; our render:
-        (when json
-          (lem-ui-render-shr-url))
-        (re-search-forward "\n\n" nil :no-error)
-        (setq str (buffer-substring (point) (point-max)))
-        (kill-buffer-and-window)        ; shr's *html*
-        (kill-buffer buf)))             ; our md
-    (setq str (lem-ui-propertize-items str json 'handle))
-    (setq str (lem-ui-propertize-items str json 'community))
-    str))
+        (condition-case x
+            (markdown-standalone buf)
+          (t ; if md rendering fails, return unrendered body:
+           (progn (erase-buffer)
+                  (insert replaced))))
+        (with-current-buffer buf
+          (let ((shr-width (when indent
+                             (- (window-width) (+ 1 indent))))
+                (shr-discard-aria-hidden t)) ; for pandoc md image output
+            ;; shr render:
+            (shr-render-buffer (current-buffer))))
+        (with-current-buffer "*html*" ; created by shr
+          ;; our render:
+          (when json
+            (lem-ui-render-shr-url))
+          (re-search-forward "\n\n" nil :no-error)
+          (setq str (buffer-substring (point) (point-max)))
+          (kill-buffer-and-window)        ; shr's *html*
+          (kill-buffer buf)))             ; our md
+      (setq str (lem-ui-propertize-items str json 'handle))
+      (setq str (lem-ui-propertize-items str json 'community))
+      str)))
 
 (defun lem-ui-propertize-items (str json type)
   "Propertize any items of TYPE in STR as links using JSON.
@@ -1820,6 +1835,29 @@ LIMIT is the max results to return."
                                      'lem-type 'community)
                        i))))
 
+(defun lem-ui-return-item-widgets (list)
+  "Return a list of item widgets for each item, a string, in LIST."
+  (cl-loop for x in list
+           collect `(item :value ,x)))
+
+(defun lem-ui-widget-notify-fun (type)
+  "Return a widget notify function.
+TYPE is a keyword used to fetch the *other* type value, currently
+either :sort or :listing-type."
+  `(lambda (widget &rest ignore)
+     (let ((item (lem-ui-get-buffer-spec ,type)))
+       ,(if (eq type :listing-type)
+            `(lem-ui-browse-communities item
+                                        (widget-value widget))
+          `(lem-ui-browse-communities (widget-value widget)
+                                      item)))))
+
+(defun lem-ui-widget-format (str &optional binding)
+  "Return a widget format string for STR, its name."
+  (concat "%[" (propertize str 'face 'lem-ui-widget-face)
+          "%]: %v"
+          binding))
+
 (defun lem-ui-browse-communities (&optional type sort limit)
   "View Lemmy communities in a sortable tabulated list.
 TYPE must be one of `lem-listing-types'.
@@ -1829,28 +1867,46 @@ LIMIT is the max results to return."
   (let* ((json (lem-list-communities (or type "All")
                                      (or sort "TopAll")
                                      (or limit "50")))
+         (sort (or sort (car lem-sort-types)))
+         (type (or type (car lem-listing-types)))
          (buf "*lem-communities*"))
     (lem-ui-with-buffer buf 'lem-mode nil nil
       (lem-ui-render-instance (lem-get-instance) :stats nil)
+      (widget-create 'menu-choice
+                     :tag "Listing"
+                     :value type
+                     :args (lem-ui-return-item-widgets lem-listing-types)
+                     :help-echo "Select a listing type"
+                     :format (lem-ui-widget-format "Listing") ; "C-c C-c")
+                     :notify (lem-ui-widget-notify-fun :sort))
+      (widget-create 'menu-choice
+                     :tag "Sort"
+                     :value sort
+                     :args (lem-ui-return-item-widgets lem-sort-types)
+                     :help-echo "Select a sort type"
+                     :format (lem-ui-widget-format "Sort") ; "C-c C-s")
+                     :notify (lem-ui-widget-notify-fun :listing-type))
+      (insert "\n")
       (make-vtable
        :use-header-line nil
        :columns '((:name "Name" :max-width 30 :width "35%")
                   (:name "Members" :width "7%")
                   (:name "Monthly users" :width "7%")
                   (:name "Posts" :width "7%")
-                  (:name "Sub"; :min-width 4
+                  (:name "Sub" ;; :min-width 4
                          :width "5%")
                   (:name "URL" :max-width 30 :width "30%"))
        :objects-function
        (lambda ()
          (cl-loop for c in (alist-get 'communities json)
                   collect (lem-ui-return-community-obj c)))
-       :row-colors  '(nil highlight) ; don't set vtable a second time
+       :row-colors  '(nil highlight)    ; don't set vtable a second time
        :divider-width 1
        :keymap lem-vtable-map)
       ;; whey "actions" when we have map + our own props?:
       ;; :actions '("RET" lem-ui-view-community-at-point-tl
       ;; "s" lem-ui-subscribe-to-community-at-point-tl))
+      (widget-minor-mode)
       (lem-ui-set-buffer-spec
        type sort #'lem-ui-browse-communities 'communities))))
 
