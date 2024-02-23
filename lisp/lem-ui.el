@@ -1866,11 +1866,10 @@ TYPE must be one of `lem-listing-types'.
 SORT must be one of `lem-sort-types'.
 LIMIT is the max results to return."
   (interactive)
-  (let* ((json (lem-list-communities (or type "All")
-                                     (or sort "TopAll")
-                                     (or limit "50")))
-         (sort (or sort (car lem-sort-types)))
-         (type (or type (car lem-listing-types)))
+  (let* ((type (or type "All"))
+         (sort (or sort "TopMonth"))
+         (limit (or limit "50")) ; max
+         (json (lem-list-communities type sort limit))
          (buf "*lem-communities*"))
     (lem-ui-with-buffer buf 'lem-mode nil nil
       (lem-ui-render-instance (lem-get-instance) :stats nil)
