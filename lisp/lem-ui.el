@@ -1928,7 +1928,7 @@ LIMIT is the max results to return."
     (define-key map [touchscreen-begin] 'widget-button-click)
     ;; The following definition needs to avoid using escape sequences that
     ;; might get converted to ^M when building loaddefs.el
-    (define-key map [(control ?m)] 'widget-button-press)
+    ;; (define-key map [(control ?m)] 'widget-button-press)
     map)
   "Keymap containing useful binding for buffers containing widgets.
 Recommended as a parent keymap for modes using widgets.
