@@ -1810,6 +1810,7 @@ LIMIT is the max results to return."
                           'shr-url .community.actor_id
                           ;; interrupted by :row-colors below:
                           'face 'lem-ui-community-face
+                          'lem-tab-stop t
                           'mouse-face 'highlight
                           'help-echo "View community")
               .counts.subscribers
@@ -1854,7 +1855,9 @@ either :sort or :listing-type."
 
 (defun lem-ui-widget-format (str &optional binding)
   "Return a widget format string for STR, its name."
-  (concat "%[" (propertize str 'face 'lem-ui-widget-face)
+  (concat "%[" (propertize str
+                           'face 'lem-ui-widget-face
+                           'lem-tab-stop t)
           "%]: %v"
           binding))
 
@@ -1906,9 +1909,32 @@ LIMIT is the max results to return."
       ;; whey "actions" when we have map + our own props?:
       ;; :actions '("RET" lem-ui-view-community-at-point-tl
       ;; "s" lem-ui-subscribe-to-community-at-point-tl))
-      (widget-minor-mode)
+      (lem-widget-minor-mode)
       (lem-ui-set-buffer-spec
        type sort #'lem-ui-browse-communities 'communities))))
+
+(define-minor-mode lem-widget-minor-mode
+  "Minor mode for traversing widgets."
+  :lighter " Widget"
+  :keymap lem-widget-keymap)
+
+(defvar lem-widget-keymap
+  (let ((map (make-sparse-keymap)))
+    ;; (define-key map "\t" 'widget-forward)
+    ;; (define-key map "\e\t" 'widget-backward)
+    ;; (define-key map [(shift tab)] 'widget-backward)
+    ;; (put 'widget-backward :advertised-binding [(shift tab)])
+    ;; (define-key map [backtab] 'widget-backward)
+    (define-key map [down-mouse-2] 'widget-button-click)
+    (define-key map [down-mouse-1] 'widget-button-click)
+    (define-key map [touchscreen-begin] 'widget-button-click)
+    ;; The following definition needs to avoid using escape sequences that
+    ;; might get converted to ^M when building loaddefs.el
+    (define-key map [(control ?m)] 'widget-button-press)
+    map)
+  "Keymap containing useful binding for buffers containing widgets.
+Recommended as a parent keymap for modes using widgets.
+Note that such modes will need to require wid-edit.")
 
 ;; actions are called on the column's object, but we use text props instead,
 ;; so we have to reimplement these for tl:
