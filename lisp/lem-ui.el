@@ -2951,6 +2951,40 @@ TYPE should be either :unlike, :dislike, or nil to like."
   (cl-loop for community in json
            do (lem-ui-render-community community nil nil :subscription)))
 
+(defun lem-ui-ts-to-secs (ts)
+  "Return TS, a timestamp, as seconds since the epoch, an integer."
+  (let ((lisp-ts (date-to-time ts)))
+    (string-to-number
+     (format-time-string "%s" lisp-ts))))
+
+(defun lem-ui--get-item-published (item)
+  "Return published timestamp of ITEM, either comment or post."
+  (let-alist item
+    ;; comments also have post data so comment first
+    (or .comment.published
+        .post.published)))
+
+(defun lem-ui-published-sort-predicate (x y)
+  "Predicate function for `sort'.
+Decide whether X comes before Y, based on timestamp."
+  (let ((pub1 (lem-ui-ts-to-secs
+               (lem-ui--get-item-published x)))
+        (pub2 (lem-ui-ts-to-secs
+               (lem-ui--get-item-published y))))
+    (> pub1 pub2)))
+
+(defun lem-ui-render-overview (user-json)
+  "Return an overview of mixed posts and comments from USER-JSON."
+  (let-alist user-json
+    (let* ((merged (append .comments .posts))
+           (sorted (sort merged #'lem-ui-published-sort-predicate)))
+      (cl-loop for item in sorted
+               do (let ((type (caar item))
+                        (reply-p (eq item 'comment-reply)))
+                    (if (eq type 'post)
+                        (lem-ui-render-post item :community :trim)
+                      (lem-ui-render-comment item reply-p :details)))))))
+
 (defun lem-ui-view-user (id &optional item sort limit)
   "View user with ID.
 ITEM must be a member of `lem-user-items-types'.
@@ -2984,9 +3018,7 @@ CURRENT-USER means we are displaying the current user's profile."
                (lem-ui-render-comments .comments :details))
               (t ; no arg: overview
                (lem-ui-insert-heading "overview")
-               ;; web app just does comments then posts for "overview"?:
-               (lem-ui-render-comments .comments :details)
-               (lem-ui-render-posts .posts :community :trim)))
+               (lem-ui-render-overview user-json)))
         (lem-ui--init-view)
         (lem-ui-set-buffer-spec
          nil ; no listing type for users
