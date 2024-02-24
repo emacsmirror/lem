@@ -1846,7 +1846,7 @@ LIMIT is the max results to return."
 (defun lem-ui-return-item-widgets (list)
   "Return a list of item widgets for each item, a string, in LIST."
   (cl-loop for x in list
-           collect `(item :value ,x)))
+           collect `(choice-item :value ,x)))
 
 (defun lem-ui-widget-notify-fun (type)
   "Return a widget notify function.
