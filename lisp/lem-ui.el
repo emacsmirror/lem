@@ -2921,7 +2921,9 @@ TYPE should be either :unlike, :dislike, or nil to like."
                                 'face '(:weight bold))
                     " "
                     (when (eq t .is_admin)
-                      (lem-ui-propertize-admin-box))
+                      (concat
+                       (lem-ui-propertize-admin-box)
+                       " "))
                     (propertize
                      (lem-ui--handle-from-user-url .person.actor_id)
                      'face 'font-lock-comment-face))
