@@ -1464,6 +1464,15 @@ LIMIT."
           (lem-ui--init-view)
           (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)))))) ; limit
 
+(defun lem-ui-featured-p (post)
+  "Return t if POST, which is data, is featured in the current view.
+Posts can be featured either for instance or community."
+  (let-alist post
+    ;; (let ((view (lem-ui-view-type))) ; buffer-spec not set yet
+    (if (string-suffix-p "instance*" (buffer-name))
+        (eq t .post.featured_local) ; pinned instance
+      (eq t .post.featured_community)))) ; pinned community
+
 (defun lem-ui-render-post (post &optional community trim)
   ;; NB trim in instance, community, and user views
   ;; NB show community info in instance and in post views
@@ -1491,8 +1500,7 @@ SORT must be a member of `lem-sort-types'."
                             (when community (or .community.title
                                                 .community.name))
                             (when community .community.actor_id)
-                            (or (eq t .post.featured_community) ; pinned community
-                                (eq t .post.featured_local)) ; pinned instance
+                            (lem-ui-featured-p post)
                             nil admin-p mod-p del-p handle nil .post.updated)
          "\n"
          (if .post.body
