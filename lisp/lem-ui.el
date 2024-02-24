@@ -2915,35 +2915,55 @@ TYPE should be either :unlike, :dislike, or nil to like."
            do (progn (lem-ui-render-user user)
                      (insert "\n"))))
 
+(defun lem-ui--format-moderates (community)
+  ""
+  (let-alist community
+    (concat
+     (lem-ui--format-community-as-link .community.title .community.actor_id)
+     " ")))
+
 (defun lem-ui-render-user (json)
   "Render user with data JSON."
-  (let-alist json
+  (let-alist (alist-get 'person_view json)
     (insert
      (propertize
       (concat
        (propertize (concat
+                    ;; top byline:
+                    ;; name:
                     (propertize (or .person.display_name
                                     .person.name)
                                 'face '(:weight bold))
                     " "
+                    ;; admin box:
                     (when (eq t .is_admin)
                       (concat
                        (lem-ui-propertize-admin-box)
                        " "))
+                    ;; handle
                     (propertize
                      (lem-ui--handle-from-user-url .person.actor_id)
                      'face 'font-lock-comment-face))
                    'byline-top t) ; for prev/next cmds
-       ;; .person.actor_id
+       ;; bio:
        (if .person.bio
            (concat "\n"
                    (lem-ui-render-body .person.bio))
          "\n")
+       ;; mods:
+       (when-let ((mods (alist-get 'moderates json)))
+         ;; needs wrapping or filling, maybe we `visual-line-mode' after all:
+         (concat "mods: "
+                 (cl-loop for c in mods
+                          concat (lem-ui--format-moderates c))
+                 "\n"))
+       ;; stats:
        (lem-ui-symbol 'direct) " " ; FIXME: we need a post symbol
        (number-to-string .counts.post_count) " | "
        (lem-ui-symbol 'reply) " "
        (number-to-string .counts.comment_count)
        " | "
+       ;; join date
        "joined: "
        (fedi--relative-time-description
         (date-to-time .person.published))
@@ -3017,7 +3037,7 @@ CURRENT-USER means we are displaying the current user's profile."
     (lem-ui-with-buffer buf 'lem-mode nil bindings
       ;; we have this on the 's' binding now so no need:
       (let-alist user-json
-        (lem-ui-render-user .person_view)
+        (lem-ui-render-user user-json)
         (cond ((equal item "posts")
                (lem-ui-insert-heading "posts")
                (lem-ui-render-posts .posts :community :trim))
