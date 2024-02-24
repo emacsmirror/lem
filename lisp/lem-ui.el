@@ -757,7 +757,9 @@ Optionally, use SORT."
 LISTING-TYPE is one of `lem-listing-types'.
 SORT is one of `lem-sort-types'.
 LIMIT is the max results to return.
-PAGE is the page number."
+PAGE is the page number.
+COMMUNITY-ID is the ID of a community to limit search to.
+CREATOR-ID is same to limit search to a user."
   (interactive)
   (let* ((types ; remove not-yet-implemented search types:
           (remove "Url"
@@ -799,7 +801,7 @@ PAGE is the page number."
   "Search in the current community."
   (interactive)
   (if (not (eq (lem-ui-view-type) 'community))
-      (user-error "Not in a community view.")
+      (user-error "Not in a community view")
     (let ((id (save-excursion
                 (goto-char (point-min))
                 (lem-ui--property 'id)))
@@ -811,7 +813,7 @@ PAGE is the page number."
   (interactive)
   (if (not (or (eq (lem-ui-view-type) 'user)
                (eq (lem-ui-view-type) 'current-user)))
-      (user-error "Not in a user view.")
+      (user-error "Not in a user view")
     (let ((id (save-excursion
                 (goto-char (point-min))
                 (lem-ui--property 'id)))
@@ -1356,7 +1358,7 @@ INDENT is a number, the level of indent for the item."
       (let ((replaced (string-replace "@" "\\@" (buffer-string))))
         (erase-buffer)
         (insert replaced)
-        (condition-case x
+        (condition-case nil
             (markdown-standalone buf)
           (t ; if md rendering fails, return unrendered body:
            (progn (erase-buffer)
@@ -1861,7 +1863,8 @@ either :sort or :listing-type."
                                       item)))))
 
 (defun lem-ui-widget-format (str &optional binding)
-  "Return a widget format string for STR, its name."
+  "Return a widget format string for STR, its name.
+BINDING is a string of a keybinding to cycle the widget's value."
   (concat "%[" (propertize str
                            'face 'lem-ui-widget-face
                            'lem-tab-stop t)
