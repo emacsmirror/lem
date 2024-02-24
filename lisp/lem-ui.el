@@ -1082,6 +1082,12 @@ START and END are the boundaries of the link in the post body."
               'keymap lem-ui--link-map
               'face '(:weight bold)))
 
+(defun lem-ui--format-community-as-link (community community-url)
+  "Format COMMUNITY, a string, as a link using COMMUNITY-URL."
+  (lem-ui--propertize-link community nil 'community
+                           nil 'lem-ui-community-face
+                           community-url))
+
 (defun lem-ui-top-byline (title url username _score timestamp
                                 &optional community community-url
                                 featured-p op-p admin-p mod-p del-p handle
@@ -1128,9 +1134,7 @@ EDITED is a timestamp."
         (concat
          (propertize " to "
                      'face font-lock-comment-face)
-         (lem-ui--propertize-link community nil 'community
-                                  nil 'lem-ui-community-face
-                                  community-url)))
+         (lem-ui--format-community-as-link community community-url)))
       (concat
        " | "
        (propertize
