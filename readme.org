@@ -203,6 +203,7 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-block-item-instance             | Block instance of item at point.                                          |
 |           | lem-ui-block-user                      | Block author of item at point.                                            |
 | C         | lem-ui-browse-communities              | View Lemmy communities in a sortable tabulated list.                      |
+|           | lem-ui-choose-inbox-view               | Prompt for an inbox view and load it.                                     |
 |           | lem-ui-choose-listing-type             | Prompt for a listing type, and use it to reload current view.             |
 |           | lem-ui-choose-search-type              | Choose a search type from `lem-search-types' and repeat current query.    |
 | o         | lem-ui-choose-sort                     | Prompt for a sort type, and use it to reload the current view.            |
@@ -266,3 +267,4 @@ I don't have a tech worker's income, so even a small tip would help out.
 | RET       | lem-ui-view-thing-at-point             | View post, community or user at point.                                    |
 |           | lem-vtable-revert-command              | Re-query data and regenerate the table under point.                       |
 |           | lem-vtable-sort-by-current-column      | Sort the table under point by the column under point.                     |
+|           | lem-widget-minor-mode                  | Minor mode for traversing widgets.                                        |
