@@ -700,7 +700,9 @@ Optionally, use SORT."
                         (lem-ui-next-type sort-last sort-types))))
     (cond ((or (eq view 'user)
                (eq view 'current-user))
-           (lem-ui-view-user id item sort-next))
+           (if (equal item "overview")
+               (message "Not implemented yet.")
+             (lem-ui-view-user id item sort-next)))
           ((eq view 'community)
            (lem-ui-view-community id item sort-next))
           ((eq view 'post)
@@ -3053,6 +3055,7 @@ Decide whether X comes before Y, based on timestamp."
 (defun lem-ui-render-overview (user-json)
   "Return an overview of mixed posts and comments from USER-JSON."
   (let-alist user-json
+    ;; FIXME: we need to respect sort type when doing our combining here!
     (let* ((merged (append .comments .posts))
            (sorted (sort merged #'lem-ui-published-sort-predicate)))
       (cl-loop for item in sorted
