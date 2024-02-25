@@ -2377,6 +2377,13 @@ Optionally only return UNREAD items."
     ;; TODO: implement unread arg
     (lem-ui-view-inbox next)))
 
+(defun lem-ui-choose-inbox-view ()
+  "Prompt for an inbox view and load it."
+  (interactive)
+  (let ((choice (intern
+                 (completing-read "Inbox view: " lem-inbox-types))))
+    (lem-ui-view-inbox choice)))
+
 ;;; EDIT/DELETE POSTS/COMMENTS
 
 (defmacro lem-ui-with-own-item (item-type &rest body)
