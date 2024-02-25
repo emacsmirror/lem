@@ -2274,13 +2274,17 @@ Optionally only view UNREAD items."
   (interactive)
   (lem-ui-view-inbox 'mentions))
 
+(defun lem-ui-render-mention (mention)
+  "Render MENTION."
+  (let ((comment (alist-get 'comment mention)))
+    (insert
+     (lem-ui-format-comment comment)
+     "\n")))
+
 (defun lem-ui-render-mentions (mentions)
   "Render mentions MENTIONS."
   (cl-loop for men in mentions
-           for comment = (alist-get 'comment men)
-           do (insert
-               (lem-ui-format-comment comment)
-               "\n")))
+           do (lem-ui-render-mention men)))
 
 (defun lem-ui-view-private-messages (&optional _unread)
   "View reply comments to the current user.
@@ -2288,12 +2292,16 @@ Optionally only view UNREAD items."
   (interactive)
   (lem-ui-view-inbox 'private-messages))
 
+(defun lem-ui-render-private-message (pm)
+  "Render PM, a private message."
+  (insert
+   (lem-ui-format-private-message pm)
+   "\n"))
+
 (defun lem-ui-render-private-messages (private-messages)
   "Render private messages PRIVATE-MESSAGES."
   (cl-loop for pm in private-messages
-           do (insert
-               (lem-ui-format-private-message pm)
-               "\n")))
+           do (lem-ui-render-private-message pm)))
 
 (defun lem-ui-mark-private-message-read ()
   "Mark the private message at point as read."
@@ -2306,19 +2314,29 @@ Optionally only view UNREAD items."
 Optionally only view UNREAD items.
 Optionally set ITEMS to view."
   (interactive)
-  (let* ((items (or items 'replies))
-         (item-fun (lem-ui-make-fun "lem-get-" items))
-         (render-fun (lem-ui-make-fun "lem-ui-render-" items))
-         (items-data (if (eq item-fun 'lem-get-private-messages)
-                         ;; pms: unread-only page limit creator-id:
-                         (funcall item-fun (if unread "true" nil))
-                       ;; mentions/replies: sort page limit unread-only
-                       (funcall item-fun
-                                nil ; lem-default-comment-sort-type
-                                nil ; page
-                                nil ;limit
-                                (if unread "true" nil))))
-         (list (alist-get (lem-ui-hyphen-to-underscore items) items-data))
+  (let* ((unread-str (if unread "true" nil))
+         (items (or items 'replies))
+         (item-fun (if (eq items 'all)
+                       'lem-ui-get-inbox-all
+                     (lem-ui-make-fun "lem-get-" items)))
+         (render-fun (if (eq items 'all)
+                         'lem-ui-render-inbox-all
+                       (lem-ui-make-fun "lem-ui-render-" items)))
+         (items-data (cond ((eq items 'all)
+                            (funcall item-fun unread-str))
+                           ((eq item-fun 'lem-get-private-messages)
+                            ;; pms: unread-only page limit creator-id:
+                            (funcall item-fun unread-str))
+                           ;; mentions/replies: sort page limit unread-only
+                           (t
+                            (funcall item-fun
+                                     nil ; lem-default-comment-sort-type
+                                     nil ; page
+                                     nil ;limit
+                                     unread-str))))
+         (list (if (eq items 'all)
+                   items-data
+                 (alist-get (lem-ui-hyphen-to-underscore items) items-data)))
          (buf "*lem-inbox*")
          (bindings (lem-ui-view-options 'inbox)))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
@@ -2327,6 +2345,29 @@ Optionally set ITEMS to view."
       (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil nil #'lem-ui-view-inbox
                               items nil unread))))
+
+(defun lem-ui-get-inbox-all (&optional unread)
+  "Return a merged list of replies, mentions, and private messages.
+Optionally only return UNREAD items."
+  (let ((replies (alist-get 'replies
+                            (lem-get-replies nil nil nil unread)))
+        (mentions (alist-get 'mentions
+                             (lem-get-mentions nil nil nil unread)))
+        (pms (alist-get 'private_messages
+                        (lem-get-private-messages unread))))
+    (append replies mentions pms)))
+
+(defun lem-ui-render-inbox-all (data)
+  "Render DATA, a mix of replies, mentions, and private messages."
+  (let ((sorted (sort data #'lem-ui-published-sort-predicate)))
+    (cl-loop for item in sorted
+             do (let ((type (caar item)))
+                  (cond ((eq type 'comment_reply)
+                         (lem-ui-render-comment item :reply :details))
+                        ((eq type 'mention)
+                         (lem-ui-render-mention item))
+                        ((eq type 'private_message)
+                         (lem-ui-render-private-message item)))))))
 
 (defun lem-ui-cycle-inbox ()
   "Cycle inbox to next item view in `lem-inbox-types'."
@@ -2989,7 +3030,9 @@ TYPE should be either :unlike, :dislike, or nil to like."
   "Return published timestamp of ITEM, either comment or post."
   (let-alist item
     ;; comments also have post data so comment first
-    (or .comment.published
+    (or .private_message.published
+        .comment_reply.published
+        .comment.published
         .post.published)))
 
 (defun lem-ui-published-sort-predicate (x y)
