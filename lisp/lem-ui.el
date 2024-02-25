@@ -2315,7 +2315,7 @@ Optionally only view UNREAD items.
 Optionally set ITEMS to view."
   (interactive)
   (let* ((unread-str (if unread "true" nil))
-         (items (or items 'replies))
+         (items (or items 'all))
          (item-fun (if (eq items 'all)
                        'lem-ui-get-inbox-all
                      (lem-ui-make-fun "lem-get-" items)))
