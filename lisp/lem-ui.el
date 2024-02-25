@@ -2950,14 +2950,13 @@ TYPE should be either :unlike, :dislike, or nil to like."
 ;;; USERS
 
 (defun lem-ui-render-users (json)
-  "JSON."
-  ;; (let ((users (alist-get 'users json)))
+  "Render JSON, a list of users."
   (cl-loop for user in json
            do (progn (lem-ui-render-user user)
                      (insert "\n"))))
 
 (defun lem-ui--format-moderates (community)
-  ""
+  "Format COMMUNITY as a link."
   (let-alist community
     (concat
      (lem-ui--format-community-as-link .community.title .community.actor_id)
