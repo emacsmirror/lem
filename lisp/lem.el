@@ -149,6 +149,15 @@ keep the timestamps current as time progresses."
 Uses `cursor-face-highlight-mode'."
   :type 'boolean)
 
+
+(defcustom lem-encrypt-auth-tokens nil
+  "Whether to encrypt the user's authentication token in the plstore.
+If you set this to non-nil, you also likely need to set
+`plstore-encrypt-to' to your GPG key ID for decryption.
+If you change the value of this variable, you need to also delete
+the file ~/.emacs.d/lem.plstore and log in again."
+  :type 'boolean)
+
 ;;; MAP
 
 (defvar lem-mode-map
@@ -198,13 +207,6 @@ Load current user's instance posts."
   (unless lem-auth-token
     (lem-login-set-token))
   (lem-ui-view-instance lem-default-listing-type lem-default-sort-type))
-
-(defcustom lem-encrypt-auth-tokens nil
-  "Whether to encrypt the user's authentication token in the plstore.
-If you set this to non-nil, you also likely need to set
-`plstore-encrypt-to' to your GPG key ID for decryption.
-If you change the value of this variable, you need to also delete
-the file ~/.emacs.d/lem.plstore and log in again.")
 
 (defun lem-auth-store-token (username token)
   "Store lemmy jwt TOKEN for USERNAME."

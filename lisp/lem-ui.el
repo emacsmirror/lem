@@ -1930,11 +1930,6 @@ LIMIT is the max results to return."
       (lem-ui-set-buffer-spec
        type sort #'lem-ui-browse-communities 'communities))))
 
-(define-minor-mode lem-widget-minor-mode
-  "Minor mode for traversing widgets."
-  :lighter " Widget"
-  :keymap lem-widget-keymap)
-
 (defvar lem-widget-keymap
   (let ((map (make-sparse-keymap)))
     ;; (define-key map "\t" 'widget-forward)
@@ -1952,6 +1947,11 @@ LIMIT is the max results to return."
   "Keymap containing useful binding for buffers containing widgets.
 Recommended as a parent keymap for modes using widgets.
 Note that such modes will need to require wid-edit.")
+
+(define-minor-mode lem-widget-minor-mode
+  "Minor mode for traversing widgets."
+  :lighter " Widget"
+  :keymap lem-widget-keymap)
 
 ;; actions are called on the column's object, but we use text props instead,
 ;; so we have to reimplement these for tl:
