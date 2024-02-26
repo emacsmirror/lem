@@ -1087,7 +1087,7 @@ START and END are the boundaries of the link in the post body."
 (defun lem-ui--format-community-as-link (community community-url)
   "Format COMMUNITY, a string, as a link using COMMUNITY-URL."
   (lem-ui--propertize-link community nil 'community
-                           nil 'lem-ui-community-face
+                           community-url 'lem-ui-community-face
                            community-url))
 
 (defun lem-ui-top-byline (title url username _score timestamp
