@@ -701,7 +701,7 @@ Optionally, use SORT."
     (cond ((or (eq view 'user)
                (eq view 'current-user))
            (if (equal item "overview")
-               (message "Not implemented yet.")
+               (message "Not implemented for overview.")
              (lem-ui-view-user id item sort-next)))
           ((eq view 'community)
            (lem-ui-view-community id item sort-next))
