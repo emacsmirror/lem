@@ -320,19 +320,33 @@ BINDINGS is a list of variables for which to display bidings."
          (message
           (substitute-command-keys msg-str))))))
 
-;; consider adding a lem-type check arg
-(defmacro lem-ui-with-item (body &optional number)
+(defmacro lem-ui-with-item (type body &optional number)
   "Call BODY after fetching ID of thing (at point).
 Thing can be anything handled by `lem-ui-thing-json', currently:
-comment, post, community or person.
+comment, post, community, or person.
+If TYPE is all, don't check for item type.
 Within this macro call, arg ID is available.
 NUMBER means return ID as a number."
   (declare (debug t)
-           (indent 0))
-  `(let* ((id (lem-ui--id-from-prop (if ,number nil :string))))
-     (if (not id)
-         (message "Looks like there's no item at point?")
-       ,body)))
+           (indent 1))
+  `(if (and (not (eq ,type 'all))
+            (not (eq ,type (lem-ui--property 'lem-type))))
+       (message "No %s at point?" ,type)
+     (let* ((id (lem-ui--id-from-prop (if ,number nil :string))))
+       (if (not id)
+           (message "Unable to find item id.")
+         ,body))))
+
+(defmacro lem-ui-with-own-item (item-type &rest body)
+  "Call BODY if ITEM-TYPE is at point and owned by the current user."
+  (declare (debug t)
+           (indent 1))
+  `(cond ((not (eq ,item-type (lem-ui--property 'lem-type)))
+          (message "No %s at point?" ,item-type))
+         ((not (equal lem-user-id (lem-ui--property 'creator-id)))
+          (message "You can only modify your own items"))
+         (t
+          ,@body)))
 
 ;;; BUFFER DETAILS
 
@@ -515,7 +529,7 @@ Blocking an instance means you wont see content from that
 instance, but will still see content from its users if they are
 active on other instances."
   (interactive)
-  (lem-ui-with-item
+  (lem-ui-with-item 'all
     (let-alist (lem-ui--property 'json)
       (let ((instance (url-host (url-generic-parse-url .post.ap_id))))
         (when (y-or-n-p (format "Block instance %s?" instance))
@@ -916,7 +930,7 @@ STR is for message."
   "Feature (pin) a post, either to its instance or community.
 UNFEATURE means we are unfeaturing a post."
   (interactive)
-  (lem-ui-with-item
+  (lem-ui-with-item 'post
     (let* ((json (lem-ui--property 'json))
            (post (alist-get 'post json))
            (id (lem-ui--property 'id))
@@ -1453,7 +1467,7 @@ community of the current post, with COMMUNITY-ID."
 (defun lem-ui-view-post-at-point ()
   "View post at point."
   (interactive)
-  (lem-ui-with-item
+  (lem-ui-with-item 'post
     (lem-ui-view-post id)))
 
 (defun lem-ui-view-post (id &optional sort limit)
@@ -1572,7 +1586,7 @@ TRIM means trim each post for length."
 Saved items can be viewed in your profile, like bookmarks.
 If UNSAVE, unsave the item instead."
   (interactive)
-  (lem-ui-with-item
+  (lem-ui-with-item 'all
     (let* ((type (lem-ui--item-type))
            (s-str (if unsave "unsaved" "saved"))
            (s-bool (if unsave :json-false t))
@@ -1987,7 +2001,7 @@ Note that such modes will need to require wid-edit.")
 (defun lem-ui-subscribe-to-community-at-point ()
   "Subscribe to community at point."
   (interactive)
-  (lem-ui-with-item
+  (lem-ui-with-item 'community
     (if (not (equal 'community (lem-ui--item-type)))
         (message "no community at point?")
       (lem-ui-subscribe-to-community id))
@@ -2010,7 +2024,7 @@ Note that such modes will need to require wid-edit.")
 (defun lem-ui-block-community-at-point ()
   "Block community at point."
   (interactive)
-  (lem-ui-with-item
+  (lem-ui-with-item 'community
     (if (not (equal 'community (lem-ui--item-type)))
         (message "no community at point?")
       (let-alist (lem-ui--property 'json)
@@ -2200,7 +2214,7 @@ And optionally for instance COMMUNITIES."
 (defun lem-ui-view-item-community ()
   "View community of item at point."
   (interactive)
-  (lem-ui-with-item
+  (lem-ui-with-item 'all
     (let ((type (lem-ui--property 'lem-type))
           (id (or (lem-ui--property 'community-id)
                   (lem-ui--property 'id)))) ; community header
@@ -2395,17 +2409,6 @@ Optionally only return UNREAD items."
     (lem-ui-view-inbox choice sort)))
 
 ;;; EDIT/DELETE POSTS/COMMENTS
-
-(defmacro lem-ui-with-own-item (item-type &rest body)
-  "Call BODY if ITEM-TYPE is at point and owned by the current user."
-  (declare (debug t)
-           (indent 1))
-  `(cond ((not (eq ,item-type (lem-ui--property 'lem-type)))
-          (message "No %s at point?" ,item-type))
-         ((not (equal lem-user-id (lem-ui--property 'creator-id)))
-          (message "You can only modify your own items"))
-         (t
-          ,@body)))
 
 (defun lem-ui-edit-comment-brief ()
   "Edit comment at point if possible, in the minibuffer."
@@ -2907,7 +2910,7 @@ If COMMENT-ID is provided, move point to that comment."
   "Like (upvote) item at point.
 TYPE should be either :unlike, :dislike, or nil to like."
   (interactive)
-  (lem-ui-with-item
+  (lem-ui-with-item 'all
     (let* ((item (lem-ui--property 'lem-type))
            (fun (if (eq item 'post)
                     #'lem-like-post
@@ -2952,7 +2955,7 @@ TYPE should be either :unlike, :dislike, or nil to like."
 (defun lem-ui-like-item-toggle ()
   "Toggle like status of item at point."
   (interactive)
-  (lem-ui-with-item
+  (lem-ui-with-item 'all
     (let* ((json (lem-ui--property 'json))
            (my-vote (alist-get 'my_vote json)))
       (if json
@@ -3123,7 +3126,7 @@ CURRENT-USER means we are displaying the current user's profile."
 (defun lem-ui-view-item-user ()
   "View user of item at point."
   (interactive)
-  (lem-ui-with-item
+  (lem-ui-with-item 'all
     (let* ((type (lem-ui--item-type))
            (id (cond ((or (eq type 'user)
                           (eq type 'person))
@@ -3140,14 +3143,14 @@ CURRENT-USER means we are displaying the current user's profile."
 (defun lem-ui-message-user-at-point ()
   "Send private message to user at point."
   (interactive)
-  (lem-ui-with-item
+  (lem-ui-with-item 'all
     (let ((message (read-string "Private message: ")))
       (lem-send-private-message message id))))
 
 (defun lem-ui-block-user ()
   "Block author of item at point."
   (interactive)
-  (lem-ui-with-item
+  (lem-ui-with-item 'all
     (let* ((id (lem-ui--property 'creator-id))
            (json (lem-ui--property 'json))
            (name (alist-get 'name
@@ -3209,7 +3212,7 @@ START and END mark the region to replace."
 (defun lem-ui-copy-item-url ()
   "Copy the URL (ap_id) of the post or comment at point."
   (interactive)
-  (lem-ui-with-item
+  (lem-ui-with-item 'all
     (let* ((json (lem-ui--property 'json))
            (item (or (alist-get 'comment json)
                      (alist-get 'post json)))
@@ -3221,7 +3224,7 @@ START and END mark the region to replace."
 (defun lem-ui-print-json ()
   "Fetch the JSON of item at point and pretty print it in a new buffer."
   (interactive)
-  (let ((json (lem-ui-with-item
+  (let ((json (lem-ui-with-item 'all
                 (lem-ui--property 'json)))
         (buf (get-buffer-create "*lem-json*")))
     (with-current-buffer buf

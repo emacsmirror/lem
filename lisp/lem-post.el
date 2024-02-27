@@ -404,7 +404,7 @@ Optionally, message user with RECIPIENT-ID."
 (defun lem-post-item-author-private-message ()
   "Send a private message to the author of item at point."
   (interactive)
-  (lem-ui-with-item
+  (lem-ui-with-item 'all
     (let* ((item (lem-ui-thing-json))
            (obj (or (alist-get 'post item)
                     (alist-get 'comment item)))
