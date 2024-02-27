@@ -715,6 +715,8 @@ Optionally, use SORT."
            (lem-ui-browse-communities type sort-next))
           ((eq view 'search)
            (lem-ui-search query item type sort-next))
+          ((eq view 'inbox)
+           (lem-ui-view-inbox item sort))
           (t
            ;; TODO: communities / search
            (message "Not implemented yet.")))))
@@ -1299,7 +1301,7 @@ COMMUNITY means display the community posted to."
           ((eq type 'user)
            (lem-ui-view-user id item sort limit))
           ((eq type 'inbox)
-           (lem-ui-view-inbox))
+           (lem-ui-view-inbox item sort))
           (t
            (user-error "Unable to reload view type %s" type)))))
 
@@ -2311,10 +2313,12 @@ Optionally only view UNREAD items."
   (let ((id (lem-ui--property 'id)))
     (lem-mark-private-message-read id)))
 
-(defun lem-ui-view-inbox (&optional items unread)
+(defun lem-ui-view-inbox (&optional items sort unread)
   "View user inbox, for replies, mentions, and PMs to the current user.
 Optionally only view UNREAD items.
-Optionally set ITEMS to view."
+Optionally set ITEMS, a symbol, to view.
+SORT is a member of `lem-comment-sort-types'.
+Sorting is not available for private messages, nor for all."
   (interactive)
   (let* ((unread-str (if unread "true" nil))
          (items (or items 'all))
@@ -2325,14 +2329,16 @@ Optionally set ITEMS to view."
                          'lem-ui-render-inbox-all
                        (lem-ui-make-fun "lem-ui-render-" items)))
          (items-data (cond ((eq items 'all)
+                            ;; all, no sort:
                             (funcall item-fun unread-str))
                            ((eq item-fun 'lem-get-private-messages)
                             ;; pms: unread-only page limit creator-id:
+                            ;; no sort:
                             (funcall item-fun unread-str))
                            ;; mentions/replies: sort page limit unread-only
                            (t
                             (funcall item-fun
-                                     nil ; lem-default-comment-sort-type
+                                     sort ; lem-default-comment-sort-type
                                      nil ; page
                                      nil ;limit
                                      unread-str))))
@@ -2375,16 +2381,18 @@ Optionally only return UNREAD items."
   "Cycle inbox to next item view in `lem-inbox-types'."
   (interactive)
   (let* ((last (lem-ui-get-buffer-spec :item))
-         (next (lem-ui-next-type last lem-inbox-types)))
+         (next (lem-ui-next-type last lem-inbox-types))
+         (sort (lem-ui-get-buffer-spec :sort)))
     ;; TODO: implement unread arg
-    (lem-ui-view-inbox next)))
+    (lem-ui-view-inbox next sort)))
 
 (defun lem-ui-choose-inbox-view ()
   "Prompt for an inbox view and load it."
   (interactive)
   (let ((choice (intern
-                 (completing-read "Inbox view: " lem-inbox-types))))
-    (lem-ui-view-inbox choice)))
+                 (completing-read "Inbox view: " lem-inbox-types)))
+        (sort (lem-ui-get-buffer-spec :sort)))
+    (lem-ui-view-inbox choice sort)))
 
 ;;; EDIT/DELETE POSTS/COMMENTS
 
