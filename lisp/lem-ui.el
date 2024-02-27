@@ -1235,6 +1235,7 @@ PREFIX is a \"line-prefix\" property to add."
   "Call `lem-ui-bt-byline' to update the bottom byline.
 JSON is the item's json.
 VOTE, SAVED, and PREFIX are arguments for `lem-ui-bt-byline'."
+  ;; FIXME: this assumes post object
   (let-alist json
     (let ((vote (or vote .my_vote))
           (saved (or saved .saved))
@@ -1279,21 +1280,29 @@ COMMUNITY means display the community posted to."
      'creator-id .creator.id
      'lem-type (caar json))))
 
-(defun lem-ui-update-parent-post ()
+(defun lem-ui-update-parent-item-maybe ()
   "Go to buffer's first element, and reload its json data and bottom byline."
   (save-restriction
     (save-excursion
       (widen)
       (goto-char (point-min))
       (forward-char)
-      (let* ((id (lem-ui--property 'id))
-             (post-view (lem-get-post id))
-             (post (alist-get 'post_view post-view)))
-        (lem-ui--update-item-json post)
-        (lem-ui-update-item-from-json
-         'byline-bottom
-         (lambda (json)
-           (lem-ui-bt-byline-replace json)))))))
+      (let* ((item-type (lem-ui--property 'lem-type))
+             (id (lem-ui--property 'id))
+             (item-fun (lem-ui-make-fun "lem-get-" item-type))
+             (item-data (funcall item-fun id))
+             (item (alist-get (intern
+                               (concat (symbol-name item-type)
+                                       "_view"))
+                              item-data)))
+        ;; for now, just update parent posts:
+        ;; as lem-ui-bt-byline-replace wrongly assumes posts
+        (when (eq (lem-ui-view-type) 'post)
+          (lem-ui--update-item-json item)
+          (lem-ui-update-item-from-json
+           'byline-bottom
+           (lambda (json)
+             (lem-ui-bt-byline-replace json))))))))
 
 (defun lem-ui-reload-view ()
   "Reload the current view."
@@ -2459,7 +2468,7 @@ If RESTORE, restore the item instead."
                  (lambda (response)
                    (lem-ui-format-comment (alist-get 'comment_view response)
                                           indent)))
-                (lem-ui-update-parent-post))))))))))
+                (lem-ui-update-parent-item-maybe))))))))))
 
 (defun lem-ui-delete-comment ()
   "Delete comment at point."
