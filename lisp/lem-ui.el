@@ -2063,7 +2063,7 @@ SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return.
 PAGE is the page number of items to display, a string."
   (let* ((community (lem-get-community id))
-         (buf "*lem-community*")
+         (buf (format "*lem-community-%s*" id))
          ;; in case we set community posts, then switch to comments:
          (sort (if (equal item "comments")
                    (if (lem-comment-sort-type-p sort)

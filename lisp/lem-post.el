@@ -326,10 +326,27 @@ Call response and update functions."
               (lem-ui-view-community .community_view.community.id))
              (t ;; creating a post
               ;; after new post: view the post
-              (lem-ui-response-msg
-               response 'post_view :non-nil
-               (format "Post %s created!" .post_view.post.name))
-              (lem-ui-view-post .post_view.post.id)))))))))
+              (lem-ui-post-post-submit response)))))))))
+
+(defun lem-ui-reload-parent-community-view (community-id)
+  "If community with COMMUNITY-ID is in `buffer-list', reload it."
+  (let ((community-id (number-to-string community-id)))
+    (cl-loop for b in (buffer-list)
+             when (string-suffix-p (concat "-" community-id "*")
+                                   (buffer-name b))
+             return (with-current-buffer b
+                      (lem-ui-reload-view)))))
+
+(defun lem-ui-post-post-submit (response)
+  "Handle post-creation RESPONSE.
+Display response message, view post, and update post's community
+view buffer if present."
+  (let-alist response
+    (lem-ui-response-msg
+     response 'post_view :non-nil
+     (format "Post %s created!" .post_view.post.name))
+    (lem-ui-reload-parent-community-view .post_view.post.community_id)
+    (lem-ui-view-post .post_view.post.id)))
 
 ;;; POSTING COMMENTS
 
