@@ -3215,6 +3215,7 @@ CURRENT-USER means we are displaying the current user's profile."
       ;; we have this on the 's' binding now so no need:
       (let-alist user-json
         (lem-ui-render-user user-json)
+        (lem-ui-widgets-create `("Sort" ,sort))
         (cond ((equal item "posts")
                (lem-ui-insert-heading "posts")
                (lem-ui-render-posts .posts :community :trim))
