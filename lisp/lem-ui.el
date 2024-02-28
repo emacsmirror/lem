@@ -2529,6 +2529,78 @@ If RESTORE, restore the item instead."
           ((eq type 'comment)
            (lem-ui-delete-comment)))))
 
+;;; REMOVING
+
+(defun lem-ui-remove-item (item fun &optional restore)
+  "Remove item of type ITEM at point, calling FUN.
+If RESTORE, restore the item instead."
+  (lem-ui-with-item item
+    (let-alist (lem-ui--property 'json)
+      (let* ((id (lem-ui--property 'id)))
+        ;; TODO: check if removed necessary?
+        
+        ;; (del-p (or (eq t .post.deleted)
+        ;; (eq t .comment.deleted))))
+        ;; (cond
+        ;; ((and del-p (not restore))
+        ;; (user-error "Item already deleted?"))
+        ;; ((and restore (not del-p))
+        ;; (user-error "Item not deleted?"))
+        ;; (t
+        (when (y-or-n-p (format "%s %s?"
+                                (if restore "Restore" "Remove")
+                                item))
+          (let ((response (funcall fun id (if restore :json-false t)))
+                (view (lem-ui-get-buffer-spec :view-fun))
+                (indent (length (lem-ui--property 'line-prefix))))
+            (lem-ui-response-msg
+             response
+             (lem-ui-item-to-alist-key item) :non-nil
+             (format "%s %s %s!" item id
+                     (if restore "restored" "removed")))
+            (lem-ui--update-item-json response)
+            (if (eq item 'post)
+                (lem-ui-update-item-from-json
+                 'byline-top
+                 (lambda (response)
+                   (lem-ui-top-byline-replace
+                    (alist-get 'post_view response)
+                    (unless (eq view 'lem-ui-view-community)
+                      :community))))
+              (lem-ui-update-item-from-json
+               'lem-type
+               (lambda (response)
+                 (lem-ui-format-comment (alist-get 'comment_view response)
+                                        indent)))
+              (lem-ui-update-parent-item-maybe))))))))
+
+(defun lem-ui-remove-post ()
+  "Remove the post at point.
+To remove an item, you must be a moderator in its community."
+  (interactive)
+  (lem-ui-with-item 'post
+    (let-alist (lem-ui--property 'json)
+      (let ((mod-p (or (eq t .creator_is_moderator)
+                       (cl-member .creator.id lem-ui-post-community-mods-ids))))
+        (if (not mod-p)
+            (user-error "You need to be a mod to remove items")
+          ;; TODO: refactor delete-item: "delete" str, and reload on remove.
+          (lem-ui-delete-item 'post #'lem-remove-post))))))
+
+
+(defun lem-ui-remove-comment ()
+  "Remove the comment at point.
+To remove an item, you must be a moderator in its community."
+  (interactive)
+  (lem-ui-with-item 'comment
+    (let-alist (lem-ui--property 'json)
+      (let ((mod-p (or (eq t .creator_is_moderator)
+                       (cl-member .creator.id lem-ui-post-community-mods-ids))))
+        (if (not mod-p)
+            (user-error "You need to be a mod to remove items")
+          ;; TODO: refactor delete-item: "delete" str, and reload on remove.
+          (lem-ui-remove-item 'comment #'lem-remove-comment))))))
+
 ;;; COMMENTS
 
 (defun lem-ui-render-comment (comment &optional reply details)
