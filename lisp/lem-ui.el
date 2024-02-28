@@ -1383,37 +1383,43 @@ JSON is the item's data to process the link with.
 INDENT is a number, the level of indent for the item."
   (let ((buf "*lem-md*")
         str)
+    ;; 1: temp buffer, prepare for md
     (with-temp-buffer
       (insert body)
       (goto-char (point-min))
       (lem-ui-mdize-plain-urls)
-      ;; FIXME: this breaks a normal URL containing a handle (e.g a link to a
-      ;; mastodon user page):
-      (let ((replaced (string-replace "@" "\\@" (buffer-string))))
-        (erase-buffer)
-        (insert replaced)
+      (goto-char (point-min))
+      (while (re-search-forward "@" nil :noerror)
+        ;; escape @ if not inside full URL
+        (unless (thing-at-point 'url)
+          (replace-match "\\\\@")))
+      ;; 2: md-ize or fallback
+      (let ((old-buf (buffer-string)))
         (condition-case nil
             (markdown-standalone buf)
-          (t ; if md rendering fails, return unrendered body:
-           (progn (erase-buffer)
-                  (insert replaced))))
-        (with-current-buffer buf
-          (let ((shr-width (when indent
-                             (- (window-width) (+ 1 indent))))
-                (shr-discard-aria-hidden t)) ; for pandoc md image output
-            ;; shr render:
-            (shr-render-buffer (current-buffer))))
-        (with-current-buffer "*html*" ; created by shr
-          ;; our render:
-          (when json
-            (lem-ui-render-shr-url))
-          (re-search-forward "\n\n" nil :no-error)
-          (setq str (buffer-substring (point) (point-max)))
-          (kill-buffer-and-window)        ; shr's *html*
-          (kill-buffer buf)))             ; our md
-      (setq str (lem-ui-propertize-items str json 'handle))
-      (setq str (lem-ui-propertize-items str json 'community))
-      str)))
+          (t ; if rendering fails, return unrendered body:
+           (with-current-buffer buf
+             (erase-buffer)
+             (insert old-buf)))))
+      ;; 3: shr-render the md
+      (with-current-buffer buf
+        (let ((shr-width (when indent
+                           (- (window-width) (+ 1 indent))))
+              (shr-discard-aria-hidden t)) ; for pandoc md image output
+          ;; shr render:
+          (shr-render-buffer (current-buffer))))
+      ;; 4 our render shr urls + collect result
+      (with-current-buffer "*html*"
+        ;; our render:
+        (when json
+          (lem-ui-render-shr-url))
+        (re-search-forward "\n\n" nil :no-error)
+        (setq str (buffer-substring (point) (point-max)))
+        (kill-buffer-and-window)        ; shr's *html*
+        (kill-buffer buf)))             ; our md
+    (setq str (lem-ui-propertize-items str json 'handle))
+    (setq str (lem-ui-propertize-items str json 'community))
+    str))
 
 (defun lem-ui-propertize-items (str json type)
   "Propertize any items of TYPE in STR as links using JSON.
