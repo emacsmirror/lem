@@ -3142,7 +3142,7 @@ TYPE should be either :unlike, :dislike, or nil to like."
        "\n")
       'json json
       'id .person.id
-      'lem-type (caar json)))))
+      'lem-type 'person))))
 
 (defun lem-ui-render-user-subscriptions (json)
   "Render subscribed communities from JSON data."
