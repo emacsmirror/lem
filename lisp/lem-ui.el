@@ -445,10 +445,7 @@ ITEM must be a member of `lem-items-types'."
          (bindings (lem-ui-view-options 'instance)))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
       (lem-ui-render-instance instance :stats sidebar)
-      (lem-ui-widget-create "Listing" type)
-      (lem-ui-widget-create "Sort" sort)
-      (lem-widget-minor-mode)
-      (insert "\n")
+      (lem-ui-widgets-create `("Listing" ,type "Sort" ,sort))
       (lem-ui-insert-heading (if (eq nil item) "posts" item))
       (if (equal item "comments")
           (lem-ui-render-comments items :details)
@@ -1509,9 +1506,10 @@ LIMIT."
         (lem-ui-with-buffer buf 'lem-mode nil bindings
           (lem-ui--set-mods community-id)
           (lem-ui-render-post post :community)
+          (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post) ;limit
+          (lem-ui-widgets-create `("Sort" ,sort))
           (lem-ui-render-post-comments id sort limit)
-          (lem-ui--init-view)
-          (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post)))))) ; limit
+          (lem-ui--init-view))))))
 
 (defun lem-ui-featured-p (post)
   "Return t if POST, which is data, is featured in the current view.
@@ -1927,9 +1925,9 @@ COMMENT means use `lem-comment-sort-types' not `lem-sort-types'"
   (let ((type-list (cond ((equal kind "Listing")
                           lem-listing-types)
                          ((equal kind "Sort")
-                          (if comment
-                              lem-comment-sort-types
-                            lem-sort-types))
+                          (if (eq (lem-ui-view-type) 'post)
+                              lem-comment-sort-types)
+                          lem-sort-types)
                          ((equal kind "Inbox")
                           lem-inbox-types)
                          ;; maybe items is useless as we have headings:
@@ -1945,6 +1943,13 @@ COMMENT means use `lem-comment-sort-types' not `lem-sort-types'"
                      :format (lem-ui-widget-format kind) ; "C-c C-c")
                      :notify (lem-ui-widget-notify-fun :sort)))))
 
+(defun lem-ui-widgets-create (plist)
+  "PLIST is a plist of kind and value arguments for `lem-ui-widget-create'."
+  (while plist
+    (funcall #'lem-ui-widget-create (pop plist) (pop plist)))
+  (insert "\n")
+  (lem-widget-minor-mode))
+
 (defun lem-ui-browse-communities (&optional type sort limit)
   "View Lemmy communities in a sortable tabulated list.
 TYPE must be one of `lem-listing-types'.
@@ -1958,9 +1963,7 @@ LIMIT is the max results to return."
          (buf "*lem-communities*"))
     (lem-ui-with-buffer buf 'lem-mode nil nil
       (lem-ui-render-instance (lem-get-instance) :stats nil)
-      (lem-ui-widget-create "Listing" type)
-      (lem-ui-widget-create "Sort" sort)
-      (insert "\n")
+      (lem-ui-widgets-create `("Listing" ,type "Sort" ,sort))
       (make-vtable
        :use-header-line nil
        :columns '((:name "Name" :max-width 30 :width "35%")
@@ -1980,7 +1983,6 @@ LIMIT is the max results to return."
       ;; whey "actions" when we have map + our own props?:
       ;; :actions '("RET" lem-ui-view-community-at-point-tl
       ;; "s" lem-ui-subscribe-to-community-at-point-tl))
-      (lem-widget-minor-mode)
       (lem-ui-set-buffer-spec
        type sort #'lem-ui-browse-communities 'communities))))
 
@@ -2132,6 +2134,7 @@ PAGE is the page number of items to display, a string."
          (bindings (lem-ui-view-options 'community)))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
       (lem-ui-render-community community :stats :view)
+      (lem-ui-widgets-create `("Sort" ,sort))
       (if (equal item "comments")
           (progn
             (lem-ui-insert-heading "comments")
