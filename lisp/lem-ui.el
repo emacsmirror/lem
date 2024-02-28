@@ -1949,9 +1949,7 @@ COMMENT means use `lem-comment-sort-types' not `lem-sort-types'"
   "PLIST is a plist of kind and value arguments for `lem-ui-widget-create'."
   (while plist
     (funcall #'lem-ui-widget-create (pop plist) (pop plist)))
-  (insert "\n")
-  ;; (lem-widget-minor-mode)
-  )
+  (insert "\n"))
 
 (defun lem-ui-browse-communities (&optional type sort limit)
   "View Lemmy communities in a sortable tabulated list.
@@ -2006,11 +2004,6 @@ LIMIT is the max results to return."
   "Keymap containing useful binding for buffers containing widgets.
 Recommended as a parent keymap for modes using widgets.
 Note that such modes will need to require wid-edit.")
-
-(define-minor-mode lem-widget-minor-mode
-  "Minor mode for traversing widgets."
-  :lighter " Widget"
-  :keymap lem-widget-keymap)
 
 ;; actions are called on the column's object, but we use text props instead,
 ;; so we have to reimplement these for tl:
