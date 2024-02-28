@@ -1395,8 +1395,10 @@ INDENT is a number, the level of indent for the item."
       (lem-ui-mdize-plain-urls)
       (goto-char (point-min))
       (while (re-search-forward "@" nil :noerror)
+        ;; FIXME: still no sure this is right
+        ;; it doesn't break correct md links, but does it fix others?
         (when (and (not (markdown-link-p))
-                   (thing-at-point 'url))
+                   (not (thing-at-point 'url)))
           (replace-match "\\\\@")))
       ;; 2: md-ize or fallback
       (let ((old-buf (buffer-string)))
