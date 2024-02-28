@@ -1286,27 +1286,29 @@ COMMUNITY means display the community posted to."
 
 (defun lem-ui-update-parent-item-maybe ()
   "Go to buffer's first element, and reload its json data and bottom byline."
-  (save-restriction
-    (save-excursion
-      (widen)
-      (goto-char (point-min))
-      (forward-char)
-      (let* ((item-type (lem-ui--property 'lem-type))
-             (id (lem-ui--property 'id))
-             (item-fun (lem-ui-make-fun "lem-get-" item-type))
-             (item-data (funcall item-fun id))
-             (item (alist-get (intern
-                               (concat (symbol-name item-type)
-                                       "_view"))
-                              item-data)))
-        ;; for now, just update parent posts:
-        ;; as lem-ui-bt-byline-replace wrongly assumes posts
-        (when (eq (lem-ui-view-type) 'post)
-          (lem-ui--update-item-json item)
-          (lem-ui-update-item-from-json
-           'byline-bottom
-           (lambda (json)
-             (lem-ui-bt-byline-replace json))))))))
+  ;; FIXME: only running in post views till we improve things.
+  (when (eq (lem-ui-view-type) 'post)
+    (save-restriction
+      (save-excursion
+        (widen)
+        (goto-char (point-min))
+        (forward-char)
+        (let* ((item-type (lem-ui--property 'lem-type))
+               (id (lem-ui--property 'id))
+               (item-fun (lem-ui-make-fun "lem-get-" item-type))
+               (item-data (funcall item-fun id))
+               (item (alist-get (intern
+                                 (concat (symbol-name item-type)
+                                         "_view"))
+                                item-data)))
+          ;; for now, just update parent posts:
+          ;; as lem-ui-bt-byline-replace wrongly assumes posts
+          (when (eq (lem-ui-view-type) 'post)
+            (lem-ui--update-item-json item)
+            (lem-ui-update-item-from-json
+             'byline-bottom
+             (lambda (json)
+               (lem-ui-bt-byline-replace json)))))))))
 
 (defun lem-ui-reload-view ()
   "Reload the current view."
