@@ -445,6 +445,10 @@ ITEM must be a member of `lem-items-types'."
          (bindings (lem-ui-view-options 'instance)))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
       (lem-ui-render-instance instance :stats sidebar)
+      (lem-ui-widget-create "Listing" type)
+      (lem-ui-widget-create "Sort" sort)
+      (lem-widget-minor-mode)
+      (insert "\n")
       (lem-ui-insert-heading (if (eq nil item) "posts" item))
       (if (equal item "comments")
           (lem-ui-render-comments items :details)
@@ -1912,6 +1916,33 @@ BINDING is a string of a keybinding to cycle the widget's value."
           "%]: %v"
           binding))
 
+(defun lem-ui-widget-create (kind value &optional comment)
+  "Return a widget of KIND, with default VALUE.
+KIND is a string, either Listing, Sort, Items, or Inbox, and will
+be used for the widget's tag.
+VALUE is a string, a member of the list associated with KIND.
+COMMENT means use `lem-comment-sort-types' not `lem-sort-types'"
+  (let ((type-list (cond ((equal kind "Listing")
+                          lem-listing-types)
+                         ((equal kind "Sort")
+                          (if comment
+                              lem-comment-sort-types
+                            lem-sort-types))
+                         ((equal kind "Inbox")
+                          lem-inbox-types)
+                         ;; maybe items is useless as we have headings:
+                         ((equal kind "Items")
+                          lem-items-types))))
+    (if (not (member value type-list))
+        (error "%s is not a member of %s" value type-list)
+      (widget-create 'menu-choice
+                     :tag kind
+                     :value value
+                     :args (lem-ui-return-item-widgets type-list)
+                     :help-echo (format "Select a %s kind" kind)
+                     :format (lem-ui-widget-format kind) ; "C-c C-c")
+                     :notify (lem-ui-widget-notify-fun :sort)))))
+
 (defun lem-ui-browse-communities (&optional type sort limit)
   "View Lemmy communities in a sortable tabulated list.
 TYPE must be one of `lem-listing-types'.
@@ -1925,20 +1956,8 @@ LIMIT is the max results to return."
          (buf "*lem-communities*"))
     (lem-ui-with-buffer buf 'lem-mode nil nil
       (lem-ui-render-instance (lem-get-instance) :stats nil)
-      (widget-create 'menu-choice
-                     :tag "Listing"
-                     :value type
-                     :args (lem-ui-return-item-widgets lem-listing-types)
-                     :help-echo "Select a listing type"
-                     :format (lem-ui-widget-format "Listing") ; "C-c C-c")
-                     :notify (lem-ui-widget-notify-fun :sort))
-      (widget-create 'menu-choice
-                     :tag "Sort"
-                     :value sort
-                     :args (lem-ui-return-item-widgets lem-sort-types)
-                     :help-echo "Select a sort type"
-                     :format (lem-ui-widget-format "Sort") ; "C-c C-s")
-                     :notify (lem-ui-widget-notify-fun :listing-type))
+      (lem-ui-widget-create "Listing" type)
+      (lem-ui-widget-create "Sort" sort)
       (insert "\n")
       (make-vtable
        :use-header-line nil
