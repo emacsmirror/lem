@@ -1306,6 +1306,7 @@ COMMUNITY means display the community posted to."
 
 (defun lem-ui-reload-view ()
   "Reload the current view."
+  (interactive)
   (let ((type (lem-ui-view-type))
         (item (lem-ui-get-buffer-spec :item))
         (sort (lem-ui-get-buffer-spec :sort))
