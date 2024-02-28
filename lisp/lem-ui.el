@@ -808,10 +808,13 @@ CREATOR-ID is same to limit search to a user."
     ;; "Url") TODO
     (lem-ui-with-buffer buf 'lem-mode nil nil
       ;; and say a prayer to the function signature gods:
-      (if (or (equal type "posts")
-              (equal type "comments"))
-          (funcall type-fun data t)
-        (funcall type-fun data))
+      (cond ((or (equal type "posts")
+                 (equal type "comments"))
+             (funcall type-fun data t))
+            ((equal type "users")
+             (funcall type-fun data :search))
+            (t
+             (funcall type-fun data)))
       (lem-ui-set-buffer-spec listing-type sort
                               #'lem-ui-search
                               type page nil query))))
@@ -3090,10 +3093,11 @@ TYPE should be either :unlike, :dislike, or nil to like."
 
 ;;; USERS
 
-(defun lem-ui-render-users (json)
-  "Render JSON, a list of users."
+(defun lem-ui-render-users (json &optional search)
+  "Render JSON, a list of users.
+SEARCH means we are rendering a search result."
   (cl-loop for user in json
-           do (progn (lem-ui-render-user user)
+           do (progn (lem-ui-render-user user search)
                      (insert "\n"))))
 
 (defun lem-ui--format-moderates (community)
@@ -3103,9 +3107,10 @@ TYPE should be either :unlike, :dislike, or nil to like."
      (lem-ui--format-community-as-link .community.title .community.actor_id)
      " ")))
 
-(defun lem-ui-render-user (json)
-  "Render user with data JSON."
-  (let-alist (alist-get 'person_view json)
+(defun lem-ui-render-user (json &optional search)
+  "Render user with data JSON.
+SEARCH means we are rendering a search result."
+  (let-alist (if search json (alist-get 'person_view json))
     (insert
      (propertize
       (concat
