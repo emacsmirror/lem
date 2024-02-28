@@ -398,7 +398,7 @@ Optionally start from POS."
           ((or (eq type 'comment)
                (eq type 'comment-reply))
            (lem-ui-view-comment-post))
-          ((eq type 'person)
+          ((eq type 'user)
            (lem-ui-view-item-user)))))
 
 (defun lem-ui-scroll-up-command ()
@@ -2256,7 +2256,8 @@ And optionally for instance COMMUNITIES."
     (let ((type (lem-ui--property 'lem-type))
           (id (or (lem-ui--property 'community-id)
                   (lem-ui--property 'id)))) ; community header
-      (if (eq type 'instance)
+      (if (or (eq type 'instance)
+              (eq type 'user))
           (user-error "Item has no community")
         (lem-ui-view-community id)))))
 
@@ -3142,7 +3143,7 @@ TYPE should be either :unlike, :dislike, or nil to like."
        "\n")
       'json json
       'id .person.id
-      'lem-type 'person))))
+      'lem-type 'user))))
 
 (defun lem-ui-render-user-subscriptions (json)
   "Render subscribed communities from JSON data."
