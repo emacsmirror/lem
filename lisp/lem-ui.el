@@ -134,6 +134,26 @@ achieved by providing a function such as
        (insert (funcall labelfn item indent) "\n"))
      hierarchy)))
 
+;;; WIDGETS
+
+(defvar lem-widget-keymap
+  (let ((map (make-sparse-keymap)))
+    ;; (define-key map "\t" 'widget-forward)
+    ;; (define-key map "\e\t" 'widget-backward)
+    ;; (define-key map [(shift tab)] 'widget-backward)
+    ;; (put 'widget-backward :advertised-binding [(shift tab)])
+    ;; (define-key map [backtab] 'widget-backward)
+    (define-key map [down-mouse-2] 'widget-button-click)
+    (define-key map [down-mouse-1] 'widget-button-click)
+    (define-key map [touchscreen-begin] 'widget-button-click)
+    ;; The following definition needs to avoid using escape sequences that
+    ;; might get converted to ^M when building loaddefs.el
+    (define-key map [(control ?m)] 'widget-button-press)
+    map)
+  "Keymap containing useful binding for buffers containing widgets.
+Recommended as a parent keymap for modes using widgets.
+Note that such modes will need to require wid-edit.")
+
 ;;; VARS
 
 (defvar lem-ui-comments-limit "50"
@@ -1293,6 +1313,8 @@ COMMUNITY means display the community posted to."
         (widen)
         (goto-char (point-min))
         (forward-char)
+        ;; FIXME: we have user item type, but "person_view",
+        ;; so this isn't working for users
         (let* ((item-type (lem-ui--property 'lem-type))
                (id (lem-ui--property 'id))
                (item-fun (lem-ui-make-fun "lem-get-" item-type))
@@ -1385,7 +1407,7 @@ NO-SHORTEN means display full URL, else only the domain is shown."
 ;; (get-text-property (car region) 'shr-url))))))
 
 (defun lem-ui--escape-@s (buffer)
-  ""
+  "Escape @ symbols in BUFFER."
   (with-current-buffer buffer
     (switch-to-buffer (current-buffer))
     (while (re-search-forward "@" nil :noerror)
@@ -1931,12 +1953,11 @@ BINDING is a string of a keybinding to cycle the widget's value."
           "%]: %v"
           binding))
 
-(defun lem-ui-widget-create (kind value &optional comment)
+(defun lem-ui-widget-create (kind value)
   "Return a widget of KIND, with default VALUE.
 KIND is a string, either Listing, Sort, Items, or Inbox, and will
 be used for the widget's tag.
-VALUE is a string, a member of the list associated with KIND.
-COMMENT means use `lem-comment-sort-types' not `lem-sort-types'"
+VALUE is a string, a member of the list associated with KIND."
   (let ((type-list (cond ((equal kind "Listing")
                           lem-listing-types)
                          ((equal kind "Sort")
@@ -2000,24 +2021,6 @@ LIMIT is the max results to return."
       ;; "s" lem-ui-subscribe-to-community-at-point-tl))
       (lem-ui-set-buffer-spec
        type sort #'lem-ui-browse-communities 'communities))))
-
-(defvar lem-widget-keymap
-  (let ((map (make-sparse-keymap)))
-    ;; (define-key map "\t" 'widget-forward)
-    ;; (define-key map "\e\t" 'widget-backward)
-    ;; (define-key map [(shift tab)] 'widget-backward)
-    ;; (put 'widget-backward :advertised-binding [(shift tab)])
-    ;; (define-key map [backtab] 'widget-backward)
-    (define-key map [down-mouse-2] 'widget-button-click)
-    (define-key map [down-mouse-1] 'widget-button-click)
-    (define-key map [touchscreen-begin] 'widget-button-click)
-    ;; The following definition needs to avoid using escape sequences that
-    ;; might get converted to ^M when building loaddefs.el
-    (define-key map [(control ?m)] 'widget-button-press)
-    map)
-  "Keymap containing useful binding for buffers containing widgets.
-Recommended as a parent keymap for modes using widgets.
-Note that such modes will need to require wid-edit.")
 
 ;; actions are called on the column's object, but we use text props instead,
 ;; so we have to reimplement these for tl:
