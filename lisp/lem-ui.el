@@ -2497,7 +2497,7 @@ If RESTORE, restore the item instead."
                  'lem-type
                  (lambda (response)
                    (lem-ui-format-comment (alist-get 'comment_view response)
-                                          indent)))
+                                          indent nil :details)))
                 (lem-ui-update-parent-item-maybe))))))))))
 
 (defun lem-ui-delete-comment ()
@@ -2572,7 +2572,7 @@ If RESTORE, restore the item instead."
                'lem-type
                (lambda (response)
                  (lem-ui-format-comment (alist-get 'comment_view response)
-                                        indent)))
+                                        indent nil :details)))
               (lem-ui-update-parent-item-maybe))))))))
 
 (defun lem-ui-remove-post ()
