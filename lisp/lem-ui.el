@@ -868,7 +868,7 @@ STRING means ID should be a string."
           (string-match "^/display/[-a-f0-9]+$" query)
           (string-match "^/profile/[[:alpha:]]+$" query)
           (string-match "^/p/[[:alpha:]]+/[[:digit:]]+$" query)
-          (string-match "^/[[:alpha:]]+$" query)
+          ;; (string-match "^/[[:alpha:]]+$" query) ; unsinn! this matches https://example.com/example
           (string-match "^/u/[_[:alpha:]]+$" query)
           (string-match "^/c/[@._[:alnum:]]+$" query)
           (string-match "^/post/[[:digit:]]+$" query)
