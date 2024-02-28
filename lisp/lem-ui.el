@@ -1389,13 +1389,14 @@ INDENT is a number, the level of indent for the item."
         str)
     ;; 1: temp buffer, prepare for md
     (with-temp-buffer
+      ;; (switch-to-buffer (current-buffer))
       (insert body)
       (goto-char (point-min))
       (lem-ui-mdize-plain-urls)
       (goto-char (point-min))
       (while (re-search-forward "@" nil :noerror)
-        ;; escape @ if not inside full URL
-        (unless (thing-at-point 'url)
+        (when (and (not (markdown-link-p))
+                   (thing-at-point 'url))
           (replace-match "\\\\@")))
       ;; 2: md-ize or fallback
       (let ((old-buf (buffer-string)))
@@ -1941,14 +1942,16 @@ COMMENT means use `lem-comment-sort-types' not `lem-sort-types'"
                      :args (lem-ui-return-item-widgets type-list)
                      :help-echo (format "Select a %s kind" kind)
                      :format (lem-ui-widget-format kind) ; "C-c C-c")
-                     :notify (lem-ui-widget-notify-fun :sort)))))
+                     :notify (lem-ui-widget-notify-fun :sort)
+                     :keymap lem-widget-keymap))))
 
 (defun lem-ui-widgets-create (plist)
   "PLIST is a plist of kind and value arguments for `lem-ui-widget-create'."
   (while plist
     (funcall #'lem-ui-widget-create (pop plist) (pop plist)))
   (insert "\n")
-  (lem-widget-minor-mode))
+  ;; (lem-widget-minor-mode)
+  )
 
 (defun lem-ui-browse-communities (&optional type sort limit)
   "View Lemmy communities in a sortable tabulated list.
@@ -1998,7 +2001,7 @@ LIMIT is the max results to return."
     (define-key map [touchscreen-begin] 'widget-button-click)
     ;; The following definition needs to avoid using escape sequences that
     ;; might get converted to ^M when building loaddefs.el
-    ;; (define-key map [(control ?m)] 'widget-button-press)
+    (define-key map [(control ?m)] 'widget-button-press)
     map)
   "Keymap containing useful binding for buffers containing widgets.
 Recommended as a parent keymap for modes using widgets.
