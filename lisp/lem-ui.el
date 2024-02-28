@@ -1381,6 +1381,21 @@ NO-SHORTEN means display full URL, else only the domain is shown."
         (lem-ui--process-link (car region) (cdr region))))))
 ;; (get-text-property (car region) 'shr-url))))))
 
+(defun lem-ui--escape-@s (buffer)
+  ""
+  (with-current-buffer buffer
+    (switch-to-buffer (current-buffer))
+    (while (re-search-forward "@" nil :noerror)
+      ;; FIXME: still wrong
+      ;; e.g. with something we don't need to fix:
+      ;; https://lemmy.ml/post/10890295
+      ;; e.g. of something we DO need to fix?
+      (when (and (not (markdown-link-p))
+                 (not (thing-at-point 'url)))
+        (ignore)
+        ;; (replace-match "\\\\@")
+        ))))
+
 (defun lem-ui-render-body (body &optional json indent)
   "Render item BODY as markdowned html.
 JSON is the item's data to process the link with.
@@ -1389,17 +1404,11 @@ INDENT is a number, the level of indent for the item."
         str)
     ;; 1: temp buffer, prepare for md
     (with-temp-buffer
-      ;; (switch-to-buffer (current-buffer))
       (insert body)
       (goto-char (point-min))
       (lem-ui-mdize-plain-urls)
       (goto-char (point-min))
-      (while (re-search-forward "@" nil :noerror)
-        ;; FIXME: still no sure this is right
-        ;; it doesn't break correct md links, but does it fix others?
-        (when (and (not (markdown-link-p))
-                   (not (thing-at-point 'url)))
-          (replace-match "\\\\@")))
+      (lem-ui--escape-@s (current-buffer))
       ;; 2: md-ize or fallback
       (let ((old-buf (buffer-string)))
         (condition-case nil
