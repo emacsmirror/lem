@@ -1053,14 +1053,14 @@ etc.")
            (lem-ui-view-comment-post (lem-ui--property 'post-id)))
           ((and (eq (lem-ui--property 'lem-type) 'post)
                 (lem-ui--property 'title))
-           (lem-ui-view-post-at-point))
-          )))
+           (lem-ui-view-post-at-point)))))
 
 (defun lem-ui--propertize-link (item id type &optional url face help-echo community-id)
   "Propertize a link ITEM with ID and TYPE.
 Optionally provide URL for shr-url.
 FACE is a face to use.
-HELP-ECHO is a help-echo string."
+HELP-ECHO is a help-echo string.
+COMMUNITY-ID is a community id."
   ;; FIXME: we shouldn't ghost shr rendering just to have buttons, we need to
   ;; distinguish shr categories/shr-urls from our own links
   ;; that way we have no follow-link-at-point problems:
@@ -1145,7 +1145,7 @@ START and END are the boundaries of the link in the post body."
               'face '(:weight bold)))
 
 (defun lem-ui--format-community-as-link (community id url)
-  "Format COMMUNITY, a string, as a link using COMMUNITY-URL.
+  "Format COMMUNITY, a string, as a link using URL.
 ID is a community-id."
   (lem-ui--propertize-link community nil 'community
                            nil ; no shr-url if not rendered!
@@ -1390,6 +1390,7 @@ COMMUNITY means display the community posted to."
 
 (defun lem-ui-render-url (url &optional no-shorten)
   "Render URL, a plain non-html string.
+Used for post URLs.
 NO-SHORTEN means display full URL, else only the domain is shown.
 Adds lem-tab-stop and `lem-ui-link-map' to rendered urls."
   (when url
@@ -1500,12 +1501,12 @@ INDENT is a number, the level of indent for the item."
 (defun lem-ui-tabstop-link-by-regex (regex)
   "Add lem-tab-stop property to link matching REGEX."
   (while (re-search-forward regex nil :no-error)
-    (let ((item (buffer-substring-no-properties (match-beginning 2)
-                                                (match-end 2))))
-      (add-text-properties (match-beginning 2)
-                           (match-end 2)
-                           `( lem-tab-stop url
-                              keymap ,lem-ui-link-map)))))
+    ;; (let ((item (buffer-substring-no-properties (match-beginning 2)
+    ;; (match-end 2))))
+    (add-text-properties (match-beginning 2)
+                         (match-end 2)
+                         `( lem-tab-stop url
+                            keymap ,lem-ui-link-map))))
 
 (defun lem-ui-propertize-items (str json type)
   "Propertize any items of TYPE in STR as links using JSON.
