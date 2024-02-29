@@ -1927,22 +1927,12 @@ LIMIT is the max results to return."
                                      'lem-type 'community)
                        i))))
 
+;;; WIDGETS
+
 (defun lem-ui-return-item-widgets (list)
   "Return a list of item widgets for each item, a string, in LIST."
   (cl-loop for x in list
-           collect `(choice-item :value ,x)))
-
-(defun lem-ui-widget-notify-fun (type)
-  "Return a widget notify function.
-TYPE is a keyword used to fetch the *other* type value, currently
-either :sort or :listing-type."
-  `(lambda (widget &rest ignore)
-     (let ((item (lem-ui-get-buffer-spec ,type)))
-       ,(if (eq type :listing-type)
-            `(lem-ui-browse-communities item
-                                        (widget-value widget))
-          `(lem-ui-browse-communities (widget-value widget)
-                                      item)))))
+           collect `(choice-item :value ,x :format "%[%v%] ")))
 
 (defun lem-ui-widget-format (str &optional binding)
   "Return a widget format string for STR, its name.
@@ -1952,6 +1942,21 @@ BINDING is a string of a keybinding to cycle the widget's value."
                            'lem-tab-stop t)
           "%]: %v"
           binding))
+
+(defun lem-ui-widget-notify-fun ()
+  "Return a widget notify function.
+KIND
+TYPE is a keyword used to fetch the *other* type value, currently
+either :sort or :listing-type.
+RELOAD-FUN is the function to call to reload the current view."
+  `(lambda (widget &rest ignore)
+     (let ((value (widget-value widget))
+           (tag (widget-get widget :tag)))
+       (cond ((equal tag "Listing")
+              (lem-ui-cycle-listing-type value))
+             ((equal tag "Sort")
+              (lem-ui-cycle-sort value))
+             (t (message "Widget kind not implemented yet"))))))
 
 (defun lem-ui-widget-create (kind value)
   "Return a widget of KIND, with default VALUE.
@@ -1977,7 +1982,7 @@ VALUE is a string, a member of the list associated with KIND."
                      :args (lem-ui-return-item-widgets type-list)
                      :help-echo (format "Select a %s kind" kind)
                      :format (lem-ui-widget-format kind) ; "C-c C-c")
-                     :notify (lem-ui-widget-notify-fun :sort)
+                     :notify (lem-ui-widget-notify-fun)
                      :keymap lem-widget-keymap))))
 
 (defun lem-ui-widgets-create (plist)
