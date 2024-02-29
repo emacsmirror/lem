@@ -1015,19 +1015,18 @@ etc.")
 
 (defun lem-ui--follow-link-at-point ()
   "Follow link at point."
+  ;; If a link is a part of a larger element, "id" prop will likely be for the
+  ;; parent element, as the propertizing of the parent will override any
+  ;; propertizing of the link. so the link needs an element-id prop, e.g.
+  ;; community-id
   (interactive)
   (let ((id (lem-ui--id-from-prop :string 'id))
         (creator-id (lem-ui--id-from-prop :string 'creator-id))
         (community-id (lem-ui--id-from-prop :string 'community-id))
         (item-type (lem-ui--property 'lem-tab-stop))
         url)
-    ;; FIXME: url-lookup should come last?
-    (cond ((setq url (lem-ui--property 'shr-url))
-           (if (string-prefix-p "/c/" url) ; community relative link
-               (lem-get-community (substring-no-properties url 3))
-             (lem-ui-url-lookup url)))
-          ((eq item-type 'community)
-           (lem-ui-view-community community-id))
+    (cond ((eq item-type 'community)
+           (lem-ui-view-community community-id)) ; in bylines, etc.
           ((and (eq item-type 'user)
                 creator-id)
            (lem-ui-view-user creator-id "overview"))
@@ -1043,7 +1042,7 @@ etc.")
                 (lem-ui--property 'title))
            (lem-ui-view-post-at-point)))))
 
-(defun lem-ui--propertize-link (item id type &optional url face help-echo)
+(defun lem-ui--propertize-link (item id type &optional url face help-echo community-id)
   "Propertize a link ITEM with ID and TYPE.
 Optionally provide URL for shr-url.
 FACE is a face to use.
@@ -1056,6 +1055,7 @@ HELP-ECHO is a help-echo string."
               'follow-link t
               'mouse-face 'highlight
               'id id
+              'community-id community-id ; for mods links
               'lem-tab-stop type
               'face face
               'help-echo help-echo))
@@ -1126,11 +1126,12 @@ START and END are the boundaries of the link in the post body."
               'keymap lem-ui--link-map
               'face '(:weight bold)))
 
-(defun lem-ui--format-community-as-link (community community-url)
-  "Format COMMUNITY, a string, as a link using COMMUNITY-URL."
+(defun lem-ui--format-community-as-link (community id url)
+  "Format COMMUNITY, a string, as a link using COMMUNITY-URL.
+ID is a community-id."
   (lem-ui--propertize-link community nil 'community
-                           community-url 'lem-ui-community-face
-                           community-url))
+                           url 'lem-ui-community-face
+                           url id))
 
 (defun lem-ui-top-byline (title url username _score timestamp
                                 &optional community community-url
@@ -1181,7 +1182,8 @@ EDITED is a timestamp."
         (concat
          (propertize " to "
                      'face font-lock-comment-face)
-         (lem-ui--format-community-as-link community community-url)))
+         (lem-ui--format-community-as-link community nil ; comm-id added to post
+                                           community-url)))
       ;; timestamp:
       (concat
        " | "
@@ -3119,7 +3121,9 @@ SEARCH means we are rendering a search result."
   "Format COMMUNITY as a link."
   (let-alist community
     (concat
-     (lem-ui--format-community-as-link .community.title .community.actor_id)
+     (lem-ui--format-community-as-link .community.title
+                                       .community.id
+                                       .community.actor_id)
      " ")))
 
 (defun lem-ui-render-user (json &optional search)
