@@ -1160,8 +1160,10 @@ EDITED is a timestamp."
       (if url
           (concat url "\n")
         "")
+      ;; username:
       (lem-ui--propertize-link username nil 'user
                                nil 'lem-ui-user-face handle)
+      ;; boxes:
       (when op-p
         (concat " "
                 (lem-ui-propertize-box "OP" "green3" "original poster")))
@@ -1174,11 +1176,13 @@ EDITED is a timestamp."
       (when del-p
         (concat " "
                 (lem-ui-symbol 'deleted)))
+      ;; community
       (when community
         (concat
          (propertize " to "
                      'face font-lock-comment-face)
          (lem-ui--format-community-as-link community community-url)))
+      ;; timestamp:
       (concat
        " | "
        (propertize
@@ -1205,6 +1209,7 @@ EDITED is a timestamp."
                      (lem-ui-symbol 'pinned))
            ""))
         'face font-lock-comment-face))
+      ;; post title:
       (when post-title
         (concat "\n"
                 (lem-ui-propertize-title post-title))))
