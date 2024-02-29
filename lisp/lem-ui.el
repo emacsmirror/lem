@@ -724,12 +724,19 @@ It must be a member of the same list."
     (lem-ui-cycle-listing-type choice)))
 
 (defun lem-ui-get-sort-types (view item)
-  "Return `lem-comment-sort-types' or `lem-sort-types'.
-If VIEW is `eq' to post, or ITEM to \"comments\", return the former."
-  (if (or (eq view 'post)
-          (equal item "comments"))
-      lem-comment-sort-types
-    lem-sort-types))
+  "Return sort type list according to VIEW.
+Return either `lem-comment-sort-types',
+`lem-user-view-sort-types' or `lem-sort-types'.
+If VIEW is `eq' to post, or ITEM to \"comments\", return the
+former. IF VIEW is `eq' user, return the second."
+  (cond ((or (eq view 'post)
+             (equal item "comments"))
+         lem-comment-sort-types)
+        ((or (eq view 'user)
+             (eq view 'current-user))
+         lem-user-view-sort-types)
+        (t
+         lem-sort-types)))
 
 (defun lem-ui-cycle-sort (&optional sort)
   "Cycle view between some `lem-sort-types'.
@@ -2030,9 +2037,13 @@ VALUE is a string, a member of the list associated with KIND."
   (let ((type-list (cond ((equal kind "Listing")
                           lem-listing-types)
                          ((equal kind "Sort")
-                          (if (eq (lem-ui-view-type) 'post)
-                              lem-comment-sort-types
-                            lem-sort-types))
+                          (cond ((eq (lem-ui-view-type) 'post)
+                                 lem-comment-sort-types)
+                                ((or (eq (lem-ui-view-type) 'user)
+                                     (eq (lem-ui-view-type) 'current-user))
+                                 lem-user-view-sort-types)
+                                (t
+                                 lem-sort-types)))
                          ((equal kind "Inbox")
                           lem-inbox-types)
                          ;; maybe items is useless as we have headings:
@@ -3283,24 +3294,30 @@ SORT must be a member of `lem-sort-types' or if item is
 \"comments\", then a member of `lem-comment-sort-types'.
 LIMIT is max items to show.
 CURRENT-USER means we are displaying the current user's profile."
-  (let* (; sort must be non-comment sort for user request:
-         (person-sort (if (lem-sort-type-p sort)
-                          sort
-                        lem-default-sort-type))
-         (user-json (lem-api-get-person-by-id id person-sort limit))
-         (sort (cond ((equal item "comments")
-                      (if (lem-comment-sort-type-p sort)
-                          sort
-                        lem-default-comment-sort-type))
-                     (t
-                      (or sort
-                          lem-default-sort-type))))
+  (let* ((sort (if (lem-user-view-sort-type-p sort)
+                   sort
+                 (lem-ui-view-default-sort)))
+         (user-json (lem-api-get-person-by-id id sort limit))
+         ;; `lem-ui-view-default-sort' should take care of this now?
+         ;; (sort (cond ((equal item "comments")
+         ;;              (if (lem-comment-sort-type-p sort)
+         ;;                  sort
+         ;;                lem-default-comment-sort-type))
+         ;;             (t
+         ;;              (or sort
+         ;;                  lem-default-sort-type))))
          (buf "*lem-user*")
          (bindings (lem-ui-view-options 'user)))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
       ;; we have this on the 's' binding now so no need:
       (let-alist user-json
         (lem-ui-render-user user-json)
+        (lem-ui-set-buffer-spec
+         nil ; no listing type for users
+         sort (if (eq id lem-user-id)
+                  #'lem-ui-view-own-profile
+                #'lem-ui-view-user)
+         (or item "overview"))
         (lem-ui-widgets-create `("Sort" ,sort))
         (cond ((equal item "posts")
                (lem-ui-insert-heading "posts")
@@ -3311,13 +3328,7 @@ CURRENT-USER means we are displaying the current user's profile."
               (t ; no arg: overview
                (lem-ui-insert-heading "overview")
                (lem-ui-render-overview user-json)))
-        (lem-ui--init-view)
-        (lem-ui-set-buffer-spec
-         nil ; no listing type for users
-         sort (if (eq id lem-user-id)
-                  #'lem-ui-view-own-profile
-                #'lem-ui-view-user)
-         (or item "overview"))))))
+        (lem-ui--init-view)))))
 
 (defun lem-ui-view-own-profile ()
   "View profile of the current user."

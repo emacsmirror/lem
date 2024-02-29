@@ -84,6 +84,17 @@
   "Non-nil if STR is in `lem-comment-sort-types'."
   (cl-member str lem-comment-sort-types :test 'equal))
 
+;; as per web UI:
+(defconst lem-user-view-sort-types
+  '("New" "Old" "Controversial"
+    "TopDay" "TopWeek" "TopMonth" "TopYear" "TopAll"
+    "MostComments" "NewComments" "TopHour" "TopSixHour"
+    "TopTwelveHour" "TopThreeMonths" "TopSixMonths" "TopNineMonths"))
+
+(defun lem-user-view-sort-type-p (str)
+  "Non-nil if STR is in `lem-sort-types'."
+  (cl-member str lem-user-view-sort-types :test 'equal))
+
 (defconst lem-search-types
   '("All" "Comments" "Posts" "Communities" "Users" "Url"))
 
@@ -148,7 +159,6 @@ keep the timestamps current as time progresses."
   "Whether to highlight the current post's title.
 Uses `cursor-face-highlight-mode'."
   :type 'boolean)
-
 
 (defcustom lem-encrypt-auth-tokens nil
   "Whether to encrypt the user's authentication token in the plstore.
