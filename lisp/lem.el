@@ -102,7 +102,7 @@
   (cl-member str lem-user-items-types :test 'equal))
 
 (defconst lem-inbox-types
-  '(replies mentions private-messages))
+  '(all replies mentions private-messages))
 
 ;;; CUSTOMIZE
 
