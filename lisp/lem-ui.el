@@ -499,7 +499,8 @@ STR is the preceding string to insert."
                                (cl-second x)
                                'user
                                (cl-third x)
-                               'lem-ui-user-face))
+                               'lem-ui-user-face
+                               (cl-third x)))
     list " | ")))
 
 (defun lem-ui-render-instance (instance &optional stats sidebar)
