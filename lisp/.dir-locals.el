@@ -1,5 +1,5 @@
-;;; Directory Local Variables
+;;; Directory Local Variables            -*- no-byte-compile: t -*-
 ;;; For more information see (info "(emacs) Directory Variables")
 
-;; setting this makes package-lint look in the main file for deps:
-((emacs-lisp-mode . ((package-lint-main-file . "lem.el"))))
+((emacs-lisp-mode . ((comment-fill-column . 76)
+                     (package-lint-main-file . "lem.el"))))
