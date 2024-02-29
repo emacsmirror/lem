@@ -1001,7 +1001,7 @@ UNFEATURE means we are unfeaturing a post."
 
 ;;; LINKS
 
-(defvar lem-ui--link-map
+(defvar lem-ui-link-map
   (let ((map (make-sparse-keymap)))
     ;; (set-keymap-parent map shr-map)
     (define-key map [return] #'lem-ui--follow-link-at-point)
@@ -1064,7 +1064,7 @@ HELP-ECHO is a help-echo string."
   ;; rendered shr-urls use url-lookup, others use our get functions.
   (propertize item
               'shr-url url
-              'keymap lem-ui--link-map
+              'keymap lem-ui-link-map
               'button t
               'category 'shr
               'follow-link t
@@ -1112,7 +1112,7 @@ before (non-nil) or after (nil)"
   "Process link URL in JSON as userhandle, community, or normal link.
 START and END are the boundaries of the link in the post body."
   (let* ((help-echo (get-text-property start 'help-echo))
-         (keymap lem-ui--link-map)
+         (keymap lem-ui-link-map)
          (lem-tab-stop-type 'shr-url))
     (add-text-properties start end
                          (append
@@ -1138,7 +1138,7 @@ START and END are the boundaries of the link in the post body."
               'mouse-face 'highlight
               'cursor-face '(:inherit highlight :extend t)
               'title t
-              'keymap lem-ui--link-map
+              'keymap lem-ui-link-map
               'face '(:weight bold)))
 
 (defun lem-ui--format-community-as-link (community id url)
@@ -1387,7 +1387,8 @@ COMMUNITY means display the community posted to."
 
 (defun lem-ui-render-url (url &optional no-shorten)
   "Render URL, a plain non-html string.
-NO-SHORTEN means display full URL, else only the domain is shown."
+NO-SHORTEN means display full URL, else only the domain is shown.
+Adds lem-tab-stop and `lem-ui-link-map' to rendered urls."
   (when url
     (let ((parsed (url-generic-parse-url url))
           rendered)
@@ -1398,7 +1399,12 @@ NO-SHORTEN means display full URL, else only the domain is shown."
                   (url-host parsed))
                 "</a>")
         (shr-render-buffer (current-buffer))
-        (setq rendered (buffer-string))
+        (setq rendered
+              (concat
+               (propertize (buffer-string)
+                           'lem-tab-stop 'url
+                           'keymap lem-ui-link-map)
+               " "))
         (kill-buffer-and-window))
       rendered)))
 
@@ -1485,49 +1491,65 @@ INDENT is a number, the level of indent for the item."
         (kill-buffer buf)))             ; our md
     (setq str (lem-ui-propertize-items str json 'handle))
     (setq str (lem-ui-propertize-items str json 'community))
+    (setq str (lem-ui-propertize-items str json 'url))
     str))
+
+(defun lem-ui-propertize-link (regex)
+  "Add lem-tab-stop property to link matching REGEX."
+  (while (re-search-forward regex nil :no-error)
+    (let ((item (buffer-substring-no-properties (match-beginning 2)
+                                                (match-end 2))))
+      (add-text-properties (match-beginning 2)
+                           (match-end 2)
+                           '( lem-tab-stop url
+                              keymap lem-ui-link-map)))))
 
 (defun lem-ui-propertize-items (str json type)
   "Propertize any items of TYPE in STR as links using JSON.
 Type is a symbol, either handle or community.
 Communities are of the form \"!community@instance.com.\""
-  (with-temp-buffer
-    ;; (switch-to-buffer (current-buffer))
-    (insert str)
-    (goto-char (point-min))
-    (save-match-data
-      ;; ideally we'd work errors out, but we don't want to ruin
-      ;; our caller, which might make a page load fail:
-      (ignore-errors
-        (while (re-search-forward (if (eq type 'community)
-                                      lem-ui-community-regex
-                                    lem-ui-handle-regex)
-                                  nil :no-error)
-          (let* ((item (buffer-substring-no-properties (match-beginning 2)
-                                                       (match-end 2)))
-                 (beg (match-beginning 1))
-                 (end (match-end 1))
-                 (domain (if (match-beginning 3)
-                             (buffer-substring-no-properties (match-beginning 3)
-                                                             (match-end 3))))
-                 (ap-link (url-generic-parse-url (alist-get 'ap_id json)))
-                 (instance (or domain (url-domain ap-link)))
-                 (link (concat "https://" instance
-                               (if (eq type 'community) "/c/" "/u/")
-                               item)))
-            (add-text-properties beg
-                                 end
-                                 `(face '(shr-text shr-link)
-                                        lem-tab-stop ,type
-                                        mouse-face highlight
-                                        shr-tabstop t
-                                        shr-url ,link
-                                        button t
-                                        category shr
-                                        follow-link t
-                                        help-echo ,link
-                                        keymap ,lem-ui--link-map))))))
-    (buffer-string)))
+  (let ((regex (cond ((eq type 'community)
+                      lem-ui-community-regex)
+                     ((eq type 'handle)
+                      lem-ui-handle-regex)
+                     ((eq type 'url)
+                      lem-ui-url-regex))))
+    (with-temp-buffer
+      ;; (switch-to-buffer (current-buffer))
+      (insert str)
+      (goto-char (point-min))
+      (save-match-data
+        ;; ideally we'd work errors out, but we don't want to ruin
+        ;; our caller, which might make a page load fail:
+        (ignore-errors
+          (if (eq type 'url)
+              (lem-ui-propertize-link regex)
+            (while (re-search-forward regex nil :no-error)
+              (let* ((item (buffer-substring-no-properties (match-beginning 2)
+                                                           (match-end 2)))
+                     (beg (match-beginning 1))
+                     (end (match-end 1))
+                     (domain (if (match-beginning 3)
+                                 (buffer-substring-no-properties (match-beginning 3)
+                                                                 (match-end 3))))
+                     (ap-link (url-generic-parse-url (alist-get 'ap_id json)))
+                     (instance (or domain (url-domain ap-link)))
+                     (link (concat "https://" instance
+                                   (if (eq type 'community) "/c/" "/u/")
+                                   item)))
+                (add-text-properties beg
+                                     end
+                                     `(face '(shr-text shr-link)
+                                            lem-tab-stop ,type
+                                            mouse-face highlight
+                                            shr-tabstop t
+                                            shr-url ,link
+                                            button t
+                                            category shr
+                                            follow-link t
+                                            help-echo ,link
+                                            keymap ,lem-ui-link-map))))))
+        (buffer-string)))))
 
 (defun lem-ui-mods-ids (mods)
   "Return a list of the ids of MODS."
