@@ -576,6 +576,19 @@ active on other instances."
 
 ;;; CYCLE SORT, LISTING, and ITEMS TYPE
 
+(defun lem-ui-view-default-sort ()
+  "Return the default sort type for the current view.
+Returns the car of `lem-user-view-sort-types',
+`lem-comment-sort-types' or `lem-sort-types'."
+  (let ((view (lem-ui-view-type)))
+    (cond ((or (eq view 'user)
+               (eq view 'current-user))
+           (car lem-user-view-sort-types)) ;"New"
+          ((eq view 'post)
+           (car lem-comment-sort-types)) ; "Hot"
+          (t ; instance, community
+           (car lem-sort-types))))) ; "Active"
+
 (defun lem-ui-view-type ()
   "Return the current view, based on `lem-ui-buffer-spec'."
   ;; TODO: minor ones
