@@ -1019,13 +1019,23 @@ etc.")
   ;; parent element, as the propertizing of the parent will override any
   ;; propertizing of the link. so the link needs an element-id prop, e.g.
   ;; community-id
+
+  ;; if a link is shr-rendered (in a body somewhere) it requires url-lookup,
+  ;; and the id won't work for other functions
+
+  ;; perhaps we just have to check for shr-url, and be careful about when we
+  ;; set it ourselves, ie only do so if we can't load the view by other means
   (interactive)
   (let ((id (lem-ui--id-from-prop :string 'id))
         (creator-id (lem-ui--id-from-prop :string 'creator-id))
         (community-id (lem-ui--id-from-prop :string 'community-id))
         (item-type (lem-ui--property 'lem-tab-stop))
-        url)
-    (cond ((eq item-type 'community)
+        (shr-url (lem-ui--property 'shr-url)))
+    (cond (shr-url ; shr-url: url-lookup (for rendered links)
+           (if (string-prefix-p "/c/" shr-url) ; community relative link
+               (lem-get-community (substring-no-properties shr-url 3))
+             (lem-ui-url-lookup shr-url)))
+          ((eq item-type 'community)
            (lem-ui-view-community community-id)) ; in bylines, etc.
           ((and (eq item-type 'user)
                 creator-id)
@@ -1041,17 +1051,17 @@ etc.")
           ((and (eq (lem-ui--property 'lem-type) 'post)
                 (lem-ui--property 'title))
            (lem-ui-view-post-at-point))
-          ;; FIXME: url-lookup last?
-          ((setq url (lem-ui--property 'shr-url))
-           (if (string-prefix-p "/c/" url) ; community relative link
-               (lem-get-community (substring-no-properties url 3))
-             (lem-ui-url-lookup url))))))
+          )))
 
 (defun lem-ui--propertize-link (item id type &optional url face help-echo community-id)
   "Propertize a link ITEM with ID and TYPE.
 Optionally provide URL for shr-url.
 FACE is a face to use.
 HELP-ECHO is a help-echo string."
+  ;; FIXME: we shouldn't ghost shr rendering just to have buttons, we need to
+  ;; distinguish shr categories/shr-urls from our own links
+  ;; that way we have no follow-link-at-point problems:
+  ;; rendered shr-urls use url-lookup, others use our get functions.
   (propertize item
               'shr-url url
               'keymap lem-ui--link-map
@@ -1135,7 +1145,8 @@ START and END are the boundaries of the link in the post body."
   "Format COMMUNITY, a string, as a link using COMMUNITY-URL.
 ID is a community-id."
   (lem-ui--propertize-link community nil 'community
-                           url 'lem-ui-community-face
+                           nil ; no shr-url if not rendered!
+                           'lem-ui-community-face
                            url id))
 
 (defun lem-ui-top-byline (title url username _score timestamp
