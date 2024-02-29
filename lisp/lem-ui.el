@@ -1981,8 +1981,8 @@ VALUE is a string, a member of the list associated with KIND."
                           lem-listing-types)
                          ((equal kind "Sort")
                           (if (eq (lem-ui-view-type) 'post)
-                              lem-comment-sort-types)
-                          lem-sort-types)
+                              lem-comment-sort-types
+                            lem-sort-types))
                          ((equal kind "Inbox")
                           lem-inbox-types)
                          ;; maybe items is useless as we have headings:
