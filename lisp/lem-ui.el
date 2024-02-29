@@ -498,7 +498,7 @@ STR is the preceding string to insert."
       (lem-ui--propertize-link (cl-first x)
                                (cl-second x)
                                'user
-                               (cl-third x)
+                               nil ; no URL so follow-link doesn't do lookup
                                'lem-ui-user-face
                                (cl-third x)))
     list " | ")))
@@ -1021,6 +1021,7 @@ etc.")
         (community-id (lem-ui--id-from-prop :string 'community-id))
         (item-type (lem-ui--property 'lem-tab-stop))
         url)
+    ;; FIXME: url-lookup should come last?
     (cond ((setq url (lem-ui--property 'shr-url))
            (if (string-prefix-p "/c/" url) ; community relative link
                (lem-get-community (substring-no-properties url 3))
