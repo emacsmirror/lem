@@ -1040,7 +1040,12 @@ etc.")
            (lem-ui-view-comment-post (lem-ui--property 'post-id)))
           ((and (eq (lem-ui--property 'lem-type) 'post)
                 (lem-ui--property 'title))
-           (lem-ui-view-post-at-point)))))
+           (lem-ui-view-post-at-point))
+          ;; FIXME: url-lookup last?
+          ((setq url (lem-ui--property 'shr-url))
+           (if (string-prefix-p "/c/" url) ; community relative link
+               (lem-get-community (substring-no-properties url 3))
+             (lem-ui-url-lookup url))))))
 
 (defun lem-ui--propertize-link (item id type &optional url face help-echo community-id)
   "Propertize a link ITEM with ID and TYPE.
