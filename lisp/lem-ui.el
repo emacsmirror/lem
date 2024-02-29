@@ -1497,15 +1497,15 @@ INDENT is a number, the level of indent for the item."
     (setq str (lem-ui-propertize-items str json 'url))
     str))
 
-(defun lem-ui-propertize-link (regex)
+(defun lem-ui-tabstop-link-by-regex (regex)
   "Add lem-tab-stop property to link matching REGEX."
   (while (re-search-forward regex nil :no-error)
     (let ((item (buffer-substring-no-properties (match-beginning 2)
                                                 (match-end 2))))
       (add-text-properties (match-beginning 2)
                            (match-end 2)
-                           '( lem-tab-stop url
-                              keymap lem-ui-link-map)))))
+                           `( lem-tab-stop url
+                              keymap ,lem-ui-link-map)))))
 
 (defun lem-ui-propertize-items (str json type)
   "Propertize any items of TYPE in STR as links using JSON.
@@ -1526,7 +1526,7 @@ Communities are of the form \"!community@instance.com.\""
         ;; our caller, which might make a page load fail:
         (ignore-errors
           (if (eq type 'url)
-              (lem-ui-propertize-link regex)
+              (lem-ui-tabstop-link-by-regex regex)
             (while (re-search-forward regex nil :no-error)
               (let* ((item (buffer-substring-no-properties (match-beginning 2)
                                                            (match-end 2)))
