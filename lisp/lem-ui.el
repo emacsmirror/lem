@@ -903,10 +903,13 @@ STRING means ID should be a string."
 Or url at point, or text prop shr-url, or read a URL in the minibuffer.
 Lemmy supports lookups for users, posts, comments and communities."
   (interactive)
-  (let ((query (or ; is this right? search fails if url wrongly contains uppercase term:
-                ;; search also fails if URL fails to contain required uppercase term!
-                ;; the server should be case-insensitive?
-                url ;(when url (downcase url))
+  (let ((query (or ; is this right? search fails if url wrongly contains
+                ;; uppercase term:
+
+                ;; we now try to only call this on rendered urls, all else
+                ;; should use an api get function, so no downcasing.
+                url ; works with "https://lemmy.ml/u/JoeBidet" in mods list
+                ;; (when url (downcase url)) ; fails with "https://lemmy.ml/u/JoeBidet" in mods list
                 (thing-at-point-url-at-point)
                 (lem-ui--property 'shr-url)
                 (read-string "Lookup URL: "))))
