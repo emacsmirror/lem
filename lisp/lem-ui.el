@@ -576,11 +576,11 @@ active on other instances."
 
 ;;; CYCLE SORT, LISTING, and ITEMS TYPE
 
-(defun lem-ui-view-default-sort ()
+(defun lem-ui-view-default-sort (&optional view)
   "Return the default sort type for the current view.
 Returns the car of `lem-user-view-sort-types',
 `lem-comment-sort-types' or `lem-sort-types'."
-  (let ((view (lem-ui-view-type)))
+  (let ((view (or view (lem-ui-view-type))))
     (cond ((or (eq view 'user)
                (eq view 'current-user))
            (car lem-user-view-sort-types)) ;"New"
@@ -3296,7 +3296,7 @@ LIMIT is max items to show.
 CURRENT-USER means we are displaying the current user's profile."
   (let* ((sort (if (lem-user-view-sort-type-p sort)
                    sort
-                 (lem-ui-view-default-sort)))
+                 (lem-ui-view-default-sort 'user)))
          (user-json (lem-api-get-person-by-id id sort limit))
          ;; `lem-ui-view-default-sort' should take care of this now?
          ;; (sort (cond ((equal item "comments")
