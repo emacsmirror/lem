@@ -652,10 +652,11 @@ Works on instance, community, and user views, which also have an overview."
                          lem-comment-sort-types
                        lem-sort-types))
          ;; sort value must be valid for the item we toggle to:
-         ;; TODO: handle overview
-         (sort (if (member sort-last sort-types)
-                   sort-last
-                 (car sort-types)))
+         (sort (if (equal item "comments")
+                   nil ; overview
+                 (if (member sort-last sort-types)
+                     sort-last
+                   (car sort-types))))
          (type (lem-ui-get-buffer-spec :listing-type))
          (id (lem-ui-get-view-id))
          (item-types (if (or (eq view 'user)
