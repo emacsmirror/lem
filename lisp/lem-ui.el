@@ -2029,12 +2029,12 @@ BINDING is a string of a keybinding to cycle the widget's value."
           "%]: %v"
           binding))
 
-(defun lem-ui-widget-reset-value (widget value)
+(defun lem-ui-widget-reset-value (widget value msg)
   "Reset WIDGET to its previous VALUE.
 USED to not update widget display if the sort chosen is
 unavailable in the current view."
   (widget-value-set widget value)
-  (message "Sort not implemented for this view"))
+  (message "%s" (error-message-string msg)))
 
 (defun lem-ui-widget-notify-fun (old-value)
   "Return a widget notify function.
@@ -2048,7 +2048,7 @@ VALUE is the widget's value before being changed."
               (condition-case x
                   (lem-ui-cycle-sort value)
                 (user-error ; don't update widget if cycle-sort fails:
-                 (lem-ui-widget-reset-value widget ,old-value))))
+                 (lem-ui-widget-reset-value widget ,old-value x))))
              (t (message "Widget kind not implemented yet"))))))
 
 (defun lem-ui-widget-create (kind value)
