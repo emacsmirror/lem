@@ -3181,20 +3181,21 @@ Return value of the invisibility property after toggling."
         (or invisibility
             (not invisibility-before))))))
 
-(defun lem-ui-comment-fold-tree-toggle (&optional invisibility)
+(defun lem-ui-comment-tree-fold (&optional invisibility indent)
   "Toggle invisibility of current comment and all its children.
 Optionally set INVISIBILITY.
 The invisibility of children should not be toggled independently, all
 items should rather adopt the invisibility of the top-most item."
   (interactive)
-  (let ((parent-indent (length (lem-ui--property 'line-prefix)))
+  (let ((parent-indent (or indent
+                           (length (lem-ui--property 'line-prefix))))
         (invisibility-after
          (lem-ui-comment-fold-toggle invisibility)))
     (save-excursion
       (lem-next-item)
       (let ((indent (length (lem-ui--property 'line-prefix))))
         (when (> indent parent-indent)
-          (lem-ui-comment-fold-tree-toggle invisibility-after))))))
+          (lem-ui-comment-tree-fold invisibility-after parent-indent))))))
 
 ;;; LIKES / VOTES
 
