@@ -92,8 +92,15 @@
     "TopTwelveHour" "TopThreeMonths" "TopSixMonths" "TopNineMonths"))
 
 (defun lem-user-view-sort-type-p (str)
-  "Non-nil if STR is in `lem-sort-types'."
+  "Non-nil if STR is in `lem-user-view-sort-types'."
   (cl-member str lem-user-view-sort-types :test 'equal))
+
+(defconst lem-inbox-sort-types
+  '("New" "Hot" "Top" "Old" "Controversial"))
+
+(defun lem-inbox-sort-type-p (str)
+  "Non-nil if STR is in `lem-inbox-sort-types'."
+  (cl-member str lem-inbox-sort-types :test 'equal))
 
 (defconst lem-search-types
   '("All" "Comments" "Posts" "Communities" "Users" "Url"))

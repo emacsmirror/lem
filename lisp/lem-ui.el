@@ -586,6 +586,10 @@ Returns the car of `lem-user-view-sort-types',
            (car lem-user-view-sort-types)) ;"New"
           ((eq view 'post)
            (car lem-comment-sort-types)) ; "Hot"
+          ((eq view 'communities) ; browse communities
+           "TopMonth")
+          ((eq view 'inbox)
+           (car lem-inbox-sort-types)) ; "New"
           (t ; instance, community
            (car lem-sort-types))))) ; "Active"
 
@@ -735,6 +739,8 @@ former. IF VIEW is `eq' user, return the second."
         ((or (eq view 'user)
              (eq view 'current-user))
          lem-user-view-sort-types)
+        ((eq view 'inbox)
+         lem-inbox-sort-types)
         (t
          lem-sort-types)))
 
@@ -772,9 +778,12 @@ Optionally, use SORT."
           ((eq view 'search)
            (lem-ui-search query item type sort-next))
           ((eq view 'inbox)
-           (lem-ui-view-inbox item sort))
+           (if (or (eq item 'all)
+                   (eq item 'private-messages))
+               (message "Sort not available for this inbox item")
+             (lem-ui-view-inbox item sort-next)))
           (t
-           ;; TODO: communities / search
+           ;; TODO: search
            (message "Not implemented yet.")))))
 
 (defun lem-ui-choose-sort ()
@@ -2466,10 +2475,15 @@ Optionally only view UNREAD items."
   "View user inbox, for replies, mentions, and PMs to the current user.
 Optionally only view UNREAD items.
 Optionally set ITEMS, a symbol, to view.
-SORT is a member of `lem-comment-sort-types'.
+SORT is a member of `lem-inbox-sort-types'.
 Sorting is not available for private messages, nor for all."
   (interactive)
-  (let* ((unread-str (if unread "true" nil))
+  ;; NB: Sort only works for replies and mentions
+  ;; Web UI sorts "all" by score for user page, maybe also for inbox?
+  ;; Web UI offers all of `lem-inbox-sort-types' for sorting, but API
+  ;; doesn't offer sorting for get private messages.
+  (let* ((sort (or sort (lem-ui-view-default-sort 'inbox)))
+         (unread-str (if unread "true" nil))
          (items (or items 'all))
          (item-fun (if (eq items 'all)
                        'lem-ui-get-inbox-all
@@ -2487,7 +2501,7 @@ Sorting is not available for private messages, nor for all."
                            ;; mentions/replies: sort page limit unread-only
                            (t
                             (funcall item-fun
-                                     sort ; lem-default-comment-sort-type
+                                     sort
                                      nil ; page
                                      nil ;limit
                                      unread-str))))
@@ -2500,7 +2514,7 @@ Sorting is not available for private messages, nor for all."
       (lem-ui-insert-heading (format "inbox: %s" items))
       (funcall render-fun list)
       (lem-ui--init-view)
-      (lem-ui-set-buffer-spec nil nil #'lem-ui-view-inbox
+      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-inbox
                               items nil unread))))
 
 (defun lem-ui-get-inbox-all (&optional unread)
