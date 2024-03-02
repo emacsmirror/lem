@@ -2898,10 +2898,12 @@ DETAILS means display what community and post the comment is linked to."
             (lem-ui-format-display-prop deleted removed)
           (propertize (or content "")
                       'body t))
-        "\n"
-        (lem-ui-bt-byline .counts.score .counts.child_count .my_vote .saved)
-        "\n"
-        lem-ui-horiz-bar
+        (propertize
+         (concat
+          "\n"
+          (lem-ui-bt-byline .counts.score .counts.child_count .my_vote .saved)
+          "\n" lem-ui-horiz-bar)
+         'byline-bt-fold t)
         "\n")
        'json comment
        ;; in replies view we need the actual id for like-toggling:
@@ -3136,6 +3138,58 @@ If COMMENT-ID is provided, move point to that comment."
                                (lem-ui--property 'id)))))
         (lem-ui-view-post post-id)
         (lem-ui-post-goto-comment comment-id post-id)))))
+
+;;; FOLDING COMMENTS
+
+(defun lem-ui-comment-fold-toggle (&optional invisibility)
+  "Toggle invisibility of the comment at point.
+Optionally set it to INVISIBILITY.
+Return value of the invisibility property after toggling."
+  (interactive)
+  (lem-ui-with-item 'comment
+    (let* ((inhibit-read-only t)
+           (comment-range (lem-ui--find-property-range 'body
+                                                       (point)))
+           (byline-top (lem-ui--find-property-range 'byline-top
+                                                    (point)))
+           (byline-bottom (lem-ui--find-property-range 'byline-bt-fold
+                                                       (point)))
+           (invisibility-before (get-text-property (car comment-range)
+                                                   'invisible)))
+      (when byline-top
+        (add-text-properties
+         (car comment-range)
+         (cdr comment-range)
+         (list 'invisible
+               (or invisibility
+                   (not
+                    (get-text-property (car comment-range)
+                                       'invisible)))))
+        (add-text-properties
+         (car byline-bottom)
+         (cdr byline-bottom)
+         (list 'invisible
+               (or invisibility
+                   (not
+                    (get-text-property (car byline-bottom)
+                                       'invisible)))))
+        (or invisibility
+            (not invisibility-before))))))
+
+(defun lem-ui-comment-fold-tree-toggle (&optional invisibility)
+  "Toggle invisibility of current comment and all its children.
+Optionally set INVISIBILITY.
+The invisibility of children should not be toggled independently, all
+items should rather adopt the invisibility of the top-most item."
+  (interactive)
+  (let ((parent-indent (length (lem-ui--property 'line-prefix)))
+        (invisibility-after
+         (lem-ui-comment-fold-toggle invisibility)))
+    (save-excursion
+      (lem-next-item)
+      (let ((indent (length (lem-ui--property 'line-prefix))))
+        (when (> indent parent-indent)
+          (lem-ui-comment-fold-tree-toggle invisibility-after))))))
 
 ;;; LIKES / VOTES
 
