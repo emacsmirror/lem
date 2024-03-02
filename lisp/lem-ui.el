@@ -3185,17 +3185,18 @@ Return value of the invisibility property after toggling."
   "Toggle invisibility of current comment and all its children.
 Optionally set INVISIBILITY.
 The invisibility of children should not be toggled independently, all
-items should rather adopt the invisibility of the top-most item."
+items should rather adopt the invisibility of the top-most item.
+INDENT is the level of the top level comment to be folded."
   (interactive)
-  (let ((parent-indent (or indent
-                           (length (lem-ui--property 'line-prefix))))
+  (let ((top-indent (or indent
+                        (length (lem-ui--property 'line-prefix))))
         (invisibility-after
          (lem-ui-comment-fold-toggle invisibility)))
     (save-excursion
       (lem-next-item)
       (let ((indent (length (lem-ui--property 'line-prefix))))
-        (when (> indent parent-indent)
-          (lem-ui-comment-tree-fold invisibility-after parent-indent))))))
+        (when (> indent top-indent)
+          (lem-ui-comment-tree-fold invisibility-after top-indent))))))
 
 ;;; LIKES / VOTES
 
