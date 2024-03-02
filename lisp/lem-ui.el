@@ -768,7 +768,7 @@ Optionally, use SORT."
     (cond ((or (eq view 'user)
                (eq view 'current-user))
            (if (equal item "overview")
-               (message "Not implemented for overview.")
+               (user-error "Not implemented for overview.")
              (lem-ui-view-user id item sort-next)))
           ((eq view 'community)
            (lem-ui-view-community id item sort-next))
@@ -785,11 +785,11 @@ Optionally, use SORT."
           ((eq view 'inbox)
            (if (or (eq item 'all)
                    (eq item 'private-messages))
-               (message "Sort not available for this inbox item")
+               (user-error "Sort not available for this inbox item")
              (lem-ui-view-inbox item sort-next)))
           (t
            ;; TODO: search
-           (message "Not implemented yet.")))))
+           (user-error "Not implemented yet.")))))
 
 (defun lem-ui-choose-sort ()
   "Prompt for a sort type, and use it to reload the current view."
@@ -2028,19 +2028,26 @@ BINDING is a string of a keybinding to cycle the widget's value."
           "%]: %v"
           binding))
 
-(defun lem-ui-widget-notify-fun ()
+(defun lem-ui-widget-reset-value (widget value)
+  "Reset WIDGET to its previous VALUE.
+USED to not update widget display if the sort chosen is
+unavailable in the current view."
+  (widget-value-set widget value)
+  (message "Sort not implemented for this view"))
+
+(defun lem-ui-widget-notify-fun (old-value)
   "Return a widget notify function.
-KIND
-TYPE is a keyword used to fetch the *other* type value, currently
-either :sort or :listing-type.
-RELOAD-FUN is the function to call to reload the current view."
+VALUE is the widget's value before being changed."
   `(lambda (widget &rest ignore)
      (let ((value (widget-value widget))
            (tag (widget-get widget :tag)))
        (cond ((equal tag "Listing")
               (lem-ui-cycle-listing-type value))
              ((equal tag "Sort")
-              (lem-ui-cycle-sort value))
+              (condition-case x
+                  (lem-ui-cycle-sort value)
+                (user-error ; don't update widget if cycle-sort fails:
+                 (lem-ui-widget-reset-value widget ,old-value))))
              (t (message "Widget kind not implemented yet"))))))
 
 (defun lem-ui-widget-create (kind value)
@@ -2072,7 +2079,7 @@ VALUE is a string, a member of the list associated with KIND."
                      :args (lem-ui-return-item-widgets type-list)
                      :help-echo (format "Select a %s kind" kind)
                      :format (lem-ui-widget-format kind) ; "C-c C-c")
-                     :notify (lem-ui-widget-notify-fun)
+                     :notify (lem-ui-widget-notify-fun value)
                      :keymap lem-widget-keymap))))
 
 (defun lem-ui-widgets-create (plist)
