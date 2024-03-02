@@ -450,7 +450,7 @@ TYPE must be member of `lem-listing-types'.
 ITEM must be a member of `lem-items-types'."
   (interactive)
   (let* ((instance (lem-get-instance))
-         (sort (or sort lem-default-sort-type))
+         (sort (or sort (lem-ui-view-default-sort 'instance)))
          (type (or type lem-default-listing-type))
          (items (if (equal item "comments")
                     (progn
@@ -590,7 +590,7 @@ Returns the car of `lem-user-view-sort-types',
            "TopMonth")
           ((eq view 'inbox)
            (car lem-inbox-sort-types)) ; "New"
-          (t ;(eq view 'community)
+          (t
            ;; Roll our own comments preference here, the webUI is
            ;; contradictory:
            (let ((item (lem-ui-get-buffer-spec :item)))
@@ -1622,7 +1622,7 @@ LIMIT."
       (let* ((post (alist-get 'post_view post-view))
              (community-id (alist-get 'community_id
                                       (alist-get 'post post)))
-             (sort (or sort lem-default-comment-sort-type))
+             (sort (or sort (lem-ui-view-default-sort 'post)))
              (bindings (lem-ui-view-options 'post))
              (buf (format "*lem-post-%s*" id)))
         (lem-ui-with-buffer buf 'lem-mode nil bindings
