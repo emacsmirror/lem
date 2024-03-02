@@ -36,9 +36,9 @@
 (require 'vtable)
 
 (require 'widget)
-
-(eval-when-compile
-  (require 'wid-edit))
+(require 'wid-edit)
+;; (eval-when-compile
+;; (require 'wid-edit))
 
 (require 'markdown-mode)
 
@@ -57,6 +57,8 @@
 (defvar lem-search-types)
 (defvar lem-inbox-types)
 (defvar lem-user-id)
+(defvar lem-user-view-sort-types)
+(defvar lem-inbox-sort-types)
 
 (defvar lem-enable-relative-timestamps)
 
@@ -66,6 +68,7 @@
 (autoload 'lem-mode "lem.el")
 (autoload 'lem-comment-sort-type-p "lem.el")
 (autoload 'lem-sort-type-p "lem.el")
+(autoload 'lem-user-view-sort-type-p "lem.el")
 
 (defface lem-ui-user-face '((t :inherit warning :underline t))
   "Face user displaying usernames.")
@@ -579,7 +582,8 @@ active on other instances."
 (defun lem-ui-view-default-sort (&optional view)
   "Return the default sort type for the current view.
 Returns the car of `lem-user-view-sort-types',
-`lem-comment-sort-types' or `lem-sort-types'."
+`lem-comment-sort-types' or `lem-sort-types'.
+Optionally return default sort type for VIEW."
   (let ((view (or view (lem-ui-view-type))))
     (cond ((or (eq view 'user)
                (eq view 'current-user))
@@ -769,7 +773,7 @@ Optionally, use SORT."
     (cond ((or (eq view 'user)
                (eq view 'current-user))
            (if (equal item "overview")
-               (user-error "Not implemented for overview.")
+               (user-error "Not implemented for overview")
              (lem-ui-view-user id item sort-next)))
           ((eq view 'community)
            (lem-ui-view-community id item sort-next))
@@ -790,7 +794,7 @@ Optionally, use SORT."
              (lem-ui-view-inbox item sort-next)))
           (t
            ;; TODO: search
-           (user-error "Not implemented yet.")))))
+           (user-error "Not implemented yet")))))
 
 (defun lem-ui-choose-sort ()
   "Prompt for a sort type, and use it to reload the current view."
@@ -2032,13 +2036,14 @@ BINDING is a string of a keybinding to cycle the widget's value."
 (defun lem-ui-widget-reset-value (widget value msg)
   "Reset WIDGET to its previous VALUE.
 USED to not update widget display if the sort chosen is
-unavailable in the current view."
+unavailable in the current view.
+MSG is the error message string to display."
   (widget-value-set widget value)
   (message "%s" (error-message-string msg)))
 
 (defun lem-ui-widget-notify-fun (old-value)
   "Return a widget notify function.
-VALUE is the widget's value before being changed."
+OLD-VALUE is the widget's value before being changed."
   `(lambda (widget &rest ignore)
      (let ((value (widget-value widget))
            (tag (widget-get widget :tag)))
