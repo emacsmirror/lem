@@ -211,6 +211,7 @@ the file ~/.emacs.d/lem.plstore and log in again."
     (define-key map (kbd "e") #'lem-post-edit-post-or-comment)
     (define-key map (kbd "/") #'lem-switch-to-buffer)
     (define-key map (kbd "g") #'lem-ui-reload-view)
+    (define-key map (kbd "f") #'lem-ui-comment-tree-fold)
     (define-key map (kbd "M-C-Q") #'lem-kill-all-buffers)
     map)
   "Keymap for `lem-mode'.")
