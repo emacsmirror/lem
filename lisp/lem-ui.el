@@ -465,14 +465,14 @@ ITEM must be a member of `lem-items-types'."
          (bindings (lem-ui-view-options 'instance)))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
       (lem-ui-render-instance instance :stats sidebar)
+      (lem-ui-set-buffer-spec
+       type sort #'lem-ui-view-instance (or item "posts") page)
       (lem-ui-widgets-create `("Listing" ,type "Sort" ,sort))
       (lem-ui-insert-heading (if (eq nil item) "posts" item))
       (if (equal item "comments")
           (lem-ui-render-comments items :details)
         (lem-ui-render-posts-instance items))
-      (lem-ui--init-view)
-      (lem-ui-set-buffer-spec
-       type sort #'lem-ui-view-instance (or item "posts") page))))
+      (lem-ui--init-view))))
 
 (defun lem-ui-view-instance-full ()
   "View full instance details."
@@ -590,8 +590,13 @@ Returns the car of `lem-user-view-sort-types',
            "TopMonth")
           ((eq view 'inbox)
            (car lem-inbox-sort-types)) ; "New"
-          (t ; instance, community
-           (car lem-sort-types))))) ; "Active"
+          (t ;(eq view 'community)
+           ;; Roll our own comments preference here, the webUI is
+           ;; contradictory:
+           (let ((item (lem-ui-get-buffer-spec :item)))
+             (if (equal item "posts")
+                 (car lem-sort-types) ; "Active"
+               (car lem-comment-sort-types))))))) ; "Hot"
 
 (defun lem-ui-view-type ()
   "Return the current view, based on `lem-ui-buffer-spec'."
@@ -2046,7 +2051,8 @@ VALUE is a string, a member of the list associated with KIND."
   (let ((type-list (cond ((equal kind "Listing")
                           lem-listing-types)
                          ((equal kind "Sort")
-                          (cond ((eq (lem-ui-view-type) 'post)
+                          (cond ((or (eq (lem-ui-view-type) 'post)
+                                     (equal (lem-ui-get-buffer-spec :item) "comments"))
                                  lem-comment-sort-types)
                                 ((or (eq (lem-ui-view-type) 'user)
                                      (eq (lem-ui-view-type) 'current-user))
@@ -2088,6 +2094,8 @@ LIMIT is the max results to return."
          (buf "*lem-communities*"))
     (lem-ui-with-buffer buf 'lem-mode nil nil
       (lem-ui-render-instance (lem-get-instance) :stats nil)
+      (lem-ui-set-buffer-spec
+       type sort #'lem-ui-browse-communities 'communities)
       (lem-ui-widgets-create `("Listing" ,type "Sort" ,sort))
       (make-vtable
        :use-header-line nil
@@ -2104,12 +2112,10 @@ LIMIT is the max results to return."
                   collect (lem-ui-return-community-obj c)))
        :row-colors  '(nil highlight)    ; don't set vtable a second time
        :divider-width 1
-       :keymap lem-vtable-map)
-      ;; whey "actions" when we have map + our own props?:
-      ;; :actions '("RET" lem-ui-view-community-at-point-tl
-      ;; "s" lem-ui-subscribe-to-community-at-point-tl))
-      (lem-ui-set-buffer-spec
-       type sort #'lem-ui-browse-communities 'communities))))
+       :keymap lem-vtable-map))))
+;; whey "actions" when we have map + our own props?:
+;; :actions '("RET" lem-ui-view-community-at-point-tl
+;; "s" lem-ui-subscribe-to-community-at-point-tl))
 
 ;; actions are called on the column's object, but we use text props instead,
 ;; so we have to reimplement these for tl:
@@ -2224,8 +2230,9 @@ PAGE is the page number of items to display, a string."
          (sort (if (equal item "comments")
                    (if (lem-comment-sort-type-p sort)
                        sort
-                     lem-default-comment-sort-type)
-                 (or sort lem-default-sort-type)))
+                     (lem-ui-view-default-sort 'community))
+                 (or sort
+                     (lem-ui-view-default-sort 'community))))
          (items (if (equal item "comments")
                     (alist-get 'comments
                                (lem-api-get-community-comments
@@ -2236,18 +2243,16 @@ PAGE is the page number of items to display, a string."
          (bindings (lem-ui-view-options 'community)))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
       (lem-ui-render-community community :stats :view)
+      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-community
+                              (or item "posts") page)
       (lem-ui-widgets-create `("Sort" ,sort))
       (if (equal item "comments")
           (progn
             (lem-ui-insert-heading "comments")
             (lem-ui-render-comments items)) ; no type
         (lem-ui-insert-heading (or item "posts"))
-        ;; (if (equal item "comments")
-        ;; (lem-ui-render-comments items)
         (lem-ui-render-posts items nil :trim)) ; no children
-      (lem-ui--init-view)
-      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-community
-                              (or item "posts") page))))
+      (lem-ui--init-view))))
 
 (defun lem-ui-get-community-id (community &optional string)
   "Return ID of COMMUNITY.
