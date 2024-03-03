@@ -2907,9 +2907,9 @@ DETAILS means display what community and post the comment is linked to."
          (concat
           "\n"
           (lem-ui-bt-byline .counts.score .counts.child_count .my_vote .saved)
-          "\n" lem-ui-horiz-bar)
-         'byline-bt-fold t)
-        "\n")
+          "\n" lem-ui-horiz-bar
+          "\n")
+         'byline-bt-fold t))
        'json comment
        ;; in replies view we need the actual id for like-toggling:
        'id .comment.id ;(if reply .comment_reply.id .comment.id)
