@@ -3146,10 +3146,24 @@ If COMMENT-ID is provided, move point to that comment."
 
 ;;; FOLDING COMMENTS
 
-(defun lem-ui-comment-fold-toggle (&optional invisibility)
+(defun lem-ui--set-invis-prop (invis pos)
+  "Return value of INVIS as a boolean.
+If INVIS is nil, return the opposite of the invisibility property at
+POS."
+  (cond ((eq invis :invisible)
+         t)
+        ((eq invis :not-invisible)
+         nil)
+        (t
+         (not
+          (get-text-property pos
+                             'invisible)))))
+
+(defun lem-ui-comment-fold-toggle (&optional invis)
   "Toggle invisibility of the comment at point.
-Optionally set it to INVISIBILITY.
-Return value of the invisibility property after toggling."
+Optionally set it to INVIS, a keyword.
+Return the value of the invisibility property after toggling as
+a keyword."
   (interactive)
   (lem-ui-with-item 'comment
     (let* ((inhibit-read-only t)
@@ -3159,44 +3173,44 @@ Return value of the invisibility property after toggling."
                                                     (point)))
            (byline-bottom (lem-ui--find-property-range 'byline-bt-fold
                                                        (point)))
-           (invisibility-before (get-text-property (car comment-range)
-                                                   'invisible)))
+           (invis-before (get-text-property (car comment-range)
+                                            'invisible)))
       (when byline-top
+        ;; set body:
         (add-text-properties
          (car comment-range)
          (cdr comment-range)
          (list 'invisible
-               (or invisibility
-                   (not
-                    (get-text-property (car comment-range)
-                                       'invisible)))))
+               (lem-ui--set-invis-prop invis (car comment-range))))
+        ;; set bottom byline:
         (add-text-properties
          (car byline-bottom)
          (cdr byline-bottom)
          (list 'invisible
-               (or invisibility
-                   (not
-                    (get-text-property (car byline-bottom)
-                                       'invisible)))))
-        (or invisibility
-            (not invisibility-before))))))
+               (lem-ui--set-invis-prop invis (car byline-bottom))))
+        ;; return result of toggle as kw:
+        (or invis ; kw
+            (if invis-before
+                :not-invisible
+              :invisible))))))
 
-(defun lem-ui-comment-tree-fold (&optional invisibility indent)
+(defun lem-ui-comment-tree-fold (&optional invis indent)
   "Toggle invisibility of current comment and all its children.
-Optionally set INVISIBILITY.
-The invisibility of children should not be toggled independently, all
-items should rather adopt the invisibility of the top-most item.
+Optionally set INVIS, a keyword (used for recursion).
+The invisibility of children should not necessarily be toggled,
+but should adopt the invisibility of the top-most item. So if
+some children comments have been toggled, toggling their parent
+should return all items in the branch to the same invisibility.
 INDENT is the level of the top level comment to be folded."
   (interactive)
-  (let ((top-indent (or indent
-                        (length (lem-ui--property 'line-prefix))))
-        (invisibility-after
-         (lem-ui-comment-fold-toggle invisibility)))
+  (let* ((top-indent (or indent
+                         (length (lem-ui--property 'line-prefix))))
+         (invis-after (lem-ui-comment-fold-toggle invis)))
     (save-excursion
       (lem-next-item)
       (let ((indent (length (lem-ui--property 'line-prefix))))
         (when (> indent top-indent)
-          (lem-ui-comment-tree-fold invisibility-after top-indent))))))
+          (lem-ui-comment-tree-fold invis-after top-indent))))))
 
 ;;; LIKES / VOTES
 
