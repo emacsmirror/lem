@@ -212,6 +212,8 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-choose-listing-type             | Prompt for a listing type, and use it to reload current view.             |
 |           | lem-ui-choose-search-type              | Choose a search type from `lem-search-types' and repeat current query.    |
 | o         | lem-ui-choose-sort                     | Prompt for a sort type, and use it to reload the current view.            |
+|           | lem-ui-comment-fold-toggle             | Toggle invisibility of the comment at point.                              |
+|           | lem-ui-comment-fold-tree-toggle        | Toggle invisibility of current comment and all its children.              |
 |           | lem-ui-copy-item-url                   | Copy the URL (ap_id) of the post or comment at point.                     |
 |           | lem-ui-cycle-inbox                     | Cycle inbox to next item view in `lem-inbox-types'.                       |
 | C-c C-c   | lem-ui-cycle-listing-type              | Cycle view between `lem-listing-types'.                                   |
@@ -237,6 +239,7 @@ I don't have a tech worker's income, so even a small tip would help out.
 | <backtab> | lem-ui-prev-tab-item                   | Jump to prev tab item.                                                    |
 |           | lem-ui-print-json                      | Fetch the JSON of item at point and pretty print it in a new buffer.      |
 | g         | lem-ui-reload-view                     | Reload the current view.                                                  |
+|           | lem-ui-remove-comment                  | Remove the comment at point.                                              |
 |           | lem-ui-remove-post                     | Remove the post at point.                                                 |
 |           | lem-ui-restore-comment                 | Restore deleted comment at point.                                         |
 |           | lem-ui-restore-post                    | Restore deleted post at point.                                            |
@@ -248,6 +251,7 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-search-in-user                  | Search in the user currently viewed.                                      |
 |           | lem-ui-subscribe-to-community          | Subscribe to a community, using ID or prompt for a handle.                |
 | s         | lem-ui-subscribe-to-community-at-point | Subscribe to community at point.                                          |
+|           | lem-ui-subscribe-to-item-community     | Subscribe to community of item at point.                                  |
 | C-c C-v   | lem-ui-toggle-posts-comments           | Switch between displaying posts or comments.                              |
 |           | lem-ui-unblock-community               | Prompt for a blocked community, and unblock it.                           |
 |           | lem-ui-unblock-instance                | Prompt for a blocked instance and unblock it.                             |
@@ -274,4 +278,3 @@ I don't have a tech worker's income, so even a small tip would help out.
 | RET       | lem-ui-view-thing-at-point             | View post, community or user at point.                                    |
 |           | lem-vtable-revert-command              | Re-query data and regenerate the table under point.                       |
 |           | lem-vtable-sort-by-current-column      | Sort the table under point by the column under point.                     |
-|           | lem-widget-minor-mode                  | Minor mode for traversing widgets.                                        |
