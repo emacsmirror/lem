@@ -2384,6 +2384,21 @@ And optionally for instance COMMUNITIES."
           (user-error "Item has no community")
         (lem-ui-view-community id)))))
 
+(defun lem-ui-subscribe-to-item-community ()
+  "Subscribe to community of item at point."
+  (interactive)
+  (lem-ui-with-item 'all
+    (let ((type (lem-ui--property 'lem-type))
+          (id (or (lem-ui--property 'community-id)
+                  (lem-ui--property 'id))) ; community header
+          (url (let-alist (lem-ui--property 'json)
+                 .community.actor_id)))
+      (if (or (eq type 'instance)
+              (eq type 'user))
+          (user-error "Item has no community")
+        (when (y-or-n-p (format "Subscribe to %s" url))
+          (lem-ui-subscribe-to-community id))))))
+
 (defun lem-ui-delete-community ()
   "Prompt for a community moderated by the current user and delete it."
   (interactive)
