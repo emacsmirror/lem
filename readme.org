@@ -85,6 +85,22 @@ Lemmy makes heavy use of sorting. Item (posts, comments, users, communities) vie
 - =C-c C-s= - =lem-ui-cycle-sort= - cycle between sort types (new, hot, active, top, old, etc.). To directly set sort, call =o=, or =lem-ui-choose-sort=. Full sort type lists are found in =lem-sort-types= and =lem-comment-sort-types=, the list is chosen according to the present view.
 - =C-c C-v= - =lem-ui-toggle-posts-comments= - toggle between posts or comments, or optionally overview if the view supports it (e.g. for user views).
 
+** folding and navigating comment trees
+
+=lem.el= has a number of comment tree navigating and folding (hiding) commands:
+
+- =M-p= - =lem-ui-prev-top-level= - navigate to the previous top-level comment
+- =M-n= - =lem-ui-next-top-level= - navigate to the next top-level comment
+- =M-u= - =lem-ui-branch-top-level= - move to the comment at the top of branch point is in
+
+
+- =f= - =lem-ui-comment-tree-fold= - toggle folding of current comment, and all its children (but not its parents)
+- =F= - =lem-ui-comment-fold-toggle= - toggle folding of current comment only
+- =M-f= - =lem-ui-fold-current-branch= - toggle folding of current branch (parents and children)
+- =C-M-f= - =lem-ui-fold-all-toggle= - toggle folding of all comments in buffer
+- =lem-ui-fold-all-comments= - fold all comments in buffer
+- =lem-ui-unfold-all-comments= - unfold all comments in buffer
+
 * dependencies
 
 - [[https://codeberg.org/martianh/fedi.el][fedi.el]], a library to make writing a library of API requests easier.
