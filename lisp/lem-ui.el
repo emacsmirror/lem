@@ -381,6 +381,15 @@ NUMBER means return ID as a number."
          (t
           ,@body)))
 
+(defmacro lem-ui-with-view (type &rest body)
+  "Call BODY if current view is of TYPE."
+  (declare (debug t)
+           (indent 1))
+  `(if (and (not (eq ,type 'all))
+            (not (eq (lem-ui-view-type) ,type)))
+       (user-error "Not in view %s" ,type)
+     ,@body))
+
 ;;; BUFFER DETAILS
 
 (defvar-local lem-ui-buffer-spec nil
@@ -3181,8 +3190,7 @@ If COMMENT-ID is provided, move point to that comment."
   "Move to previous top level comment.
 If not currently at a top level comment, move to top of current branch."
   (interactive)
-  (if (not (eq (lem-ui-view-type) 'post))
-      (message "Not in a post view.")
+  (lem-ui-with-view 'post
     (let ((current-indent (lem-ui--current-indent)))
       (if (not (eq 0 current-indent))
           (lem-ui-branch-top-level)
@@ -3193,8 +3201,7 @@ If not currently at a top level comment, move to top of current branch."
 (defun lem-ui-next-top-level ()
   "Move to next top level comment."
   (interactive)
-  (if (not (eq (lem-ui-view-type) 'post))
-      (message "Not in a post view.")
+  (lem-ui-with-view 'post
     (let ((current-indent (lem-ui--current-indent)))
       (if (not (eq 0 current-indent))
           (while (not (eq 0 (lem-ui--current-indent)))
@@ -3206,17 +3213,22 @@ If not currently at a top level comment, move to top of current branch."
 (defun lem-ui--goto-parent-comment ()
   "Move point to parent comment.
 Stop moving up at a top level comment."
-  (let ((parent-id (lem-ui--parent-id (lem-ui--property 'json)))
-        (post-id (lem-ui--property 'post-id)))
-    (if (not parent-id)
-        (message "At top level")
-      (lem-ui-post-goto-comment parent-id post-id :no-recenter))))
+  (lem-ui-with-view 'post
+    (let ((parent-id (lem-ui--parent-id (lem-ui--property 'json)))
+          (post-id (lem-ui--property 'post-id)))
+      (if (not parent-id)
+          (message "At top level")
+        (lem-ui-post-goto-comment parent-id post-id :no-recenter)))))
 
 (defun lem-ui-branch-top-level ()
   "Move point to the top of the branch of comment at point."
   (interactive)
-  (lem-ui-with-item 'comment
-    (while (lem-ui--parent-id (lem-ui--property 'json))
+  (lem-ui-with-view 'post
+    ;; (lem-ui-with-item 'comment
+    (while (lem-ui--parent-id (or (lem-ui--property 'json)
+                                  (progn
+                                    (previous-line)
+                                    (lem-ui--property 'json))))
       (lem-ui--goto-parent-comment))))
 
 ;;; FOLDING COMMENTS
@@ -3311,9 +3323,10 @@ BUF is the buffer to fold in."
 Optionally ensure buffer BUF is current."
   (interactive)
   (with-current-buffer (or buf (current-buffer))
-    (save-excursion
-      (lem-ui-branch-top-level)
-      (lem-ui-comment-tree-fold))))
+    (lem-ui-with-view 'post
+      (save-excursion
+        (lem-ui-branch-top-level)
+        (lem-ui-comment-tree-fold)))))
 
 ;;; LIKES / VOTES
 
