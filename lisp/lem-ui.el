@@ -2776,7 +2776,7 @@ DETAILS means display what community and post the comment is linked to."
   (cl-loop for x in comments
            do (lem-ui-render-comment x nil details)))
 
-;;; THREADED COMMENTS:
+;;; THREADED COMMENTS
 ;; Path: "The path / tree location of a comment, separated by dots, ending
 ;; with the comment's id. Ex: 0.24.27"
 ;; https://github.com/LemmyNet/lemmy/blob/63d3759c481ff2d7594d391ae86e881e2aeca56d/crates/db_schema/src/source/comment.rs#L39
@@ -3176,6 +3176,30 @@ If COMMENT-ID is provided, move point to that comment."
                                (lem-ui--property 'id)))))
         (lem-ui-view-post post-id)
         (lem-ui-post-goto-comment comment-id post-id)))))
+
+(defun lem-ui-prev-top-level ()
+  "Move to previous top level comment.
+If not currently at a top level comment, move to top of current branch."
+  (interactive)
+  (lem-ui-with-item 'comment
+    (let ((current-indent (lem-ui--current-indent)))
+      (if (not (eq 0 current-indent))
+          (lem-ui-branch-top-level)
+        (lem-prev-item)
+        (while (not (eq 0 (lem-ui--current-indent)))
+          (lem-prev-item))))))
+
+(defun lem-ui-next-top-level ()
+  "Move to next top level comment."
+  (interactive)
+  (lem-ui-with-item 'comment
+    (let ((current-indent (lem-ui--current-indent)))
+      (if (not (eq 0 current-indent))
+          (while (not (eq 0 (lem-ui--current-indent)))
+            (lem-next-item))
+        (lem-next-item)
+        (while (not (eq 0 (lem-ui--current-indent)))
+          (lem-next-item))))))
 
 ;;; FOLDING COMMENTS
 
