@@ -3249,14 +3249,16 @@ INDENT is the level of the top level comment to be folded."
           (when (> indent top-indent)
             (lem-ui-comment-tree-fold invis-after top-indent)))))))
 
-(defun lem-ui--fold-all-comments ()
-  "Fold all comments in current buffer."
-  (save-excursion
-    (goto-char (point-min))
-    (while (not (equal "Nothing further" ; stop at last item
-                       (lem-next-item :no-refresh)))
-      (unless (eq t (get-text-property (point) 'folded))
-        (lem-ui-comment-tree-fold)))))
+(defun lem-ui--fold-all-comments (buf)
+  "Fold all comments in current buffer.
+BUF is the buffer to fold in."
+  (with-current-buffer buf
+    (save-excursion
+      (goto-char (point-min))
+      (while (not (equal "Nothing further" ; stop at last item
+                         (lem-next-item :no-refresh)))
+        (unless (eq t (get-text-property (point) 'folded))
+          (lem-ui-comment-tree-fold))))))
 
 (defun lem-ui--goto-parent-comment ()
   "Move point to parent comment.
@@ -3274,12 +3276,14 @@ Stop moving up at a top level comment."
     (while (lem-ui--parent-id (lem-ui--property 'json))
       (lem-ui--goto-parent-comment))))
 
-(defun lem-ui-fold-current-branch ()
-  "Toggle folding the branch of comment at point."
+(defun lem-ui-fold-current-branch (&optional buf)
+  "Toggle folding the branch of comment at point.
+Optionally ensure buffer BUF is current."
   (interactive)
-  (save-excursion
-    (lem-ui-goto-top-of-branch)
-    (lem-ui-comment-tree-fold)))
+  (with-current-buffer (or buf (current-buffer))
+    (save-excursion
+      (lem-ui-goto-top-of-branch)
+      (lem-ui-comment-tree-fold))))
 
 ;;; LIKES / VOTES
 
