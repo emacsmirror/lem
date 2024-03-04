@@ -3273,7 +3273,7 @@ Stop moving up at a top level comment."
         (message "At top level")
       (lem-ui-post-goto-comment parent-id post-id :no-recenter))))
 
-(defun lem-ui-goto-top-of-branch ()
+(defun lem-ui-branch-top-level ()
   "Move point to the top of the branch of comment at point."
   (interactive)
   (lem-ui-with-item 'comment
@@ -3286,7 +3286,7 @@ Optionally ensure buffer BUF is current."
   (interactive)
   (with-current-buffer (or buf (current-buffer))
     (save-excursion
-      (lem-ui-goto-top-of-branch)
+      (lem-ui-branch-top-level)
       (lem-ui-comment-tree-fold))))
 
 ;;; LIKES / VOTES
