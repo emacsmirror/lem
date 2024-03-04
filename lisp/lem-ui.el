@@ -3264,10 +3264,12 @@ a keyword."
                            (get-text-property (car comment-range)
                                               'invisible))))
       (when byline-top
+        ;; set top byline
         (add-text-properties
          (car byline-top)
          (cdr byline-top)
-         '(folded t))
+         `(folded
+           ,(lem-ui--set-invis-prop invis (car comment-range))))
         ;; set body:
         (add-text-properties
          (car comment-range)
