@@ -2940,10 +2940,12 @@ DEL and REM are the values of the deleted and removed attributes
 in an item's data."
   (cond ((eq del t)
          (propertize "[deleted by user]\n"
-                     'face '(:slant italic)))
+                     'face '(:slant italic)
+                     'body t))
         ((eq rem t)
          (propertize "[removed by mod]\n"
-                     'face '(:slant italic)))
+                     'face '(:slant italic)
+                     'body t))
         (t nil)))
 
 (defun lem-ui-format-private-message (private-message &optional indent)
