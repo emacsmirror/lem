@@ -3319,6 +3319,16 @@ INDENT is the level of the top level comment to be folded."
             (when (> indent top-indent)
               (lem-ui-comment-tree-fold invis-after top-indent))))))))
 
+(defun lem-ui-fold-current-branch (&optional buf)
+  "Toggle folding the branch of comment at point.
+Optionally ensure buffer BUF is current."
+  (interactive)
+  (with-current-buffer (or buf (current-buffer))
+    (lem-ui-with-view 'post
+      (save-excursion
+        (lem-ui-branch-top-level)
+        (lem-ui-comment-tree-fold)))))
+
 (defun lem-ui-fold-all-comments (&optional buf)
   "Fold all comments in current buffer.
 BUF is the buffer to fold in."
@@ -3343,15 +3353,19 @@ BUF is the buffer to fold in."
         (when (eq t (get-text-property (point) 'folded))
           (lem-ui-comment-tree-fold :not-invisible))))))
 
-(defun lem-ui-fold-current-branch (&optional buf)
-  "Toggle folding the branch of comment at point.
-Optionally ensure buffer BUF is current."
+(defun lem-ui-fold-all-toggle ()
+  "Toggle folding status of all comments in the buffer.
+We set folding status to the opposite of what the first comment
+currently is."
   (interactive)
-  (with-current-buffer (or buf (current-buffer))
-    (lem-ui-with-view 'post
-      (save-excursion
-        (lem-ui-branch-top-level)
-        (lem-ui-comment-tree-fold)))))
+  (lem-ui-with-view 'post
+    (let ((first (save-excursion
+                   (goto-char (point-min))
+                   (lem-next-item)
+                   (lem-ui--property 'folded))))
+      (if first
+          (lem-ui-unfold-all-comments)
+        (lem-ui-fold-all-comments)))))
 
 ;;; LIKES / VOTES
 

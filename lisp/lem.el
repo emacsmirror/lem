@@ -217,6 +217,7 @@ the file ~/.emacs.d/lem.plstore and log in again."
     (define-key map (kbd "f") #'lem-ui-comment-tree-fold)
     (define-key map (kbd "F") #'lem-ui-comment-fold-toggle)
     (define-key map (kbd "M-f") #'lem-ui-fold-current-branch)
+    (define-key map (kbd "C-M-f") #'lem-ui-fold-all-toggle)
     (define-key map (kbd "M-C-q") #'lem-kill-all-buffers)
     map)
   "Keymap for `lem-mode'.")
