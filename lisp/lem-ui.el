@@ -3193,21 +3193,26 @@ a keyword."
                                                     (point)))
            (byline-bottom (lem-ui--find-property-range 'byline-bt-fold
                                                        (point)))
-           (invis-before (get-text-property (car comment-range)
-                                            'invisible)))
+           (invis-before (when comment-range
+                           (get-text-property (car comment-range)
+                                              'invisible))))
       (when byline-top
+        (add-text-properties
+         (car byline-top)
+         (cdr byline-top)
+         '(folded t))
         ;; set body:
         (add-text-properties
          (car comment-range)
          (cdr comment-range)
-         (list 'invisible
-               (lem-ui--set-invis-prop invis (car comment-range))))
+         `(invisible
+           ,(lem-ui--set-invis-prop invis (car comment-range))))
         ;; set bottom byline:
         (add-text-properties
          (car byline-bottom)
          (cdr byline-bottom)
-         (list 'invisible
-               (lem-ui--set-invis-prop invis (car byline-bottom))))
+         `(invisible
+           ,(lem-ui--set-invis-prop invis (car byline-bottom))))
         ;; return result of toggle as kw:
         (or invis ; kw
             (if invis-before
