@@ -405,7 +405,8 @@ Optionally start from POS."
   (fedi--goto-pos fun 'byline-top refresh pos))
 
 (defun lem-next-item (&optional no-refresh)
-  "Move to next item."
+  "Move to next item.
+NO-REFRESH means don't try to load more items at EOB."
   (interactive)
   (lem--goto-pos #'next-single-property-change
                  (unless no-refresh #'lem-ui-more)))
@@ -2401,7 +2402,7 @@ And optionally for instance COMMUNITIES."
       (if (or (eq type 'instance)
               (eq type 'user))
           (user-error "Item has no community")
-        (when (y-or-n-p (format "Subscribe to %s" url))
+        (when (y-or-n-p (format "Subscribe to %s?" url))
           (lem-ui-subscribe-to-community id))))))
 
 (defun lem-ui-delete-community ()
@@ -3144,7 +3145,8 @@ RENDER-FUN is the name of a function to render them."
 
 (defun lem-ui-post-goto-comment (comment-id post-id &optional no-recenter)
   "Move point to comment with COMMENT-ID, a number, if possible.
-POST-ID is the post's id, used to fetch the right buffer."
+POST-ID is the post's id, used to fetch the right buffer.
+NO-RECENTER means don't call `recenter-top-bottom'."
   ;; TODO: implement forward-search/pagination
   (with-current-buffer (format "*lem-post-%s*" post-id)
     (goto-char (point-min))
