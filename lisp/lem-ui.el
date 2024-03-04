@@ -3297,28 +3297,41 @@ some children comments have been toggled, toggling their parent
 should return all items in the branch to the same invisibility.
 INDENT is the level of the top level comment to be folded."
   (interactive)
-  (let* ((top-indent (or indent
-                         (lem-ui--current-indent)))
-         ;; fold current item:
-         (invis-after (lem-ui-comment-fold-toggle invis)))
-    (save-excursion
-      ;; maybe recur into subsequent items:
-      (unless (equal "Nothing further" ; stop at last item
-                     (lem-next-item :no-refresh))
-        (let ((indent (lem-ui--current-indent)))
-          (when (> indent top-indent)
-            (lem-ui-comment-tree-fold invis-after top-indent)))))))
+  (lem-ui-with-view 'post
+    (let* ((top-indent (or indent (lem-ui--current-indent)))
+           ;; fold current item:
+           (invis-after (lem-ui-comment-fold-toggle invis)))
+      (save-excursion
+        ;; maybe recur into subsequent items:
+        (unless (equal "Nothing further" ; stop at last item
+                       (lem-next-item :no-refresh))
+          (let ((indent (lem-ui--current-indent)))
+            (when (> indent top-indent)
+              (lem-ui-comment-tree-fold invis-after top-indent))))))))
 
-(defun lem-ui--fold-all-comments (buf)
+(defun lem-ui-fold-all-comments (&optional buf)
   "Fold all comments in current buffer.
 BUF is the buffer to fold in."
-  (with-current-buffer buf
+  (interactive)
+  (with-current-buffer (or buf (current-buffer))
+    (lem-ui-with-view 'post
+      (save-excursion
+        (goto-char (point-min))
+        (while (not (equal "Nothing further" ; stop at last item
+                           (lem-next-item :no-refresh)))
+          (unless (eq t (get-text-property (point) 'folded))
+            (lem-ui-comment-tree-fold)))))))
+
+(defun lem-ui-unfold-all-comments ()
+  "Unfold all comment branches in the current buffer."
+  (interactive)
+  (lem-ui-with-view 'post
     (save-excursion
       (goto-char (point-min))
       (while (not (equal "Nothing further" ; stop at last item
                          (lem-next-item :no-refresh)))
-        (unless (eq t (get-text-property (point) 'folded))
-          (lem-ui-comment-tree-fold))))))
+        (when (eq t (get-text-property (point) 'folded))
+          (lem-ui-comment-tree-fold :not-invisible))))))
 
 (defun lem-ui-fold-current-branch (&optional buf)
   "Toggle folding the branch of comment at point.
