@@ -3203,6 +3203,22 @@ If not currently at a top level comment, move to top of current branch."
         (while (not (eq 0 (lem-ui--current-indent)))
           (lem-next-item))))))
 
+(defun lem-ui--goto-parent-comment ()
+  "Move point to parent comment.
+Stop moving up at a top level comment."
+  (let ((parent-id (lem-ui--parent-id (lem-ui--property 'json)))
+        (post-id (lem-ui--property 'post-id)))
+    (if (not parent-id)
+        (message "At top level")
+      (lem-ui-post-goto-comment parent-id post-id :no-recenter))))
+
+(defun lem-ui-branch-top-level ()
+  "Move point to the top of the branch of comment at point."
+  (interactive)
+  (lem-ui-with-item 'comment
+    (while (lem-ui--parent-id (lem-ui--property 'json))
+      (lem-ui--goto-parent-comment))))
+
 ;;; FOLDING COMMENTS
 
 (defun lem-ui--set-invis-prop (invis pos)
@@ -3289,22 +3305,6 @@ BUF is the buffer to fold in."
                          (lem-next-item :no-refresh)))
         (unless (eq t (get-text-property (point) 'folded))
           (lem-ui-comment-tree-fold))))))
-
-(defun lem-ui--goto-parent-comment ()
-  "Move point to parent comment.
-Stop moving up at a top level comment."
-  (let ((parent-id (lem-ui--parent-id (lem-ui--property 'json)))
-        (post-id (lem-ui--property 'post-id)))
-    (if (not parent-id)
-        (message "At top level")
-      (lem-ui-post-goto-comment parent-id post-id :no-recenter))))
-
-(defun lem-ui-branch-top-level ()
-  "Move point to the top of the branch of comment at point."
-  (interactive)
-  (lem-ui-with-item 'comment
-    (while (lem-ui--parent-id (lem-ui--property 'json))
-      (lem-ui--goto-parent-comment))))
 
 (defun lem-ui-fold-current-branch (&optional buf)
   "Toggle folding the branch of comment at point.
