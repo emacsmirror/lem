@@ -84,6 +84,24 @@
   "Non-nil if STR is in `lem-comment-sort-types'."
   (cl-member str lem-comment-sort-types :test 'equal))
 
+;; as per web UI:
+(defconst lem-user-view-sort-types
+  '("New" "Old" "Controversial"
+    "TopDay" "TopWeek" "TopMonth" "TopYear" "TopAll"
+    "MostComments" "NewComments" "TopHour" "TopSixHour"
+    "TopTwelveHour" "TopThreeMonths" "TopSixMonths" "TopNineMonths"))
+
+(defun lem-user-view-sort-type-p (str)
+  "Non-nil if STR is in `lem-user-view-sort-types'."
+  (cl-member str lem-user-view-sort-types :test 'equal))
+
+(defconst lem-inbox-sort-types
+  '("New" "Hot" "Top" "Old" "Controversial"))
+
+(defun lem-inbox-sort-type-p (str)
+  "Non-nil if STR is in `lem-inbox-sort-types'."
+  (cl-member str lem-inbox-sort-types :test 'equal))
+
 (defconst lem-search-types
   '("All" "Comments" "Posts" "Communities" "Users" "Url"))
 
@@ -102,7 +120,7 @@
   (cl-member str lem-user-items-types :test 'equal))
 
 (defconst lem-inbox-types
-  '(replies mentions private-messages))
+  '(all replies mentions private-messages))
 
 ;;; CUSTOMIZE
 
@@ -149,7 +167,6 @@ keep the timestamps current as time progresses."
 Uses `cursor-face-highlight-mode'."
   :type 'boolean)
 
-
 (defcustom lem-encrypt-auth-tokens nil
   "Whether to encrypt the user's authentication token in the plstore.
 If you set this to non-nil, you also likely need to set
@@ -169,6 +186,9 @@ the file ~/.emacs.d/lem.plstore and log in again."
     (define-key map (kbd "o") #'lem-ui-choose-sort)
     (define-key map (kbd "n") #'lem-next-item)
     (define-key map (kbd "p") #'lem-prev-item)
+    (define-key map (kbd "M-n") #'lem-ui-next-top-level)
+    (define-key map (kbd "M-p") #'lem-ui-prev-top-level)
+    (define-key map (kbd "M-u") #'lem-ui-branch-top-level)
     (define-key map (kbd "SPC") #'lem-ui-scroll-up-command)
     (define-key map (kbd "TAB") #'lem-ui-next-tab-item)
     (define-key map (kbd "<backtab>") #'lem-ui-prev-tab-item)
@@ -176,16 +196,16 @@ the file ~/.emacs.d/lem.plstore and log in again."
     ;; views:
     (define-key map (kbd "I") #'lem-ui-view-instance)
     (define-key map (kbd "C") #'lem-ui-browse-communities)
-    (define-key map (kbd "s") #'lem-ui-jump-to-subscribed)
-    (define-key map (kbd "P") #'lem-ui-view-item-user)
-    (define-key map (kbd "u") #'lem-ui-view-item-user)
-    (define-key map (kbd "c") #'lem-ui-view-item-community)
+    (define-key map (kbd "S") #'lem-ui-jump-to-subscribed)
+    ;; (define-key map (kbd "P") #'lem-ui-view-item-user)
     (define-key map (kbd "O") #'lem-ui-view-own-profile)
     (define-key map (kbd "A") #'lem-ui-view-saved-items)
     (define-key map (kbd "h") #'lem-ui-search)
     (define-key map (kbd "B") #'lem-ui-view-inbox)
+    (define-key map (kbd "c") #'lem-ui-view-item-community)
+    (define-key map (kbd "u") #'lem-ui-view-item-user)
     ;; actions:
-    (define-key map (kbd "S") #'lem-ui-subscribe-to-community-at-point)
+    (define-key map (kbd "s") #'lem-ui-subscribe-to-community-at-point)
     (define-key map (kbd "a") #'lem-ui-save-item-toggle)
     (define-key map (kbd "r") #'lem-post-comment) ; Reply
     (define-key map (kbd "N") #'lem-post-compose) ; New
@@ -193,7 +213,12 @@ the file ~/.emacs.d/lem.plstore and log in again."
     (define-key map (kbd "d") #'lem-ui-delete-post-or-comment)
     (define-key map (kbd "e") #'lem-post-edit-post-or-comment)
     (define-key map (kbd "/") #'lem-switch-to-buffer)
-    (define-key map (kbd "M-C-Q") #'lem-kill-all-buffers)
+    (define-key map (kbd "g") #'lem-ui-reload-view)
+    (define-key map (kbd "f") #'lem-ui-comment-tree-fold)
+    (define-key map (kbd "F") #'lem-ui-comment-fold-toggle)
+    (define-key map (kbd "M-f") #'lem-ui-fold-current-branch)
+    (define-key map (kbd "C-M-f") #'lem-ui-fold-all-toggle)
+    (define-key map (kbd "M-C-q") #'lem-kill-all-buffers)
     map)
   "Keymap for `lem-mode'.")
 

@@ -201,7 +201,7 @@ message."
 
 ;;; RESPONSE FUNCTIONS
 
-(defun lem-ui-edit-comment-response (response)
+(defun lem-post--edit-comment-response (response)
   "Call response functions upon editing a comment.
 RESPONSE is the comment_view data returned by the server."
   (with-current-buffer lem-post-last-buffer
@@ -220,22 +220,7 @@ RESPONSE is the comment_view data returned by the server."
                                                   (eq view 'community))
                                         :details))))))))
 
-(defun lem-ui-insert-comment-after-parent (response) ; parent-id)
-  "Insert new reply comment after its parent.
-RESPONSE is the JSON data of the newly created comment.
-PARENT-ID is that of its parent comment or post."
-  (with-current-buffer lem-post-last-buffer
-    (let* ((inhibit-read-only t)
-           (comment-view (alist-get 'comment_view response))
-           ;; (comment (alist-get 'comment comment-view))
-           (indent (1+ (length (lem-ui--property 'line-prefix)))))
-      ;; go to end of parent item:
-      (goto-char
-       (next-single-property-change (point) 'id))
-      (insert "\n"
-              (lem-ui-format-comment comment-view indent)))))
-
-(defun lem-ui-create-comment-response (response) ; parent-id)
+(defun lem-post--create-comment-response (response)
   "Call response functions upon editing a comment.
 RESPONSE is the comment_view data returned by the server."
   (with-current-buffer lem-post-last-buffer
@@ -246,8 +231,11 @@ RESPONSE is the comment_view data returned by the server."
       (lem-ui--update-item-json .comment_view)
       ;; its not clear if we should always dump new comment right after its
       ;; parent, or somewhere else in the tree.
-      (lem-ui-insert-comment-after-parent response) ; parent-id)
-      (lem-prev-item))))
+      ;; just reload!
+      ;; (lem-ui-insert-comment-after-parent response) ; parent-id)
+      (lem-ui-reload-view)
+      (when (eq (lem-ui-view-type) 'post)
+        (lem-prev-item)))))
 
 ;;; SUBMITTING ITEMS
 
@@ -303,10 +291,10 @@ Call response and update functions."
             (cond
              ((eq type 'new-comment)
               ;; after new comment: insert it into post view tree:
-              (lem-ui-create-comment-response response)) ; parent-id))
+              (lem-post--create-comment-response response)) ; parent-id))
              ((eq type 'edit-comment)
               ;; after edit comment: replace with updated item:
-              (lem-ui-edit-comment-response response))
+              (lem-post--edit-comment-response response))
              ((eq type 'edit-post)
               ;; after edit post: reload previous view:
               (lem-ui-response-msg
@@ -326,10 +314,27 @@ Call response and update functions."
               (lem-ui-view-community .community_view.community.id))
              (t ;; creating a post
               ;; after new post: view the post
-              (lem-ui-response-msg
-               response 'post_view :non-nil
-               (format "Post %s created!" .post_view.post.name))
-              (lem-ui-view-post .post_view.post.id)))))))))
+              (lem-post--post-post-submit response)))))))))
+
+(defun lem-post--reload-parent-community-view (community-id)
+  "If community with COMMUNITY-ID is in `buffer-list', reload it."
+  (let ((community-id (number-to-string community-id)))
+    (cl-loop for b in (buffer-list)
+             when (string-suffix-p (concat "-" community-id "*")
+                                   (buffer-name b))
+             return (with-current-buffer b
+                      (lem-ui-reload-view)))))
+
+(defun lem-post--post-post-submit (response)
+  "Handle post-creation RESPONSE.
+Display response message, view post, and update post's community
+view buffer if present."
+  (let-alist response
+    (lem-ui-response-msg
+     response 'post_view :non-nil
+     (format "Post %s created!" .post_view.post.name))
+    (lem-post--reload-parent-community-view .post_view.post.community_id)
+    (lem-ui-view-post .post_view.post.id)))
 
 ;;; POSTING COMMENTS
 
@@ -387,7 +392,7 @@ Optionally, message user with RECIPIENT-ID."
 (defun lem-post-item-author-private-message ()
   "Send a private message to the author of item at point."
   (interactive)
-  (lem-ui-with-item
+  (lem-ui-with-item 'all
     (let* ((item (lem-ui-thing-json))
            (obj (or (alist-get 'post item)
                     (alist-get 'comment item)))
