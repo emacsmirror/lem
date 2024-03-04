@@ -400,10 +400,11 @@ If search returns nil, execute REFRESH function.
 Optionally start from POS."
   (fedi--goto-pos fun 'byline-top refresh pos))
 
-(defun lem-next-item ()
+(defun lem-next-item (&optional no-refresh)
   "Move to next item."
   (interactive)
-  (lem--goto-pos #'next-single-property-change #'lem-ui-more))
+  (lem--goto-pos #'next-single-property-change
+                 (unless no-refresh #'lem-ui-more)))
 
 (defun lem-prev-item ()
   "Move to prev item."
