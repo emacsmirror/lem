@@ -364,7 +364,7 @@ NUMBER means return ID as a number."
            (indent 1))
   `(if (and (not (eq ,type 'all))
             (not (eq ,type (lem-ui--property 'lem-type))))
-       (message "No %s at point?" ,type)
+       (user-error "No %s at point?" ,type)
      (let* ((id (lem-ui--id-from-prop (if ,number nil :string))))
        (if (not id)
            (message "Unable to find item id.")
@@ -375,9 +375,9 @@ NUMBER means return ID as a number."
   (declare (debug t)
            (indent 1))
   `(cond ((not (eq ,item-type (lem-ui--property 'lem-type)))
-          (message "No %s at point?" ,item-type))
+          (user-error "No %s at point?" ,item-type))
          ((not (equal lem-user-id (lem-ui--property 'creator-id)))
-          (message "You can only modify your own items"))
+          (user-error "You can only modify your own items"))
          (t
           ,@body)))
 
