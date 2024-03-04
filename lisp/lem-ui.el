@@ -82,8 +82,8 @@
 
 ;;; HIERARCHY PATCHES
 
-(defun lem--hierarchy-labelfn-indent (labelfn &optional indent-string
-                                              prop attrib cycle-fun)
+(defun lem--hierarchy-labelfn-indent (labelfn) ; &optional indent-string)
+  ;; prop attrib cycle-fun)
   "Return a function rendering LABELFN indented with INDENT-STRING.
 
 INDENT-STRING defaults to a 2-space string.  Indentation is
@@ -94,16 +94,20 @@ ATTRIB is the prop's attribute, a kw symbol.
 CYCLE-FUN is called with one argument, the current indent level
 inside the loop, and is used to return the color for that indentation.
 Currently it is always `lem-ui-cycle-colors'."
-  (let ((indent-string (or indent-string "  ")))
-    (lambda (item indent)
-      (dotimes (index indent)
-        (insert
-         (funcall 'propertize indent-string
-                  ;; theres a better way to do this, but we need to funcall
-                  ;; cycle-fun on index to work
-                  prop (list attrib
-                             (funcall cycle-fun index)))))
-      (funcall labelfn item indent))))
+  ;; (let ((indent-string (or indent-string "  ")))
+  (lambda (item indent)
+    ;; don't manually insert indent string here, as it isn't a line-prefix
+    ;; and so point can end up on it, which we don't want.
+    ;; comments "seem" to work fine without any of this?
+    ;; and our format-comment fun handles line-prefixing:
+    ;; (dotimes (index indent)
+    ;;   (insert
+    ;;    (funcall 'propertize indent-string
+    ;;             ;; theres a better way to do this, but we need to funcall
+    ;;             ;; cycle-fun on index to work
+    ;;             prop (list attrib
+    ;;                        (funcall cycle-fun index)))))
+    (funcall labelfn item indent)))
 
 ;; (defun lem--hierarchy-print (hierarchy &optional to-string)
 ;;   "Insert HIERARCHY in current buffer as plain text.
@@ -2785,9 +2789,10 @@ ID is the post's id, used for unique buffer names."
          lem-comments-hierarchy
          (lem--hierarchy-labelfn-indent
           (lambda (item indent)
-            (lem-ui-format-comment item indent))
-          (lem-ui-symbol 'reply-bar)
-          'face ':foreground 'lem-ui-cycle-colors))))))
+            (lem-ui-format-comment item indent))))))))
+;; `lem--hierarchy-labelfn-indent' no longer handles line-prefixing:
+;; (lem-ui-symbol 'reply-bar)
+;; 'face ':foreground 'lem-ui-cycle-colors))))))
 
 (defun lem-ui-get-comment-path (comment)
   "Get path value from COMMENT."
