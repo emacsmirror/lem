@@ -3186,7 +3186,7 @@ If COMMENT-ID is provided, move point to that comment."
              (buf (lem-ui-view-post post-id)))
         (when comment-id
           ;; FIXME: only fold if comment is actually loaded in the view
-          (lem-ui--fold-all-comments buf)
+          (lem-ui-fold-all-comments buf)
           (lem-ui-post-goto-comment comment-id post-id)
           (lem-ui-fold-current-branch buf))))))
 
@@ -3231,7 +3231,7 @@ Stop moving up at a top level comment."
     ;; (lem-ui-with-item 'comment
     (while (lem-ui--parent-id (or (lem-ui--property 'json)
                                   (progn
-                                    (previous-line)
+                                    (forward-line -1)
                                     (lem-ui--property 'json))))
       (lem-ui--goto-parent-comment))))
 
