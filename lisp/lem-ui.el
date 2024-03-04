@@ -3181,7 +3181,8 @@ If COMMENT-ID is provided, move point to that comment."
   "Move to previous top level comment.
 If not currently at a top level comment, move to top of current branch."
   (interactive)
-  (lem-ui-with-item 'comment
+  (if (not (eq (lem-ui-view-type) 'post))
+      (message "Not in a post view.")
     (let ((current-indent (lem-ui--current-indent)))
       (if (not (eq 0 current-indent))
           (lem-ui-branch-top-level)
@@ -3192,7 +3193,8 @@ If not currently at a top level comment, move to top of current branch."
 (defun lem-ui-next-top-level ()
   "Move to next top level comment."
   (interactive)
-  (lem-ui-with-item 'comment
+  (if (not (eq (lem-ui-view-type) 'post))
+      (message "Not in a post view.")
     (let ((current-indent (lem-ui--current-indent)))
       (if (not (eq 0 current-indent))
           (while (not (eq 0 (lem-ui--current-indent)))
