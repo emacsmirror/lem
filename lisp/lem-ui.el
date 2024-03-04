@@ -3182,9 +3182,13 @@ If COMMENT-ID is provided, move point to that comment."
       (let* ((post-id (or post-id (lem-ui--property 'post-id)))
              (comment-id (or comment-id
                              (when comment-p
-                               (lem-ui--property 'id)))))
-        (lem-ui-view-post post-id)
-        (lem-ui-post-goto-comment comment-id post-id)))))
+                               (lem-ui--property 'id))))
+             (buf (lem-ui-view-post post-id)))
+        (when comment-id
+          ;; FIXME: only fold if comment is actually loaded in the view
+          (lem-ui--fold-all-comments buf)
+          (lem-ui-post-goto-comment comment-id post-id)
+          (lem-ui-fold-current-branch buf))))))
 
 (defun lem-ui-prev-top-level ()
   "Move to previous top level comment.
