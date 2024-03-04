@@ -314,7 +314,8 @@ Item may be post, comment, community, etc."
 MODE-FUN is called to set the major mode.
 OTHER-WINDOW means call `switch-to-buffer-other-window' rather
 than `pop-to-buffer'.
-BINDINGS is a list of variables for which to display bidings."
+BINDINGS is a list of variables for which to display bidings.
+Return the buffer."
   (declare (debug t)
            (indent 4))
   `(with-current-buffer (get-buffer-create ,buffer)
@@ -345,7 +346,8 @@ BINDINGS is a list of variables for which to display bidings."
          ;; but this also kills any view-type messages
          ;; (sleep-for 1)
          (message
-          (substitute-command-keys msg-str))))))
+          (substitute-command-keys msg-str)))
+       ,buffer)))
 
 (defmacro lem-ui-with-item (type body &optional number)
   "Call BODY after fetching ID of thing (at point).
