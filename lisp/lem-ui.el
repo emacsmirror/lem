@@ -307,6 +307,10 @@ Item may be post, comment, community, etc."
    (concat
     (symbol-name item) "_view")))
 
+(defun lem-ui--current-indent ()
+  "Return current indent level as an integer."
+  (length (lem-ui--property 'line-prefix)))
+
 ;;; MACROS
 
 (defmacro lem-ui-with-buffer (buffer mode-fun other-window bindings &rest body)
@@ -2629,7 +2633,7 @@ If RESTORE, restore the item instead."
                                   item))
             (let ((response (funcall fun id (if restore :json-false t)))
                   (view (lem-ui-get-buffer-spec :view-fun))
-                  (indent (length (lem-ui--property 'line-prefix))))
+                  (indent (lem-ui--current-indent)))
               (lem-ui-response-msg
                response
                (lem-ui-item-to-alist-key item) :non-nil
@@ -2704,7 +2708,7 @@ If RESTORE, restore the item instead."
                                 item))
           (let ((response (funcall fun id (if restore :json-false t)))
                 (view (lem-ui-get-buffer-spec :view-fun))
-                (indent (length (lem-ui--property 'line-prefix))))
+                (indent (lem-ui--current-indent)))
             (lem-ui-response-msg
              response
              (lem-ui-item-to-alist-key item) :non-nil
@@ -3238,14 +3242,14 @@ should return all items in the branch to the same invisibility.
 INDENT is the level of the top level comment to be folded."
   (interactive)
   (let* ((top-indent (or indent
-                         (length (lem-ui--property 'line-prefix))))
+                         (lem-ui--current-indent)))
          ;; fold current item:
          (invis-after (lem-ui-comment-fold-toggle invis)))
     (save-excursion
       ;; maybe recur into subsequent items:
       (unless (equal "Nothing further" ; stop at last item
                      (lem-next-item :no-refresh))
-        (let ((indent (length (lem-ui--property 'line-prefix))))
+        (let ((indent (lem-ui--current-indent)))
           (when (> indent top-indent)
             (lem-ui-comment-tree-fold invis-after top-indent)))))))
 
