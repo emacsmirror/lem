@@ -3137,14 +3137,16 @@ RENDER-FUN is the name of a function to render them."
       (lem-ui--init-view)
       (message "Loading more items... [done]"))))
 
-(defun lem-ui-post-goto-comment (comment-id post-id)
+(defun lem-ui-post-goto-comment (comment-id post-id &optional no-recenter)
   "Move point to comment with COMMENT-ID, a number, if possible.
 POST-ID is the post's id, used to fetch the right buffer."
   ;; TODO: implement forward-search/pagination
   (with-current-buffer (format "*lem-post-%s*" post-id)
+    (goto-char (point-min))
     (when-let ((match (text-property-search-forward 'id comment-id t)))
       (goto-char (prop-match-beginning match))
-      (recenter-top-bottom '(4)))))
+      (unless no-recenter
+        (recenter-top-bottom '(4))))))
 
 (defun lem-ui-view-comment-post (&optional post-id comment-id)
   "View post of comment at point, or of POST-ID.
