@@ -3258,10 +3258,16 @@ a keyword."
   (interactive)
   (lem-ui-with-item 'comment
     (let* ((inhibit-read-only t)
+           ;; if point is after relevant property, search backwards:
+           (byline-bt-p (lem-ui--property 'byline-bt-fold))
+           (body-p (lem-ui--property 'body))
            (comment-range (lem-ui--find-property-range 'body
-                                                       (point)))
+                                                       (point)
+                                                       byline-bt-p))
            (byline-top (lem-ui--find-property-range 'byline-top
-                                                    (point)))
+                                                    (point)
+                                                    (or byline-bt-p
+                                                        body-p)))
            (byline-bottom (lem-ui--find-property-range 'byline-bt-fold
                                                        (point)))
            (invis-before (when comment-range
