@@ -207,13 +207,14 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-block-community-at-point        | Block community at point.                                                 |
 |           | lem-ui-block-item-instance             | Block instance of item at point.                                          |
 |           | lem-ui-block-user                      | Block author of item at point.                                            |
+|           | lem-ui-branch-top-level                | Move point to the top of the branch of comment at point.                  |
 | C         | lem-ui-browse-communities              | View Lemmy communities in a sortable tabulated list.                      |
 |           | lem-ui-choose-inbox-view               | Prompt for an inbox view and load it.                                     |
 |           | lem-ui-choose-listing-type             | Prompt for a listing type, and use it to reload current view.             |
 |           | lem-ui-choose-search-type              | Choose a search type from `lem-search-types' and repeat current query.    |
 | o         | lem-ui-choose-sort                     | Prompt for a sort type, and use it to reload the current view.            |
 |           | lem-ui-comment-fold-toggle             | Toggle invisibility of the comment at point.                              |
-|           | lem-ui-comment-fold-tree-toggle        | Toggle invisibility of current comment and all its children.              |
+| f         | lem-ui-comment-tree-fold               | Toggle invisibility of current comment and all its children.              |
 |           | lem-ui-copy-item-url                   | Copy the URL (ap_id) of the post or comment at point.                     |
 |           | lem-ui-cycle-inbox                     | Cycle inbox to next item view in `lem-inbox-types'.                       |
 | C-c C-c   | lem-ui-cycle-listing-type              | Cycle view between `lem-listing-types'.                                   |
@@ -226,6 +227,8 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-dislike-item                    | Dislike (downvote) item at point.                                         |
 |           | lem-ui-edit-comment-brief              | Edit comment at point if possible, in the minibuffer.                     |
 |           | lem-ui-feature-post                    | Feature (pin) a post, either to its instance or community.                |
+|           | lem-ui-fold-all-comments               | Fold all comments in current buffer.                                      |
+|           | lem-ui-fold-current-branch             | Toggle folding the branch of comment at point.                            |
 |           | lem-ui-jump-to-moderated               | Prompt for a community moderated by the current user and view it.         |
 | S         | lem-ui-jump-to-subscribed              | Prompt for a subscribed community and view it.                            |
 |           | lem-ui-like-item                       | Like (upvote) item at point.                                              |
@@ -236,7 +239,9 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-message-user-at-point           | Send private message to user at point.                                    |
 |           | lem-ui-more                            | Append more items to the current view.                                    |
 | TAB       | lem-ui-next-tab-item                   | Jump to next tab item.                                                    |
+|           | lem-ui-next-top-level                  | Move to next top level comment.                                           |
 | <backtab> | lem-ui-prev-tab-item                   | Jump to prev tab item.                                                    |
+|           | lem-ui-prev-top-level                  | Move to previous top level comment.                                       |
 |           | lem-ui-print-json                      | Fetch the JSON of item at point and pretty print it in a new buffer.      |
 | g         | lem-ui-reload-view                     | Reload the current view.                                                  |
 |           | lem-ui-remove-comment                  | Remove the comment at point.                                              |
