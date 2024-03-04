@@ -3230,12 +3230,47 @@ INDENT is the level of the top level comment to be folded."
   (interactive)
   (let* ((top-indent (or indent
                          (length (lem-ui--property 'line-prefix))))
+         ;; fold current item:
          (invis-after (lem-ui-comment-fold-toggle invis)))
     (save-excursion
-      (lem-next-item)
-      (let ((indent (length (lem-ui--property 'line-prefix))))
-        (when (> indent top-indent)
-          (lem-ui-comment-tree-fold invis-after top-indent))))))
+      ;; maybe recur into subsequent items:
+      (unless (equal "Nothing further" ; stop at last item
+                     (lem-next-item :no-refresh))
+        (let ((indent (length (lem-ui--property 'line-prefix))))
+          (when (> indent top-indent)
+            (lem-ui-comment-tree-fold invis-after top-indent)))))))
+
+(defun lem-ui--fold-all-comments ()
+  "Fold all comments in current buffer."
+  (save-excursion
+    (goto-char (point-min))
+    (while (not (equal "Nothing further" ; stop at last item
+                       (lem-next-item :no-refresh)))
+      (unless (eq t (get-text-property (point) 'folded))
+        (lem-ui-comment-tree-fold)))))
+
+(defun lem-ui--goto-parent-comment ()
+  "Move point to parent comment.
+Stop moving up at a top level comment."
+  (let ((parent-id (lem-ui--parent-id (lem-ui--property 'json)))
+        (post-id (lem-ui--property 'post-id)))
+    (if (not parent-id)
+        (message "At top level")
+      (lem-ui-post-goto-comment parent-id post-id :no-recenter))))
+
+(defun lem-ui-goto-top-of-branch ()
+  "Move point to the top of the branch of comment at point."
+  (interactive)
+  (lem-ui-with-item 'comment
+    (while (lem-ui--parent-id (lem-ui--property 'json))
+      (lem-ui--goto-parent-comment))))
+
+(defun lem-ui-fold-current-branch ()
+  "Toggle folding the branch of comment at point."
+  (interactive)
+  (save-excursion
+    (lem-ui-goto-top-of-branch)
+    (lem-ui-comment-tree-fold)))
 
 ;;; LIKES / VOTES
 
