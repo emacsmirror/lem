@@ -89,8 +89,8 @@ Lemmy makes heavy use of sorting. Item (posts, comments, users, communities) vie
 
 =lem.el= has a number of comment tree navigating and folding (hiding) commands:
 
-- =M-p= - =lem-ui-prev-top-level= - navigate to the previous top-level comment
-- =M-n= - =lem-ui-next-top-level= - navigate to the next top-level comment
+- =M-p= - =lem-ui-prev-same-level= - navigate to the previous same-level comment
+- =M-n= - =lem-ui-next-same-level= - navigate to the next same-level comment
 - =M-u= - =lem-ui-branch-top-level= - move to the comment at the top of branch point is in
 
 
@@ -255,10 +255,10 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-mark-reply-comment-read         | Mark the comment-reply at point as read.                                  |
 |           | lem-ui-message-user-at-point           | Send private message to user at point.                                    |
 |           | lem-ui-more                            | Append more items to the current view.                                    |
+| M-n       | lem-ui-next-same-level                 | Move to next same level comment.                                          |
 | TAB       | lem-ui-next-tab-item                   | Jump to next tab item.                                                    |
-| M-n       | lem-ui-next-top-level                  | Move to next top level comment.                                           |
+| M-p       | lem-ui-prev-same-level                 | Move to previous same level comment.                                      |
 | <backtab> | lem-ui-prev-tab-item                   | Jump to prev tab item.                                                    |
-| M-p       | lem-ui-prev-top-level                  | Move to previous top level comment.                                       |
 |           | lem-ui-print-json                      | Fetch the JSON of item at point and pretty print it in a new buffer.      |
 | g         | lem-ui-reload-view                     | Reload the current view.                                                  |
 |           | lem-ui-remove-comment                  | Remove the comment at point.                                              |

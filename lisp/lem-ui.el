@@ -3190,29 +3190,27 @@ If COMMENT-ID is provided, move point to that comment."
           (lem-ui-post-goto-comment comment-id post-id)
           (lem-ui-fold-current-branch buf))))))
 
-(defun lem-ui-prev-top-level ()
-  "Move to previous top level comment.
-If not currently at a top level comment, move to top of current branch."
+(defun lem-ui-prev-same-level ()
+  "Move to previous same level comment.
+If no same level comment is found, move to the previous higher level one."
   (interactive)
   (lem-ui-with-view 'post
-    (let ((current-indent (lem-ui--current-indent)))
-      (if (not (eq 0 current-indent))
-          (lem-ui-branch-top-level)
-        (lem-prev-item)
-        (while (not (eq 0 (lem-ui--current-indent)))
-          (lem-prev-item))))))
+    (let ((orig-indent (lem-ui--current-indent)))
+      (lem-prev-item)
+      (while (not (>= orig-indent
+                      (lem-ui--current-indent)))
+        (lem-prev-item)))))
 
-(defun lem-ui-next-top-level ()
-  "Move to next top level comment."
+(defun lem-ui-next-same-level ()
+  "Move to next same level comment.
+If no same level comment is found, move to the next higher level one."
   (interactive)
   (lem-ui-with-view 'post
-    (let ((current-indent (lem-ui--current-indent)))
-      (if (not (eq 0 current-indent))
-          (while (not (eq 0 (lem-ui--current-indent)))
-            (lem-next-item))
-        (lem-next-item)
-        (while (not (eq 0 (lem-ui--current-indent)))
-          (lem-next-item))))))
+    (let ((orig-indent (lem-ui--current-indent)))
+      (lem-next-item)
+      (while (not (>= orig-indent
+                      (lem-ui--current-indent)))
+        (lem-next-item)))))
 
 (defun lem-ui--goto-parent-comment ()
   "Move point to parent comment.
