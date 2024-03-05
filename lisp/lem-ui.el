@@ -2899,6 +2899,33 @@ Parent-fun for `hierarchy-add-tree'."
        str))
     str))
 
+(defun lem-ui-widget-fold-format (&optional indent)
+  "Format a toggle widget for comment folding.
+INDENT is a string for `line-prefix' property."
+  (concat
+   (propertize (concat "%[" (lem-ui-symbol 'plus)
+                       "%]")
+               'face '(lem-ui-widget-face :box t)
+               'line-prefix indent
+               'lem-tab-stop t)
+   " ")) ;: %v"))
+
+(defun lem-ui-widget-fold-notify-fun (&optional old-value)
+  "Return a notify function for a toggle fold widget.
+OLD-VALUE is the widget's value before being changed."
+  `(lambda (widget &rest ignore)
+     (let ((value (widget-value widget)))
+       ;; FIXME: only works on second click? but RET works
+       (condition-case x
+           (save-excursion
+             ;; it seems like point is momentarily moved to widget
+             ;; on click event or RET, so safe to just move to byline-top
+             ;; then fold:
+             (lem-next-item)
+             (lem-ui-comment-tree-fold))
+         (user-error ; don't update widget if cycle-sort fails:
+          (lem-ui-widget-reset-value widget ,old-value x))))))
+
 (defun lem-ui-format-comment (comment &optional indent reply details)
   "Format COMMENT, optionally with INDENT amount of indent bars.
 REPLY means it is a comment-reply object.
@@ -2909,11 +2936,8 @@ DETAILS means display what community and post the comment is linked to."
                      (lem-ui-render-body .comment.content
                                          (alist-get 'comment comment)
                                          indent)))
-          (indent-str
-           ;; NB this is also done in `lem--hierarchy-labelfn-indent'
-           ;; to propertize the first line's indent bars:
-           (when indent
-             (lem-ui--make-colored-indent-str indent)))
+          (indent-str (when indent
+                        (lem-ui--make-colored-indent-str indent)))
           (handle (lem-ui--handle-from-user-url .creator.actor_id))
           (post-title (when details .post.name))
           (community-name (when details (or .community.title
@@ -2926,6 +2950,11 @@ DETAILS means display what community and post the comment is linked to."
           (deleted .comment.deleted)
           (removed .comment.removed))
       (push .comment.id lem-ui-current-items) ; pagination
+      (widget-create 'toggle
+                     :help-echo (format "Toggle comment folding")
+                     :format (lem-ui-widget-fold-format indent-str)
+                     :notify (lem-ui-widget-fold-notify-fun)
+                     :keymap lem-widget-keymap)
       (propertize
        (concat
         (lem-ui-top-byline nil nil
