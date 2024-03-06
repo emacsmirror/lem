@@ -605,6 +605,7 @@ active on other instances."
 Returns the car of `lem-user-view-sort-types',
 `lem-comment-sort-types' or `lem-sort-types'.
 Optionally return default sort type for VIEW."
+  ;; calqued off the webUI iirc
   (let ((view (or view (lem-ui-view-type))))
     (cond ((or (eq view 'user)
                (eq view 'current-user))
@@ -647,24 +648,55 @@ Optionally return default sort type for VIEW."
           ((eq view-fun 'lem-ui-view-inbox)
            'inbox))))
 
+;; from create-widget:
+;; (cond ((equal kind "Listing")
+;;        lem-listing-types)
+;;       ((equal kind "Sort")
+;;        (cond ((or (eq (lem-ui-view-type) 'post)
+;;                   (equal (lem-ui-get-buffer-spec :item) "comments"))
+;;               lem-comment-sort-types)
+;;              ((or (eq (lem-ui-view-type) 'user)
+;;                   (eq (lem-ui-view-type) 'current-user))
+;;               lem-user-view-sort-types)
+;;              (t
+;;               lem-sort-types)))
+;;       ((equal kind "Inbox")
+;;        lem-inbox-types)
+;;       ;; maybe items is useless as we have headings:
+;;       ((equal kind "Items")
+;;        lem-items-types)
+;;       ((equal kind "Search")
+;;        lem-search-types-implemented))
+
 (defun lem-ui-view-options (view)
   "Return the various sorting and other options for VIEW.
-Returns a list of the variables containing the specific options."
-  (cond ((eq view 'post)
-         '(lem-comment-sort-types))
-        ((eq view 'instance)
-         '(lem-items-types lem-sort-types lem-listing-types))
-        ((eq view 'search)
-         '(lem-listing-types lem-sort-types lem-search-types-implemented))
-        ((or (eq view 'user)
-             (eq view 'current-user))
-         '(lem-user-items-types lem-sort-types))
-        ((eq view 'community)
-         '(lem-items-types lem-sort-types))
-        ((eq view 'communities)
-         '(lem-listing-types lem-sort-types))
-        ((eq view 'inbox)
-         '(lem-comment-sort-types lem-inbox-types))))
+Returns a list of keyword plists holding the variables containing the
+specific options and their default values."
+  (let ((default-sort (lem-ui-view-default-sort view)))
+    (cond ((eq view 'post)
+           `((:sort lem-comment-sort-types :default ,default-sort)))
+          ((eq view 'instance)
+           `((:items lem-items-types :default nil)
+             (:sort lem-sort-types :default ,default-sort)
+             (:listing lem-listing-types :default nil)))
+          ((eq view 'search)
+           `((:listing lem-listing-types :default "All")
+             (:sort lem-sort-types :default ,default-sort)
+             (:search lem-search-types-implemented :default
+                      ,(car lem-search-types-implemented))))
+          ((or (eq view 'user)
+               (eq view 'current-user))
+           `((:items lem-user-items-types :default "overview")
+             (:sort lem-sort-types :default ,default-sort)))
+          ((eq view 'community)
+           `((:items lem-items-types :default "posts")
+             (:sort lem-sort-types :default ,default-sort)))
+          ((eq view 'communities)
+           '((:listing lem-listing-types :default "All")
+             (:sort lem-sort-types :default "TopMonth")))
+          ((eq view 'inbox)
+           `((:sort lem-comment-sort-types :default ,default-sort)
+             (:inbox lem-inbox-types :default all))))))
 
 (defun lem-ui-toggle-posts-comments ()
   "Switch between displaying posts or comments.
@@ -853,6 +885,25 @@ Optionally, use SORT."
   "Given SEARCH-TYPE, return a render function."
   (intern (concat "lem-ui-render-" search-type)))
 
+(defun lem-ui-kw-to-str (kw)
+  "Convert KW, a keyword, into a capitalized string."
+  (capitalize
+   (string-trim-left
+    (symbol-name kw)
+    ":")))
+
+(defun lem-ui-build-view-widget-args (view-opts &optional choices)
+  "Given VIEW-OPTS, return a nested list of arguments for creating widgets.
+VIEW-OPTS is a nested plist returned by `lem-ui-view-options'.
+CHOICES is a list of the same length and item order as VIEW-OPTS,
+used to override default values."
+  (cl-loop for o in view-opts
+           for c in choices
+           collect (let ((default (or c (plist-get o :default)))
+                         (vals (cadr o))
+                         (name (lem-ui-kw-to-str (car o))))
+                     (list name vals default))))
+
 (defun lem-ui-search (&optional query search-type
                                 listing-type sort limit page
                                 community-id creator-id)
@@ -864,9 +915,7 @@ PAGE is the page number.
 COMMUNITY-ID is the ID of a community to limit search to.
 CREATOR-ID is same to limit search to a user."
   (interactive)
-  (let* ((types ; remove not-yet-implemented search types:
-          (remove "Url"
-                  (remove "All" lem-search-types)))
+  (let* ((types lem-search-types-implemented)
          (sort (if (lem-sort-type-p sort)
                    sort
                  (lem-ui-view-default-sort 'search)))
@@ -897,10 +946,11 @@ CREATOR-ID is same to limit search to a user."
       (lem-ui-set-buffer-spec listing-type sort
                               #'lem-ui-search
                               search-type page nil query)
-      ;; TODO: build these lists using `lem-ui-view-options':
-      (lem-ui-widgets-create `( "Search" ,search-type
-                                "Listing" ,listing-type
-                                "Sort" ,sort))
+      (let* ((opts (lem-ui-view-options 'search))
+             ;; FIXME: choices must be same length and item order as opts:
+             (choices `(,listing-type ,sort ,search-type))
+             (widgets-list (lem-ui-build-view-widget-args opts choices)))
+        (lem-ui-widgets-create widgets-list))
       (insert "\n")
       ;; and say a prayer to the function signature gods:
       (cond ((or (equal search-type-downcased "posts")
@@ -2106,29 +2156,12 @@ OLD-VALUE is the widget's value before being changed."
               (lem-ui-cycle-search value))
              (t (message "Widget kind not implemented yet"))))))
 
-(defun lem-ui-widget-create (kind value)
-  "Return a widget of KIND, with default VALUE.
+(defun lem-ui-widget-create (kind type value)
+  "Return a widget of KIND, with TYPE-LIST elements, and default VALUE.
 KIND is a string, either Listing, Sort, Items, or Inbox, and will
 be used for the widget's tag.
-VALUE is a string, a member of the list associated with KIND."
-  (let ((type-list (cond ((equal kind "Listing")
-                          lem-listing-types)
-                         ((equal kind "Sort")
-                          (cond ((or (eq (lem-ui-view-type) 'post)
-                                     (equal (lem-ui-get-buffer-spec :item) "comments"))
-                                 lem-comment-sort-types)
-                                ((or (eq (lem-ui-view-type) 'user)
-                                     (eq (lem-ui-view-type) 'current-user))
-                                 lem-user-view-sort-types)
-                                (t
-                                 lem-sort-types)))
-                         ((equal kind "Inbox")
-                          lem-inbox-types)
-                         ;; maybe items is useless as we have headings:
-                         ((equal kind "Items")
-                          lem-items-types)
-                         ((equal kind "Search")
-                          lem-search-types-implemented))))
+VALUE is a string, a member of TYPE."
+  (let ((type-list (eval type)))
     (if (not (member value type-list))
         (error "%s is not a member of %s" value type-list)
       (widget-create 'menu-choice
@@ -2140,10 +2173,14 @@ VALUE is a string, a member of the list associated with KIND."
                      :notify (lem-ui-widget-notify-fun value)
                      :keymap lem-widget-keymap))))
 
-(defun lem-ui-widgets-create (plist)
-  "PLIST is a plist of kind and value arguments for `lem-ui-widget-create'."
-  (while plist
-    (funcall #'lem-ui-widget-create (pop plist) (pop plist)))
+(defun lem-ui-widgets-create (widgets-list)
+  "Create a number of dropdown widgets.
+WIDGETS-LIST is a nested list where each list contains three
+elements: a tag, a list of items, and a default value. They are
+arguments for `lem-ui-widget-create'."
+  (cl-loop for w in widgets-list
+           do (funcall #'lem-ui-widget-create
+                       (nth 0 w) (nth 1 w) (nth 2 w)))
   (insert "\n"))
 
 (defun lem-ui-browse-communities (&optional type sort limit)
