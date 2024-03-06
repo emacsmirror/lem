@@ -67,6 +67,9 @@
   "Non-nil if STR is in `lem-listing-types'."
   (cl-member str lem-listing-types :test 'equal))
 
+(defconst lem-search-listing-types
+  '("All" "Local"))
+
 (defconst lem-sort-types
   '("Active" "Hot" "New" "Old" "Controversial" "Scaled"
     "TopDay" "TopWeek" "TopMonth" "TopYear" "TopAll"
@@ -85,6 +88,9 @@
   (cl-member str lem-comment-sort-types :test 'equal))
 
 ;; as per web UI:
+;; the API shows that users and seach views have normal sort types,
+;; but the web UI gives these options
+;; (API may not be up to date?)
 (defconst lem-user-view-sort-types
   '("New" "Old" "Controversial"
     "TopDay" "TopWeek" "TopMonth" "TopYear" "TopAll"
@@ -104,6 +110,9 @@
 
 (defconst lem-search-types
   '("All" "Comments" "Posts" "Communities" "Users" "Url"))
+
+(defconst lem-search-types-implemented
+  '("Comments" "Posts" "Communities" "Users"))
 
 (defun lem-search-type-p (str)
   "Non-nil if STR is in `lem-search-types'."

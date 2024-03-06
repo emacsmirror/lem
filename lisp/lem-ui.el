@@ -655,7 +655,7 @@ Returns a list of the variables containing the specific options."
         ((eq view 'instance)
          '(lem-items-types lem-sort-types lem-listing-types))
         ((eq view 'search)
-         '(lem-listing-types lem-sort-types lem-search-types))
+         '(lem-listing-types lem-sort-types lem-search-types-implemented))
         ((or (eq view 'user)
              (eq view 'current-user))
          '(lem-user-items-types lem-sort-types))
@@ -709,8 +709,11 @@ Works on instance, community, and user views, which also have an overview."
     (lem-ui--id-from-prop :string)))
 
 (defun lem-ui-next-listing-type (type)
-  "Return next listing type after TYPE in `lem-listing-types'."
-  (lem-ui-next-type type lem-listing-types))
+  "Return next listing type after TYPE in `lem-listing-types'.
+If in search view, use `lem-search-listing-types'"
+  (if (eq 'search (lem-ui-view-type))
+      (lem-ui-next-type type lem-search-listing-types)
+    (lem-ui-next-type type lem-listing-types)))
 
 (defun lem-ui-next-type (type list)
   "Return next listing type after TYPE in LIST."
@@ -2075,6 +2078,8 @@ OLD-VALUE is the widget's value before being changed."
                   (lem-ui-cycle-sort value)
                 (user-error ; don't update widget if cycle-sort fails:
                  (lem-ui-widget-reset-value widget ,old-value x))))
+             ((equal tag "Search")
+              (lem-ui-cycle-search value))
              (t (message "Widget kind not implemented yet"))))))
 
 (defun lem-ui-widget-create (kind value)
@@ -2097,7 +2102,9 @@ VALUE is a string, a member of the list associated with KIND."
                           lem-inbox-types)
                          ;; maybe items is useless as we have headings:
                          ((equal kind "Items")
-                          lem-items-types))))
+                          lem-items-types)
+                         ((equal kind "Search")
+                          lem-search-types-implemented))))
     (if (not (member value type-list))
         (error "%s is not a member of %s" value type-list)
       (widget-create 'menu-choice
