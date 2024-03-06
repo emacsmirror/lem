@@ -670,33 +670,59 @@ Optionally return default sort type for VIEW."
 
 (defun lem-ui-view-options (view)
   "Return the various sorting and other options for VIEW.
-Returns a list of keyword plists holding the variables containing the
-specific options and their default values."
+Returns a keyword plist of keyword plists holding the variables containing the
+specific options and their default values.
+If these options are queried and return nil, then they don't
+support that option."
+  ;; TODO: see also `lem-ui-get-sort-types'!
+  ;; it mandates `lem-comment-sort-types' for all comment views
+  ;; which requires item, taken from buffer-spec
   (let ((default-sort (lem-ui-view-default-sort view)))
     (cond ((eq view 'post)
-           `((:sort lem-comment-sort-types :default ,default-sort)))
+           `((:sort :types lem-comment-sort-types :default ,default-sort)))
           ((eq view 'instance)
-           `((:items lem-items-types :default nil)
-             (:sort lem-sort-types :default ,default-sort)
-             (:listing lem-listing-types :default nil)))
+           `((:items :types lem-items-types :default nil)
+             (:sort :types lem-sort-types :default ,default-sort)
+             (:listing :types lem-listing-types :default nil)))
           ((eq view 'search)
-           `((:listing lem-listing-types :default "All")
-             (:sort lem-sort-types :default ,default-sort)
-             (:search lem-search-types-implemented :default
-                      ,(car lem-search-types-implemented))))
+           `((:listing :types lem-listing-types :default "All")
+             (:sort :types lem-sort-types :default ,default-sort)
+             (:search  :types lem-search-types-implemented
+                       :default
+                       ,(car lem-search-types-implemented))))
           ((or (eq view 'user)
                (eq view 'current-user))
-           `((:items lem-user-items-types :default "overview")
-             (:sort lem-sort-types :default ,default-sort)))
+           `((:items :types lem-user-items-types :default "overview")
+             (:sort :types lem-user-view-sort-types :default ,default-sort)))
           ((eq view 'community)
-           `((:items lem-items-types :default "posts")
-             (:sort lem-sort-types :default ,default-sort)))
+           `((:items :types lem-items-types :default "posts")
+             (:sort :types lem-sort-types :default ,default-sort)))
           ((eq view 'communities)
-           '((:listing lem-listing-types :default "All")
-             (:sort lem-sort-types :default "TopMonth")))
+           '((:listing :types lem-listing-types :default "All")
+             (:sort :types lem-sort-types :default "TopMonth")))
           ((eq view 'inbox)
-           `((:sort lem-comment-sort-types :default ,default-sort)
-             (:inbox lem-inbox-types :default all))))))
+           `((:sort :types lem-inbox-sort-types :default ,default-sort)
+             (:inbox :types lem-inbox-types :default all))))))
+
+(defun lem-ui--view-opts-type (view-opts kind)
+  "Return the the :types variable, from KIND in VIEW-OPTS.
+KIND is the type of view options, such as :listing, or :sort.
+VIEW-OPTS is a nested plist as returned by `lem-ui-view-options'."
+  (eval
+   (plist-get
+    (alist-get kind view-opts)
+    :types)))
+
+(defun lem-ui--view-opts-default (view-opts kind)
+  "Return the default option of KIND in VIEW-OPTS.
+KIND is the type of view options, such as :listing, or :sort.
+VIEW-OPTS is a nested plist as returned by `lem-ui-view-options'."
+  (plist-get
+   (alist-get kind view-opts)
+   :default))
+
+(defun lem-ui--get-opts-kind (opts kind)
+  (plist-get (cdr opts) kind))
 
 (defun lem-ui-toggle-posts-comments ()
   "Switch between displaying posts or comments.
@@ -766,25 +792,20 @@ It must be a member of the same list."
          (view (lem-ui-view-type))
          (item (lem-ui-get-buffer-spec :item))
          (query (lem-ui-get-buffer-spec :query))
-         (listing-type (or type (lem-ui-next-listing-type type-last))))
-    (cond ((or (eq view 'user)
-               (eq view 'current-user)
-               (eq view 'community)
-               (eq view 'post))
-           (message "%s views don't have listing type."
-                    view))
-          ((eq view 'instance)
-           (funcall view-fun listing-type sort nil nil item))
-          ;; (message "listing: %s" listing-type))
-          ((eq view 'communities)
-           (lem-ui-browse-communities listing-type sort))
-          ;; (message "listing: %s" listing-type))
-          ((eq view 'inbox)
-           (lem-ui-cycle-inbox))
-          ((eq view 'search)
-           (lem-ui-search query item listing-type sort))
-          (t ;; TODO: search / communities
-           (message "Not implemented yet")))))
+         (listing-type (or type (lem-ui-next-listing-type type-last)))
+         (opts (lem-ui-view-options view)))
+    (if (not (lem-ui--view-opts-type opts :listing))
+        (message "%s views don't have listing type." view)
+      (cond ((eq view 'instance)
+             (funcall view-fun listing-type sort nil nil item))
+            ((eq view 'communities)
+             (lem-ui-browse-communities listing-type sort))
+            ((eq view 'inbox)
+             (lem-ui-cycle-inbox))
+            ((eq view 'search)
+             (lem-ui-search query item listing-type sort))
+            (t
+             (message "Not implemented yet"))))))
 
 (defun lem-ui-choose-listing-type ()
   "Prompt for a listing type, and use it to reload current view."
@@ -856,8 +877,9 @@ Optionally, use SORT."
   "Prompt for a sort type, and use it to reload the current view."
   (interactive)
   (let* ((view (lem-ui-view-type))
+         (opts (lem-ui-view-options view))
          (item (lem-ui-get-buffer-spec :item))
-         (sort-list (lem-ui-get-sort-types view item))
+         (sort-list (lem-ui--view-opts-type opts :sort))
          (choice (completing-read "Sort by:" sort-list nil :match)))
     (lem-ui-cycle-sort choice)))
 
@@ -892,6 +914,13 @@ Optionally, use SORT."
     (symbol-name kw)
     ":")))
 
+(defun lem-ui--return-widget-args (opts choice)
+  ""
+  (let ((default (or choice (lem-ui--get-opts-kind opts :default)))
+        (vals (lem-ui--get-opts-kind opts :types))
+        (name (lem-ui-kw-to-str (car opts))))
+    (list name vals default)))
+
 (defun lem-ui-build-view-widget-args (view-opts &optional choices)
   "Given VIEW-OPTS, return a nested list of arguments for creating widgets.
 VIEW-OPTS is a nested plist returned by `lem-ui-view-options'.
@@ -899,10 +928,7 @@ CHOICES is a list of the same length and item order as VIEW-OPTS,
 used to override default values."
   (cl-loop for o in view-opts
            for c in choices
-           collect (let ((default (or c (plist-get o :default)))
-                         (vals (cadr o))
-                         (name (lem-ui-kw-to-str (car o))))
-                     (list name vals default))))
+           collect (lem-ui--return-widget-args o c)))
 
 (defun lem-ui-search (&optional query search-type
                                 listing-type sort limit page
@@ -915,25 +941,22 @@ PAGE is the page number.
 COMMUNITY-ID is the ID of a community to limit search to.
 CREATOR-ID is same to limit search to a user."
   (interactive)
-  (let* ((types lem-search-types-implemented)
+  (let* ((opts (lem-ui-view-options 'search))
          (sort (if (lem-sort-type-p sort)
                    sort
-                 (lem-ui-view-default-sort 'search)))
-         (listing-type (or listing-type (car lem-listing-types)))
+                 (lem-ui--view-opts-default opts :sort)))
+         (listing-type (or listing-type
+                           (lem-ui--view-opts-default opts :listing)))
          (search-type (or search-type
-                          (lem-ui-read-type "Search type: " types)))
+                          (lem-ui-read-type "Search type: "
+                                            (lem-ui--view-opts-type opts :search))))
          (search-type-downcased (downcase search-type))
-         ;; LISTING/SORT doesn't make sense for all search types, eg users,
-         ;; lets just cycle in results:
-         ;; (listing-type (lem-ui-read-type "Listing type: " lem-listing-types))
-         ;; (sort (lem-ui-read-type "Sort by: " lem-sort-types))
          (query (or query (read-string "Query: ")))
          (type-fun (lem-ui-search-type-fun search-type-downcased))
          (buf (format "*lem-search-%s*" search-type-downcased))
          (response (lem-search query search-type listing-type sort
                                (or limit lem-ui-comments-limit)
-                               page nil
-                               community-id creator-id))
+                               page nil community-id creator-id))
          (data (alist-get (intern search-type-downcased) response)))
     ;; TODO: render other responses:
     ;; ("All" TODO
@@ -946,9 +969,8 @@ CREATOR-ID is same to limit search to a user."
       (lem-ui-set-buffer-spec listing-type sort
                               #'lem-ui-search
                               search-type page nil query)
-      (let* ((opts (lem-ui-view-options 'search))
-             ;; FIXME: choices must be same length and item order as opts:
-             (choices `(,listing-type ,sort ,search-type))
+      ;; FIXME: choices must be same length and item order as opts:
+      (let* ((choices `(,listing-type ,sort ,search-type))
              (widgets-list (lem-ui-build-view-widget-args opts choices)))
         (lem-ui-widgets-create widgets-list))
       (insert "\n")
@@ -972,9 +994,11 @@ Optionally return results for SEARCH-TYPE."
            (query (lem-ui-get-buffer-spec :query))
            (sort (lem-ui-get-buffer-spec :sort))
            (listing (lem-ui-get-buffer-spec :listing-type))
+           (opts (lem-ui-view-options 'search))
+           (search-types (lem-ui--view-opts-type opts :search))
            (next-search
             (or search-type
-                (lem-ui-next-type item lem-search-types-implemented))))
+                (lem-ui-next-type item search-types))))
       (lem-ui-search query next-search listing sort))))
 
 (defun lem-ui-search-in-community ()
