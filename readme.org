@@ -85,6 +85,10 @@ Lemmy makes heavy use of sorting. Item (posts, comments, users, communities) vie
 - =C-c C-s= - =lem-ui-cycle-sort= - cycle between sort types (new, hot, active, top, old, etc.). To directly set sort, call =o=, or =lem-ui-choose-sort=. Full sort type lists are found in =lem-sort-types= and =lem-comment-sort-types=, the list is chosen according to the present view.
 - =C-c C-v= - =lem-ui-toggle-posts-comments= - toggle between posts or comments, or optionally overview if the view supports it (e.g. for user views).
 
+Additionally, for search there is:
+
+- =C-c C-h= - =lem-ui-cycle-search= - cycle between search result types for the current query.
+
 ** folding and navigating comment trees
 
 =lem.el= has a number of comment tree navigating and folding (hiding) commands:
@@ -94,7 +98,7 @@ Lemmy makes heavy use of sorting. Item (posts, comments, users, communities) vie
 - =M-u= - =lem-ui-branch-top-level= - move to the comment at the top of branch point is in
 
 
-- =f= - =lem-ui-comment-tree-fold= - toggle folding of current comment, and all its children (but not its parents)
+- =f= - =lem-ui-comment-tree-fold= - toggle folding of current comment, and all its children (but not its parents); this is also called by clicking the "+" widget on a comment
 - =F= - =lem-ui-comment-fold-toggle= - toggle folding of current comment only
 - =M-f= - =lem-ui-fold-current-branch= - toggle folding of current branch (parents and children)
 - =C-M-f= - =lem-ui-fold-all-toggle= - toggle folding of all comments in buffer
@@ -234,6 +238,7 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-copy-item-url                   | Copy the URL (ap_id) of the post or comment at point.                     |
 |           | lem-ui-cycle-inbox                     | Cycle inbox to next item view in `lem-inbox-types'.                       |
 | C-c C-c   | lem-ui-cycle-listing-type              | Cycle view between `lem-listing-types'.                                   |
+| C-c C-h   | lem-ui-cycle-search                    | Cycle current search.                                                     |
 | C-c C-s   | lem-ui-cycle-sort                      | Cycle view between some `lem-sort-types'.                                 |
 |           | lem-ui-delete-comment                  | Delete comment at point.                                                  |
 |           | lem-ui-delete-community                | Prompt for a community moderated by the current user and delete it.       |
@@ -257,8 +262,10 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-more                            | Append more items to the current view.                                    |
 | M-n       | lem-ui-next-same-level                 | Move to next same level comment.                                          |
 | TAB       | lem-ui-next-tab-item                   | Jump to next tab item.                                                    |
+|           | lem-ui-next-top-level                  | Move to next top level comment.                                           |
 | M-p       | lem-ui-prev-same-level                 | Move to previous same level comment.                                      |
 | <backtab> | lem-ui-prev-tab-item                   | Jump to prev tab item.                                                    |
+|           | lem-ui-prev-top-level                  | Move to previous top level comment.                                       |
 |           | lem-ui-print-json                      | Fetch the JSON of item at point and pretty print it in a new buffer.      |
 | g         | lem-ui-reload-view                     | Reload the current view.                                                  |
 |           | lem-ui-remove-comment                  | Remove the comment at point.                                              |

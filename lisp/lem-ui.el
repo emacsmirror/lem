@@ -867,22 +867,25 @@ CREATOR-ID is same to limit search to a user."
   (let* ((types ; remove not-yet-implemented search types:
           (remove "Url"
                   (remove "All" lem-search-types)))
-         (type (downcase
-                (or search-type
-                    (lem-ui-read-type "Search type: " types))))
+         (sort (if (lem-sort-type-p sort)
+                   sort
+                 (lem-ui-view-default-sort 'search)))
+         (listing-type (or listing-type (car lem-listing-types)))
+         (search-type (or search-type
+                          (lem-ui-read-type "Search type: " types)))
+         (search-type-downcased (downcase search-type))
          ;; LISTING/SORT doesn't make sense for all search types, eg users,
          ;; lets just cycle in results:
          ;; (listing-type (lem-ui-read-type "Listing type: " lem-listing-types))
          ;; (sort (lem-ui-read-type "Sort by: " lem-sort-types))
          (query (or query (read-string "Query: ")))
-         (type-fun (lem-ui-search-type-fun type))
-         (buf (format "*lem-search-%s*" type))
-         ;; TODO: handle community
-         (response (lem-search query (capitalize type) listing-type sort
+         (type-fun (lem-ui-search-type-fun search-type-downcased))
+         (buf (format "*lem-search-%s*" search-type-downcased))
+         (response (lem-search query search-type listing-type sort
                                (or limit lem-ui-comments-limit)
                                page nil
                                community-id creator-id))
-         (data (alist-get (intern type) response)))
+         (data (alist-get (intern search-type-downcased) response)))
     ;; TODO: render other responses:
     ;; ("All" TODO
     ;; "Comments" DONE
@@ -891,17 +894,38 @@ CREATOR-ID is same to limit search to a user."
     ;; "Users" DONE
     ;; "Url") TODO
     (lem-ui-with-buffer buf 'lem-mode nil nil
-      ;; and say a prayer to the function signature gods:
-      (cond ((or (equal type "posts")
-                 (equal type "comments"))
-             (funcall type-fun data t))
-            ((equal type "users")
-             (funcall type-fun data :search))
-            (t
-             (funcall type-fun data)))
       (lem-ui-set-buffer-spec listing-type sort
                               #'lem-ui-search
-                              type page nil query))))
+                              search-type page nil query)
+      ;; TODO: build these lists using `lem-ui-view-options':
+      (lem-ui-widgets-create `( "Search" ,search-type
+                                "Listing" ,listing-type
+                                "Sort" ,sort))
+      (insert "\n")
+      ;; and say a prayer to the function signature gods:
+      (cond ((or (equal search-type-downcased "posts")
+                 (equal search-type-downcased "comments"))
+             (funcall type-fun data t))
+            ((equal search-type-downcased "users")
+             (funcall type-fun data :search))
+            (t
+             (funcall type-fun data))))))
+
+(defun lem-ui-cycle-search (&optional search-type)
+  "Cycle current search.
+Search for next member of `lem-search-types-implemented'.
+Optionally return results for SEARCH-TYPE."
+  (interactive)
+  (lem-ui-with-view 'search
+    (let* ((item (lem-ui-get-buffer-spec :item))
+           (view-fun (lem-ui-get-buffer-spec :view-fun))
+           (query (lem-ui-get-buffer-spec :query))
+           (sort (lem-ui-get-buffer-spec :sort))
+           (listing (lem-ui-get-buffer-spec :listing-type))
+           (next-search
+            (or search-type
+                (lem-ui-next-type item lem-search-types-implemented))))
+      (lem-ui-search query next-search listing sort))))
 
 (defun lem-ui-search-in-community ()
   "Search in the current community."
@@ -2812,7 +2836,7 @@ ID is the post's id, used for unique buffer names."
          lem-comments-hierarchy
          (lem--hierarchy-labelfn-indent
           (lambda (item indent)
-            (lem-ui-format-comment item indent))))))))
+            (lem-ui-format-comment item indent nil nil :widget))))))))
 ;; `lem--hierarchy-labelfn-indent' no longer handles line-prefixing:
 ;; (lem-ui-symbol 'reply-bar)
 ;; 'face ':foreground 'lem-ui-cycle-colors))))))
@@ -2933,7 +2957,7 @@ OLD-VALUE is the widget's value before being changed."
          (user-error ; don't update widget if cycle-sort fails:
           (lem-ui-widget-reset-value widget ,old-value x))))))
 
-(defun lem-ui-format-comment (comment &optional indent reply details)
+(defun lem-ui-format-comment (comment &optional indent reply details widget)
   "Format COMMENT, optionally with INDENT amount of indent bars.
 REPLY means it is a comment-reply object.
 DETAILS means display what community and post the comment is linked to."
@@ -2957,11 +2981,12 @@ DETAILS means display what community and post the comment is linked to."
           (deleted .comment.deleted)
           (removed .comment.removed))
       (push .comment.id lem-ui-current-items) ; pagination
-      (widget-create 'toggle
-                     :help-echo (format "Toggle comment folding")
-                     :format (lem-ui-widget-fold-format indent-str)
-                     :notify (lem-ui-widget-fold-notify-fun)
-                     :keymap lem-widget-keymap)
+      (when widget
+        (widget-create 'toggle
+                       :help-echo (format "Toggle comment folding")
+                       :format (lem-ui-widget-fold-format indent-str)
+                       :notify (lem-ui-widget-fold-notify-fun)
+                       :keymap lem-widget-keymap))
       (propertize
        (concat
         (lem-ui-top-byline nil nil
