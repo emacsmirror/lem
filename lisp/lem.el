@@ -191,7 +191,7 @@ the file ~/.emacs.d/lem.plstore and log in again."
     ;; nav/sort:
     (define-key map (kbd "C-c C-c") #'lem-ui-cycle-listing-type)
     (define-key map (kbd "C-c C-s") #'lem-ui-cycle-sort)
-    (define-key map (kbd "C-c C-v") #'lem-ui-toggle-posts-comments)
+    (define-key map (kbd "C-c C-v") #'lem-ui-cycle-items)
     (define-key map (kbd "C-c C-h") #'lem-ui-cycle-search)
     (define-key map (kbd "o") #'lem-ui-choose-sort)
     (define-key map (kbd "n") #'lem-next-item)

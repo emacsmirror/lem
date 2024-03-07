@@ -330,7 +330,7 @@ Return the buffer."
                            "\\[lem-ui-cycle-listing-type]: cycle listing "))
             (view-str (when (or (member 'lem-items-types ,bindings)
                                 (member 'lem-user-items-types ,bindings))
-                        "\\[lem-ui-toggle-posts-comments]: toggle posts/comments "))
+                        "\\[lem-ui-cycle-items]: toggle posts/comments "))
             (inbox-str (when (member 'lem-inbox-types ,bindings)
                          "\\[lem-ui-cycle-listing-type]: cycle message type "))
             (msg-str (concat listing-str
@@ -726,9 +726,11 @@ VIEW-OPTS is a nested plist as returned by `lem-ui-view-options'."
   "Return the KIND entry, a keyword from view-options list OPTS."
   (plist-get (cdr opts) kind))
 
-(defun lem-ui-toggle-posts-comments (&optional set)
+(defun lem-ui-cycle-items (&optional set)
   "Switch between displaying posts or comments.
-Works on instance, community, and user views, which also have an overview."
+Works on instance and community view.
+In user views, cycle between overview, posts and comments.
+In inbox view, cycle between `lem-inbox-types'."
   (interactive)
   (let* ((item (lem-ui-get-buffer-spec :item))
          (view (lem-ui-view-type))
@@ -2187,7 +2189,7 @@ OLD-VALUE is the widget's value before being changed."
              ((equal tag "Search")
               (lem-ui-cycle-search value))
              ((equal tag "Items")
-              (lem-ui-toggle-posts-comments value))
+              (lem-ui-cycle-items value))
              ((equal tag "Inbox")
               (lem-ui-cycle-inbox))
              (t (message "Widget kind not implemented yet"))))))
