@@ -1746,17 +1746,20 @@ LIMIT."
   (let ((post-view (lem-get-post id)))
     (if (stringp post-view)
         (user-error "%s" post-view)
-      (let* ((post (alist-get 'post_view post-view))
+      (let* ((opts (lem-ui-view-options 'post))
+             (post (alist-get 'post_view post-view))
              (community-id (alist-get 'community_id
                                       (alist-get 'post post)))
-             (sort (or sort (lem-ui-view-default-sort 'post)))
-             (bindings (lem-ui-view-options 'post))
+             (sort (or sort (lem-ui-view-opts-default opts :sort)))
+             (bindings opts)
              (buf (format "*lem-post-%s*" id)))
         (lem-ui-with-buffer buf 'lem-mode nil bindings
           (lem-ui--set-mods community-id)
           (lem-ui-render-post post :community)
           (lem-ui-set-buffer-spec nil sort #'lem-ui-view-post 'post) ;limit
-          (lem-ui-widgets-create `("Sort" ,sort))
+          (let* ((choices `(,sort))
+                 (widget-args (lem-ui-build-view-widget-args opts choices)))
+            (lem-ui-widgets-create widget-args)) ;`("Sort" ,sort)))
           (lem-ui-render-post-comments id sort limit)
           (lem-ui--init-view))))))
 
