@@ -2191,7 +2191,7 @@ OLD-VALUE is the widget's value before being changed."
              ((equal tag "Items")
               (lem-ui-cycle-items value))
              ((equal tag "Inbox")
-              (lem-ui-cycle-inbox))
+              (lem-ui-cycle-inbox value))
              (t (message "Widget kind not implemented yet"))))))
 
 (defun lem-ui-widget-create (kind type value)
@@ -2705,11 +2705,11 @@ Optionally only return UNREAD items."
                         ((eq type 'private_message)
                          (lem-ui-render-private-message item)))))))
 
-(defun lem-ui-cycle-inbox ()
+(defun lem-ui-cycle-inbox (&optional item)
   "Cycle inbox to next item view in `lem-inbox-types'."
   (interactive)
   (let* ((last (lem-ui-get-buffer-spec :item))
-         (next (lem-ui-next-type last lem-inbox-types))
+         (next (or item (lem-ui-next-type last lem-inbox-types)))
          (sort (lem-ui-get-buffer-spec :sort)))
     ;; TODO: implement unread arg
     (lem-ui-view-inbox next sort)))
