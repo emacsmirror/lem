@@ -675,32 +675,34 @@ Returns a keyword plist of keyword plists holding the variables containing the
 specific options and their default values.
 If these options are queried and return nil, then they don't
 support that option."
-  ;; TODO: see also `lem-ui-get-sort-types'!
-  ;; it mandates `lem-comment-sort-types' for all comment views
-  ;; which requires item, taken from buffer-spec
+  ;; TODO: `lem-ui-get-sort-types' mandates `lem-comment-sort-types' for
+  ;; all comment views which require item, taken from buffer-spec. but that's
+  ;; wrong, going by the webUI `lem-comment-sort-types' only for post view!
+
+  ;; NB: the order here is the widgets' order!
   (let ((default-sort (lem-ui-view-default-sort view)))
     (cond ((eq view 'post)
            `((:sort :types lem-comment-sort-types :default ,default-sort)))
           ((eq view 'instance)
-           `((:items :types lem-items-types :default "posts")
+           `((:items :types lem-items-types :default ,lem-default-items-type)
              (:sort :types lem-sort-types :default ,default-sort)
-             (:listing :types lem-listing-types :default "All")))
+             (:listing :types lem-listing-types :default ,lem-default-listing-type)))
           ((eq view 'search)
-           `((:listing :types lem-listing-types :default "All")
+           `((:listing :types lem-listing-types :default ,lem-default-listing-type)
              (:sort :types lem-sort-types :default ,default-sort)
              (:search  :types lem-search-types-implemented
                        :default
                        ,(car lem-search-types-implemented))))
           ((or (eq view 'user)
                (eq view 'current-user))
-           `((:items :types lem-user-items-types :default "overview")
+           `((:items :types lem-user-items-types :default ,lem-default-user-items-type)
              (:sort :types lem-user-view-sort-types :default ,default-sort)))
           ((eq view 'community)
-           `((:items :types lem-items-types :default "posts")
+           `((:items :types lem-items-types :default ,lem-default-items-type)
              (:sort :types lem-sort-types :default ,default-sort)))
           ((eq view 'communities)
-           '((:listing :types lem-listing-types :default "All")
-             (:sort :types lem-sort-types :default "TopMonth")))
+           `((:listing :types lem-listing-types :default ,lem-default-listing-type)
+             (:sort :types lem-sort-types :default ,lem-default-communities-sort-type)))
           ((eq view 'inbox)
            `((:inbox :types lem-inbox-types :default all)
              (:sort :types lem-inbox-sort-types :default ,default-sort))))))

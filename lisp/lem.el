@@ -101,6 +101,7 @@
   "Non-nil if STR is in `lem-user-view-sort-types'."
   (cl-member str lem-user-view-sort-types :test 'equal))
 
+;; FIXME same as `lem-comment-sort-types' but diff order?
 (defconst lem-inbox-sort-types
   '("New" "Hot" "Top" "Old" "Controversial"))
 
@@ -118,10 +119,10 @@
   "Non-nil if STR is in `lem-search-types'."
   (cl-member str lem-search-types :test 'equal))
 
-(defconst lem-items-types ; instance/community no overview
+(defconst lem-items-types
   '("posts" "comments"))
 
-(defconst lem-user-items-types ; users have overview
+(defconst lem-user-items-types
   '("overview" "posts" "comments"))
 
 (defun lem-user-view-type-p (str)
@@ -157,12 +158,24 @@
   "The default comment sort type to use."
   :type (lem-map-customize-options lem-comment-sort-types))
 
+(defcustom lem-default-communities-sort-type "TopMonth"
+  "The default sort type for `lem-ui-browse-communities'."
+  :type (lem-map-customize-options lem-sort-types))
+
 (defcustom lem-default-listing-type "All"
   "The default listing type to use."
   :type (lem-map-customize-options lem-listing-types))
 
+(defcustom lem-default-items-type "posts"
+  "The default item (posts or comments) for community and instance views."
+  :type (lem-map-customize-options lem-items-types))
+
+(defcustom lem-default-user-items-type "overview"
+  "The default item (overview, posts, or comments) for user views."
+  :type (lem-map-customize-options lem-user-items-types))
+
 (defcustom lem-use-emojify nil
-  "Whether to enable `emojify-mode' in lem buffers."
+  "Whether to enable `emojify-mode' in lem.el buffers."
   :type 'boolean)
 
 (defcustom lem-enable-relative-timestamps t
