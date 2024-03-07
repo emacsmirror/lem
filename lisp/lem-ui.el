@@ -473,26 +473,28 @@ SORT must be a member of `lem-comment-sort-types' if item is
 TYPE must be member of `lem-listing-types'.
 ITEM must be a member of `lem-items-types'."
   (interactive)
-  (let* ((instance (lem-get-instance))
-         (sort (or sort (lem-ui-view-default-sort 'instance)))
-         (type (or type lem-default-listing-type))
-         (items (if (equal item "comments")
-                    (progn
-                      (unless (lem-comment-sort-type-p sort)
-                        (setq sort (car lem-comment-sort-types)))
-                      (lem-get-comments nil nil type sort limit page))
-                  (lem-get-posts type sort limit page)))
-         (items (if (equal item "comments")
-                    (alist-get 'comments items)
-                  (alist-get 'posts items)))
+  (let* ((opts (lem-ui-view-options 'instance))
+         (instance (lem-get-instance))
+         (sort (if (lem-sort-type-p sort)
+                   sort
+                 (lem-ui-view-opts-default opts :sort)))
+         (type (or type (lem-ui-view-opts-default opts :listing)))
+         (item (or item (lem-ui-view-opts-default opts :items)))
+         (items-data (if (equal item "comments")
+                         (lem-get-comments nil nil type sort limit page)
+                       (lem-get-posts type sort limit page)))
+         (items (alist-get (intern item) items-data))
          (buf "*lem-instance*")
-         (bindings (lem-ui-view-options 'instance)))
+         (bindings opts))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
       (lem-ui-render-instance instance :stats sidebar)
       (lem-ui-set-buffer-spec
-       type sort #'lem-ui-view-instance (or item "posts") page)
-      (lem-ui-widgets-create `("Listing" ,type "Sort" ,sort))
-      (lem-ui-insert-heading (if (eq nil item) "posts" item))
+       type sort #'lem-ui-view-instance item page)
+      ;; FIXME: choices must be same length and item order as opts:
+      (let* ((choices `(,item ,sort ,type))
+             (widgets-list (lem-ui-build-view-widget-args opts choices)))
+        (lem-ui-widgets-create widgets-list))
+      (insert "\n")
       (if (equal item "comments")
           (lem-ui-render-comments items :details)
         (lem-ui-render-posts-instance items))
@@ -681,9 +683,9 @@ support that option."
     (cond ((eq view 'post)
            `((:sort :types lem-comment-sort-types :default ,default-sort)))
           ((eq view 'instance)
-           `((:items :types lem-items-types :default nil)
+           `((:items :types lem-items-types :default "posts")
              (:sort :types lem-sort-types :default ,default-sort)
-             (:listing :types lem-listing-types :default nil)))
+             (:listing :types lem-listing-types :default "All")))
           ((eq view 'search)
            `((:listing :types lem-listing-types :default "All")
              (:sort :types lem-sort-types :default ,default-sort)
@@ -724,7 +726,7 @@ VIEW-OPTS is a nested plist as returned by `lem-ui-view-options'."
 (defun lem-ui--get-opts-kind (opts kind)
   (plist-get (cdr opts) kind))
 
-(defun lem-ui-toggle-posts-comments ()
+(defun lem-ui-toggle-posts-comments (&optional set)
   "Switch between displaying posts or comments.
 Works on instance, community, and user views, which also have an overview."
   (interactive)
@@ -746,7 +748,7 @@ Works on instance, community, and user views, which also have an overview."
                              (eq view 'current-user))
                          lem-user-items-types
                        lem-items-types))
-         (item-next (lem-ui-next-type item item-types)))
+         (item-next (or set (lem-ui-next-type item item-types))))
     (cond ((eq view 'community)
            (lem-ui-view-community id item-next sort)
            (message "Viewing: %s" item-next))
@@ -2178,6 +2180,8 @@ OLD-VALUE is the widget's value before being changed."
                  (lem-ui-widget-reset-value widget ,old-value x))))
              ((equal tag "Search")
               (lem-ui-cycle-search value))
+             ((equal tag "Items")
+              (lem-ui-toggle-posts-comments value))
              (t (message "Widget kind not implemented yet"))))))
 
 (defun lem-ui-widget-create (kind type value)
