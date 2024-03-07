@@ -2355,15 +2355,13 @@ ITEM must be a member of `lem-items-types'.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return.
 PAGE is the page number of items to display, a string."
-  (let* ((community (lem-get-community id))
+  (let* ((opts (lem-ui-view-options 'community))
+         (community (lem-get-community id))
          (buf (format "*lem-community-%s*" id))
-         ;; in case we set community posts, then switch to comments:
-         (sort (if (equal item "comments")
-                   (if (lem-comment-sort-type-p sort)
-                       sort
-                     (lem-ui-view-default-sort 'community))
-                 (or sort
-                     (lem-ui-view-default-sort 'community))))
+         (item (or item (lem-ui-view-opts-default opts :items)))
+         (sort (if (lem-sort-type-p sort)
+                   sort
+                 (lem-ui-view-opts-default opts :sort)))
          (items (if (equal item "comments")
                     (alist-get 'comments
                                (lem-api-get-community-comments
@@ -2371,17 +2369,16 @@ PAGE is the page number of items to display, a string."
                   (alist-get 'posts
                              (lem-api-get-community-posts-by-id
                               id nil sort limit page)))) ; no sorting
-         (bindings (lem-ui-view-options 'community)))
+         (bindings opts))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
       (lem-ui-render-community community :stats :view)
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-community
-                              (or item "posts") page)
-      (lem-ui-widgets-create `("Sort" ,sort))
+                              item page)
+      (let* ((choices `(,item ,sort))
+             (widget-args (lem-ui-build-view-widget-args opts choices)))
+        (lem-ui-widgets-create widget-args))
       (if (equal item "comments")
-          (progn
-            (lem-ui-insert-heading "comments")
-            (lem-ui-render-comments items)) ; no type
-        (lem-ui-insert-heading (or item "posts"))
+          (lem-ui-render-comments items) ; no type
         (lem-ui-render-posts items nil :trim)) ; no children
       (lem-ui--init-view))))
 
