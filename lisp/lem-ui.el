@@ -3673,43 +3673,32 @@ Decide whether X comes before Y, based on timestamp."
 (defun lem-ui-view-user (id &optional item sort limit)
   "View user with ID.
 ITEM must be a member of `lem-user-items-types'.
-SORT must be a member of `lem-sort-types' or if item is
-\"comments\", then a member of `lem-comment-sort-types'.
-LIMIT is max items to show.
-CURRENT-USER means we are displaying the current user's profile."
-  (let* ((sort (if (lem-user-view-sort-type-p sort)
+SORT must be a member of `lem-user-view-sort-types'.
+LIMIT is max items to show."
+  (let* ((opts (lem-ui-view-options 'user))
+         (item (or item (lem-ui-view-opts-default opts :items)))
+         (sort (if (lem-user-view-sort-type-p sort)
                    sort
-                 (lem-ui-view-default-sort 'user)))
+                 (lem-ui-view-opts-default opts :sort)))
          (user-json (lem-api-get-person-by-id id sort limit))
-         ;; `lem-ui-view-default-sort' should take care of this now?
-         ;; (sort (cond ((equal item "comments")
-         ;;              (if (lem-comment-sort-type-p sort)
-         ;;                  sort
-         ;;                lem-default-comment-sort-type))
-         ;;             (t
-         ;;              (or sort
-         ;;                  lem-default-sort-type))))
          (buf "*lem-user*")
-         (bindings (lem-ui-view-options 'user)))
+         (view-fun (if (eq id lem-user-id)
+                       #'lem-ui-view-own-profile
+                     #'lem-ui-view-user))
+         (bindings opts))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
-      ;; we have this on the 's' binding now so no need:
       (let-alist user-json
         (lem-ui-render-user user-json)
-        (lem-ui-set-buffer-spec
-         nil ; no listing type for users
-         sort (if (eq id lem-user-id)
-                  #'lem-ui-view-own-profile
-                #'lem-ui-view-user)
-         (or item "overview"))
-        (lem-ui-widgets-create `("Sort" ,sort))
+        (lem-ui-set-buffer-spec nil sort view-fun item)
+        (let* ((choices `(,item ,sort))
+               (widget-args (lem-ui-build-view-widget-args opts choices)))
+          ;; TODO: deactivate SORT widget in OVERVIEW?
+          (lem-ui-widgets-create widget-args))
         (cond ((equal item "posts")
-               (lem-ui-insert-heading "posts")
                (lem-ui-render-posts .posts :community :trim))
               ((equal item "comments")
-               (lem-ui-insert-heading "comments")
                (lem-ui-render-comments .comments :details))
               (t ; no arg: overview
-               (lem-ui-insert-heading "overview")
                (lem-ui-render-overview user-json)))
         (lem-ui--init-view)))))
 
