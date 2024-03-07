@@ -2218,16 +2218,20 @@ TYPE must be one of `lem-listing-types'.
 SORT must be one of `lem-sort-types'.
 LIMIT is the max results to return."
   (interactive)
-  (let* ((type (or type "All"))
-         (sort (or sort "TopMonth"))
+  (let* ((opts (lem-ui-view-options 'communities))
+         (type (or type (lem-ui-view-opts-default opts :listing)))
+         (sort (or sort (lem-ui-view-opts-default opts :sort)))
          (limit (or limit "50")) ; max
          (json (lem-list-communities type sort limit))
+         (instance (lem-get-instance))
          (buf "*lem-communities*"))
     (lem-ui-with-buffer buf 'lem-mode nil nil
-      (lem-ui-render-instance (lem-get-instance) :stats nil)
+      (lem-ui-render-instance instance :stats nil)
       (lem-ui-set-buffer-spec
        type sort #'lem-ui-browse-communities 'communities)
-      (lem-ui-widgets-create `("Listing" ,type "Sort" ,sort))
+      (let* ((choices `(,type ,sort))
+             (widget-args (lem-ui-build-view-widget-args opts choices)))
+        (lem-ui-widgets-create widget-args))
       (make-vtable
        :use-header-line nil
        :columns '((:name "Name" :max-width 30 :width "35%")
