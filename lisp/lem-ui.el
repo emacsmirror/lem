@@ -761,6 +761,8 @@ Works on instance, community, and user views, which also have an overview."
           ((eq view 'instance)
            (lem-ui-view-instance type sort nil nil item-next)
            (message "Viewing: %s" item-next))
+          ((eq view 'inbox)
+           (lem-ui-cycle-inbox))
           (t
            (user-error "Posts/Comments toggle not available in this view")))))
 
