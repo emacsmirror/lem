@@ -702,8 +702,8 @@ support that option."
            '((:listing :types lem-listing-types :default "All")
              (:sort :types lem-sort-types :default "TopMonth")))
           ((eq view 'inbox)
-           `((:sort :types lem-inbox-sort-types :default ,default-sort)
-             (:inbox :types lem-inbox-types :default all))))))
+           `((:inbox :types lem-inbox-types :default all)
+             (:sort :types lem-inbox-sort-types :default ,default-sort))))))
 
 (defun lem-ui--view-opts-type (view-opts kind)
   "Return the the :types variable, from KIND in VIEW-OPTS.
@@ -723,6 +723,7 @@ VIEW-OPTS is a nested plist as returned by `lem-ui-view-options'."
    :default))
 
 (defun lem-ui--get-opts-kind (opts kind)
+  "Return the KIND entry, a keyword from view-options list OPTS."
   (plist-get (cdr opts) kind))
 
 (defun lem-ui-toggle-posts-comments (&optional set)
@@ -732,6 +733,8 @@ Works on instance, community, and user views, which also have an overview."
   (let* ((item (lem-ui-get-buffer-spec :item))
          (view (lem-ui-view-type))
          (sort-last (lem-ui-get-buffer-spec :sort))
+         ;; FIXME: `lem-comment-sort-types' should actually only be used in
+         ;; post-view? community etc. just uses `lem-sort-types' i think.
          (sort-types (if (equal item "posts")
                          lem-comment-sort-types
                        lem-sort-types))
@@ -2183,6 +2186,8 @@ OLD-VALUE is the widget's value before being changed."
               (lem-ui-cycle-search value))
              ((equal tag "Items")
               (lem-ui-toggle-posts-comments value))
+             ((equal tag "Inbox")
+              (lem-ui-cycle-inbox))
              (t (message "Widget kind not implemented yet"))))))
 
 (defun lem-ui-widget-create (kind type value)
@@ -2634,9 +2639,10 @@ Sorting is not available for private messages, nor for all."
   ;; Web UI sorts "all" by score for user page, maybe also for inbox?
   ;; Web UI offers all of `lem-inbox-sort-types' for sorting, but API
   ;; doesn't offer sorting for get private messages.
-  (let* ((sort (or sort (lem-ui-view-default-sort 'inbox)))
+  (let* ((opts (lem-ui-view-options 'inbox))
+         (sort (or sort (lem-ui-view-opts-default opts :sort)))
+         (items (or items (lem-ui-view-opts-default opts :inbox)))
          (unread-str (if unread "true" nil))
-         (items (or items 'all))
          (item-fun (if (eq items 'all)
                        'lem-ui-get-inbox-all
                      (lem-ui-make-fun "lem-get-" items)))
@@ -2661,13 +2667,16 @@ Sorting is not available for private messages, nor for all."
                    items-data
                  (alist-get (lem-ui-hyphen-to-underscore items) items-data)))
          (buf "*lem-inbox*")
-         (bindings (lem-ui-view-options 'inbox)))
+         (bindings opts))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
-      (lem-ui-insert-heading (format "inbox: %s" items))
-      (funcall render-fun list)
-      (lem-ui--init-view)
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-inbox
-                              items nil unread))))
+                              items nil unread)
+      (let* ((choices `(,items ,sort))
+             (widget-args (lem-ui-build-view-widget-args opts choices)))
+        (lem-ui-widgets-create widget-args))
+      ;; (lem-ui-insert-heading (format "inbox: %s" items))
+      (funcall render-fun list)
+      (lem-ui--init-view))))
 
 (defun lem-ui-get-inbox-all (&optional unread)
   "Return a merged list of replies, mentions, and private messages.
