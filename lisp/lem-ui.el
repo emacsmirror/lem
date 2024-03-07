@@ -494,7 +494,6 @@ ITEM must be a member of `lem-items-types'."
       (let* ((choices `(,item ,sort ,type))
              (widgets-list (lem-ui-build-view-widget-args opts choices)))
         (lem-ui-widgets-create widgets-list))
-      (insert "\n")
       (if (equal item "comments")
           (lem-ui-render-comments items :details)
         (lem-ui-render-posts-instance items))
@@ -975,7 +974,6 @@ CREATOR-ID is same to limit search to a user."
       (let* ((choices `(,listing-type ,sort ,search-type))
              (widgets-list (lem-ui-build-view-widget-args opts choices)))
         (lem-ui-widgets-create widgets-list))
-      (insert "\n")
       ;; and say a prayer to the function signature gods:
       (cond ((or (equal search-type-downcased "posts")
                  (equal search-type-downcased "comments"))
@@ -2209,7 +2207,7 @@ arguments for `lem-ui-widget-create'."
   (cl-loop for w in widgets-list
            do (funcall #'lem-ui-widget-create
                        (nth 0 w) (nth 1 w) (nth 2 w)))
-  (insert "\n"))
+  (insert "\n\n"))
 
 (defun lem-ui-browse-communities (&optional type sort limit)
   "View Lemmy communities in a sortable tabulated list.
