@@ -59,6 +59,11 @@
 (defvar lem-user-id)
 (defvar lem-user-view-sort-types)
 (defvar lem-inbox-sort-types)
+(defvar lem-default-communities-sort-type)
+(defvar lem-default-user-items-type)
+(defvar lem-search-types-implemented)
+(defvar lem-default-items-type)
+(defvar lem-search-listing-types)
 
 (defvar lem-enable-relative-timestamps)
 
@@ -732,7 +737,8 @@ VIEW-OPTS is a nested plist as returned by `lem-ui-view-options'."
   "Switch between displaying posts or comments.
 Works on instance and community view.
 In user views, cycle between overview, posts and comments.
-In inbox view, cycle between `lem-inbox-types'."
+In inbox view, cycle between `lem-inbox-types'.
+Optionally, SET to a certain item."
   (interactive)
   (let* ((item (lem-ui-get-buffer-spec :item))
          (view (lem-ui-view-type))
@@ -888,7 +894,7 @@ Optionally, use SORT."
   (interactive)
   (let* ((view (lem-ui-view-type))
          (opts (lem-ui-view-options view))
-         (item (lem-ui-get-buffer-spec :item))
+         ;; (item (lem-ui-get-buffer-spec :item))
          (sort-list (lem-ui--view-opts-type opts :sort))
          (choice (completing-read "Sort by:" sort-list nil :match)))
     (lem-ui-cycle-sort choice)))
@@ -925,7 +931,7 @@ Optionally, use SORT."
     ":")))
 
 (defun lem-ui--return-widget-args (opts choice)
-  ""
+  "Return a three item list, givent OPTS and CHOICE."
   (let ((default (or choice (lem-ui--get-opts-kind opts :default)))
         (vals (lem-ui--get-opts-kind opts :types))
         (name (lem-ui-kw-to-str (car opts))))
@@ -999,7 +1005,7 @@ Optionally return results for SEARCH-TYPE."
   (interactive)
   (lem-ui-with-view 'search
     (let* ((item (lem-ui-get-buffer-spec :item))
-           (view-fun (lem-ui-get-buffer-spec :view-fun))
+           ;; (view-fun (lem-ui-get-buffer-spec :view-fun))
            (query (lem-ui-get-buffer-spec :query))
            (sort (lem-ui-get-buffer-spec :sort))
            (listing (lem-ui-get-buffer-spec :listing-type))
@@ -2708,7 +2714,8 @@ Optionally only return UNREAD items."
                          (lem-ui-render-private-message item)))))))
 
 (defun lem-ui-cycle-inbox (&optional item)
-  "Cycle inbox to next item view in `lem-inbox-types'."
+  "Cycle inbox to next item view in `lem-inbox-types'.
+Optionally set it to ITEM."
   (interactive)
   (let* ((last (lem-ui-get-buffer-spec :item))
          (next (or item (lem-ui-next-type last lem-inbox-types)))
@@ -3042,7 +3049,8 @@ OLD-VALUE is the widget's value before being changed."
 (defun lem-ui-format-comment (comment &optional indent reply details widget)
   "Format COMMENT, optionally with INDENT amount of indent bars.
 REPLY means it is a comment-reply object.
-DETAILS means display what community and post the comment is linked to."
+DETAILS means display what community and post the comment is linked to.
+WIDGET is a flag, and means create a toggle fold widget."
   ;; NB: no stray requests in here.
   (let-alist comment
     (let ((content (when .comment.content
