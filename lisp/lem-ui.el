@@ -2193,6 +2193,18 @@ OLD-VALUE is the widget's value before being changed."
               (lem-ui-cycle-inbox value))
              (t (message "Widget kind not implemented yet"))))))
 
+(defun lem-ui--widget-deactivate (item-type widget-type)
+  "When item of view is ITEM-TYPE, deactivate widget of WIDGET-TYPE."
+  (let ((item (lem-ui-get-buffer-spec :item)))
+    (when (equal item item-type)
+      (save-excursion
+        (goto-char (point-min))
+        (while (text-property-search-forward 'face 'lem-ui-widget-face t)
+          (let* ((widget (widget-at (1- (point))))
+                 (tag (widget-get widget :tag)))
+            (when (equal tag widget-type)
+              (widget-apply widget :deactivate))))))))
+
 (defun lem-ui-widget-create (kind type value)
   "Return a widget of KIND, with TYPE-LIST elements, and default VALUE.
 KIND is a string, either Listing, Sort, Items, or Inbox, and will
@@ -2206,7 +2218,7 @@ VALUE is a string, a member of TYPE."
                      :value value
                      :args (lem-ui-return-item-widgets type-list)
                      :help-echo (format "Select a %s kind" kind)
-                     :format (lem-ui-widget-format kind) ; "C-c C-c")
+                     :format (lem-ui-widget-format kind)
                      :notify (lem-ui-widget-notify-fun value)
                      :keymap lem-widget-keymap))))
 
@@ -3732,7 +3744,8 @@ LIMIT is max items to show."
               ((equal item "comments")
                (lem-ui-render-comments .comments :details))
               (t ; no arg: overview
-               (lem-ui-render-overview user-json)))
+               (lem-ui-render-overview user-json)
+               (lem-ui--widget-deactivate "overview" "Sort")))
         (lem-ui--init-view)))))
 
 (defun lem-ui-view-own-profile ()
