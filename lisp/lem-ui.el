@@ -3646,7 +3646,7 @@ SEARCH means we are rendering a search result."
         (date-to-time .person.published))
        "\n"
        lem-ui-horiz-bar
-       "\n")
+       "\n\n")
       'json json
       'id .person.id
       'lem-type 'user))))
