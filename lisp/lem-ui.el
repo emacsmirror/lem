@@ -391,7 +391,7 @@ NUMBER means return ID as a number."
   (declare (debug t)
            (indent 1))
   `(if (and (not (eq ,type 'all))
-            (not (eq (lem-ui-view-type) ,type)))
+            (not (eq (lem-ui--view-type) ,type)))
        (user-error "Not in view %s" ,type)
      ,@body))
 
@@ -478,7 +478,7 @@ SORT must be a member of `lem-comment-sort-types' if item is
 TYPE must be member of `lem-listing-types'.
 ITEM must be a member of `lem-items-types'."
   (interactive)
-  (let* ((opts (lem-ui-view-options 'instance))
+  (let* ((opts (lem-ui--view-options 'instance))
          (instance (lem-get-instance))
          (sort (if (lem-sort-type-p sort)
                    sort
@@ -606,13 +606,13 @@ active on other instances."
 
 ;;; CYCLE SORT, LISTING, and ITEMS TYPE
 
-(defun lem-ui-view-default-sort (&optional view)
+(defun lem-ui--view-default-sort (&optional view)
   "Return the default sort type for the current view.
 Returns the car of `lem-user-view-sort-types',
 `lem-comment-sort-types' or `lem-sort-types'.
 Optionally return default sort type for VIEW."
   ;; calqued off the webUI iirc
-  (let ((view (or view (lem-ui-view-type))))
+  (let ((view (or view (lem-ui--view-type))))
     (cond ((or (eq view 'user)
                (eq view 'current-user))
            (car lem-user-view-sort-types)) ;"New"
@@ -630,7 +630,7 @@ Optionally return default sort type for VIEW."
                  (car lem-sort-types) ; "Active"
                (car lem-comment-sort-types))))))) ; "Hot"
 
-(defun lem-ui-view-type ()
+(defun lem-ui--view-type ()
   "Return the current view, based on `lem-ui-buffer-spec'."
   ;; TODO: minor ones
   (let ((view-fun (lem-ui-get-buffer-spec :view-fun)))
@@ -658,11 +658,11 @@ Optionally return default sort type for VIEW."
 ;; (cond ((equal kind "Listing")
 ;;        lem-listing-types)
 ;;       ((equal kind "Sort")
-;;        (cond ((or (eq (lem-ui-view-type) 'post)
+;;        (cond ((or (eq (lem-ui--view-type) 'post)
 ;;                   (equal (lem-ui-get-buffer-spec :item) "comments"))
 ;;               lem-comment-sort-types)
-;;              ((or (eq (lem-ui-view-type) 'user)
-;;                   (eq (lem-ui-view-type) 'current-user))
+;;              ((or (eq (lem-ui--view-type) 'user)
+;;                   (eq (lem-ui--view-type) 'current-user))
 ;;               lem-user-view-sort-types)
 ;;              (t
 ;;               lem-sort-types)))
@@ -674,7 +674,7 @@ Optionally return default sort type for VIEW."
 ;;       ((equal kind "Search")
 ;;        lem-search-types-implemented))
 
-(defun lem-ui-view-options (view)
+(defun lem-ui--view-options (view)
   "Return the various sorting and other options for VIEW.
 Returns a keyword plist of keyword plists holding the variables containing the
 specific options and their default values.
@@ -685,7 +685,7 @@ support that option."
   ;; wrong, going by the webUI `lem-comment-sort-types' only for post view!
 
   ;; NB: the order here is the widgets' order!
-  (let ((default-sort (lem-ui-view-default-sort view)))
+  (let ((default-sort (lem-ui--view-default-sort view)))
     (cond ((eq view 'post)
            `((:sort :types lem-comment-sort-types :default ,default-sort)))
           ((eq view 'instance)
@@ -724,7 +724,7 @@ VIEW-OPTS is a nested plist as returned by `lem-ui-view-options'."
 (defun lem-ui--view-opts-default (view-opts kind)
   "Return the default option of KIND in VIEW-OPTS.
 KIND is the type of view options, such as :listing, or :sort.
-VIEW-OPTS is a nested plist as returned by `lem-ui-view-options'."
+VIEW-OPTS is a nested plist as returned by `lem-ui--view-options'."
   (plist-get
    (alist-get kind view-opts)
    :default))
@@ -741,7 +741,7 @@ In inbox view, cycle between `lem-inbox-types'.
 Optionally, SET to a certain item."
   (interactive)
   (let* ((item (lem-ui-get-buffer-spec :item))
-         (view (lem-ui-view-type))
+         (view (lem-ui--view-type))
          (sort-last (lem-ui-get-buffer-spec :sort))
          ;; FIXME: `lem-comment-sort-types' should actually only be used in
          ;; post-view? community etc. just uses `lem-sort-types' i think.
@@ -785,7 +785,7 @@ Optionally, SET to a certain item."
 (defun lem-ui-next-listing-type (type)
   "Return next listing type after TYPE in `lem-listing-types'.
 If in search view, use `lem-search-listing-types'"
-  (if (eq 'search (lem-ui-view-type))
+  (if (eq 'search (lem-ui--view-type))
       (lem-ui-next-type type lem-search-listing-types)
     (lem-ui-next-type type lem-listing-types)))
 
@@ -805,11 +805,11 @@ It must be a member of the same list."
   (let* ((type-last (lem-ui-get-buffer-spec :listing-type))
          (sort (lem-ui-get-buffer-spec :sort))
          (view-fun (lem-ui-get-buffer-spec :view-fun))
-         (view (lem-ui-view-type))
+         (view (lem-ui--view-type))
          (item (lem-ui-get-buffer-spec :item))
          (query (lem-ui-get-buffer-spec :query))
          (listing-type (or type (lem-ui-next-listing-type type-last)))
-         (opts (lem-ui-view-options view)))
+         (opts (lem-ui--view-options view)))
     (if (not (lem-ui--view-opts-type opts :listing))
         (message "%s views don't have listing type." view)
       (cond ((eq view 'instance)
@@ -855,7 +855,7 @@ Optionally, use SORT."
   (interactive)
   (let* ((type (lem-ui-get-buffer-spec :listing-type))
          (sort-last (lem-ui-get-buffer-spec :sort))
-         (view (lem-ui-view-type))
+         (view (lem-ui--view-type))
          (item (lem-ui-get-buffer-spec :item))
          (id (lem-ui-get-view-id))
          (query (lem-ui-get-buffer-spec :query))
@@ -892,8 +892,8 @@ Optionally, use SORT."
 (defun lem-ui-choose-sort ()
   "Prompt for a sort type, and use it to reload the current view."
   (interactive)
-  (let* ((view (lem-ui-view-type))
-         (opts (lem-ui-view-options view))
+  (let* ((view (lem-ui--view-type))
+         (opts (lem-ui--view-options view))
          ;; (item (lem-ui-get-buffer-spec :item))
          (sort-list (lem-ui--view-opts-type opts :sort))
          (choice (completing-read "Sort by:" sort-list nil :match)))
@@ -909,7 +909,7 @@ Optionally, use SORT."
 (defun lem-ui-choose-search-type ()
   "Choose a search type from `lem-search-types' and repeat current query."
   (interactive)
-  (if (not (eq (lem-ui-view-type) 'search))
+  (if (not (eq (lem-ui--view-type) 'search))
       (user-error "You can only choose search type in a search")
     (let* ((types (remove "Url"
                           (remove "All" lem-search-types)))
@@ -939,7 +939,7 @@ Optionally, use SORT."
 
 (defun lem-ui-build-view-widget-args (view-opts &optional choices)
   "Given VIEW-OPTS, return a nested list of arguments for creating widgets.
-VIEW-OPTS is a nested plist returned by `lem-ui-view-options'.
+VIEW-OPTS is a nested plist returned by `lem-ui--view-options'.
 CHOICES is a list of the same length and item order as VIEW-OPTS,
 used to override default values."
   (cl-loop for o in view-opts
@@ -957,7 +957,7 @@ PAGE is the page number.
 COMMUNITY-ID is the ID of a community to limit search to.
 CREATOR-ID is same to limit search to a user."
   (interactive)
-  (let* ((opts (lem-ui-view-options 'search))
+  (let* ((opts (lem-ui--view-options 'search))
          (sort (if (lem-sort-type-p sort)
                    sort
                  (lem-ui--view-opts-default opts :sort)))
@@ -1009,7 +1009,7 @@ Optionally return results for SEARCH-TYPE."
            (query (lem-ui-get-buffer-spec :query))
            (sort (lem-ui-get-buffer-spec :sort))
            (listing (lem-ui-get-buffer-spec :listing-type))
-           (opts (lem-ui-view-options 'search))
+           (opts (lem-ui--view-options 'search))
            (search-types (lem-ui--view-opts-type opts :search))
            (next-search
             (or search-type
@@ -1019,7 +1019,7 @@ Optionally return results for SEARCH-TYPE."
 (defun lem-ui-search-in-community ()
   "Search in the current community."
   (interactive)
-  (if (not (eq (lem-ui-view-type) 'community))
+  (if (not (eq (lem-ui--view-type) 'community))
       (user-error "Not in a community view")
     (let ((id (save-excursion
                 (goto-char (point-min))
@@ -1030,8 +1030,8 @@ Optionally return results for SEARCH-TYPE."
 (defun lem-ui-search-in-user ()
   "Search in the user currently viewed."
   (interactive)
-  (if (not (or (eq (lem-ui-view-type) 'user)
-               (eq (lem-ui-view-type) 'current-user)))
+  (if (not (or (eq (lem-ui--view-type) 'user)
+               (eq (lem-ui--view-type) 'current-user)))
       (user-error "Not in a user view")
     (let ((id (save-excursion
                 (goto-char (point-min))
@@ -1511,7 +1511,7 @@ COMMUNITY means display the community posted to."
 (defun lem-ui-update-parent-item-maybe ()
   "Go to buffer's first element, and reload its json data and bottom byline."
   ;; FIXME: only running in post views till we improve things.
-  (when (eq (lem-ui-view-type) 'post)
+  (when (eq (lem-ui--view-type) 'post)
     (save-restriction
       (save-excursion
         (widen)
@@ -1529,7 +1529,7 @@ COMMUNITY means display the community posted to."
                                 item-data)))
           ;; for now, just update parent posts:
           ;; as lem-ui-bt-byline-replace wrongly assumes posts
-          (when (eq (lem-ui-view-type) 'post)
+          (when (eq (lem-ui--view-type) 'post)
             (lem-ui--update-item-json item)
             (lem-ui-update-item-from-json
              'byline-bottom
@@ -1539,7 +1539,7 @@ COMMUNITY means display the community posted to."
 (defun lem-ui-reload-view ()
   "Reload the current view."
   (interactive)
-  (let ((type (lem-ui-view-type))
+  (let ((type (lem-ui--view-type))
         (item (lem-ui-get-buffer-spec :item))
         (sort (lem-ui-get-buffer-spec :sort))
         (listing (lem-ui-get-buffer-spec :listing-type))
@@ -1761,7 +1761,7 @@ LIMIT."
   (let ((post-view (lem-get-post id)))
     (if (stringp post-view)
         (user-error "%s" post-view)
-      (let* ((opts (lem-ui-view-options 'post))
+      (let* ((opts (lem-ui--view-options 'post))
              (post (alist-get 'post_view post-view))
              (community-id (alist-get 'community_id
                                       (alist-get 'post post)))
@@ -1782,7 +1782,7 @@ LIMIT."
   "Return t if POST, which is data, is featured in the current view.
 Posts can be featured either for instance or community."
   (let-alist post
-    ;; (let ((view (lem-ui-view-type))) ; buffer-spec not set yet
+    ;; (let ((view (lem-ui--view-type))) ; buffer-spec not set yet
     (if (string-suffix-p "instance*" (buffer-name))
         (eq t .post.featured_local) ; pinned instance
       (eq t .post.featured_community)))) ; pinned community
@@ -2235,7 +2235,7 @@ TYPE must be one of `lem-listing-types'.
 SORT must be one of `lem-sort-types'.
 LIMIT is the max results to return."
   (interactive)
-  (let* ((opts (lem-ui-view-options 'communities))
+  (let* ((opts (lem-ui--view-options 'communities))
          (type (or type (lem-ui--view-opts-default opts :listing)))
          (sort (or sort (lem-ui--view-opts-default opts :sort)))
          (limit (or limit "50")) ; max
@@ -2376,7 +2376,7 @@ ITEM must be a member of `lem-items-types'.
 SORT must be a member of `lem-sort-types'.
 LIMIT is the amount of results to return.
 PAGE is the page number of items to display, a string."
-  (let* ((opts (lem-ui-view-options 'community))
+  (let* ((opts (lem-ui--view-options 'community))
          (community (lem-get-community id))
          (buf (format "*lem-community-%s*" id))
          (item (or item (lem-ui--view-opts-default opts :items)))
@@ -2651,7 +2651,7 @@ Sorting is not available for private messages, nor for all."
   ;; Web UI sorts "all" by score for user page, maybe also for inbox?
   ;; Web UI offers all of `lem-inbox-sort-types' for sorting, but API
   ;; doesn't offer sorting for get private messages.
-  (let* ((opts (lem-ui-view-options 'inbox))
+  (let* ((opts (lem-ui--view-options 'inbox))
          (sort (or sort (lem-ui--view-opts-default opts :sort)))
          (items (or items (lem-ui--view-opts-default opts :inbox)))
          (unread-str (if unread "true" nil))
@@ -3207,7 +3207,7 @@ ITEMS should be an alist of the form '\=(plural-name ((items-list)))'."
   "Append more items to the current view."
   (interactive)
   (let ((item (lem-ui-get-buffer-spec :item))
-        ;; TODO: use `lem-ui-view-type' instead
+        ;; TODO: use `lem-ui--view-type' instead
         (view-fun (lem-ui-get-buffer-spec :view-fun)))
     (cond ((eq view-fun 'lem-ui-view-post)
            ;; nb max-depth doesn't work with pagination yet:
@@ -3698,7 +3698,7 @@ Decide whether X comes before Y, based on timestamp."
 ITEM must be a member of `lem-user-items-types'.
 SORT must be a member of `lem-user-view-sort-types'.
 LIMIT is max items to show."
-  (let* ((opts (lem-ui-view-options 'user))
+  (let* ((opts (lem-ui--view-options 'user))
          (item (or item (lem-ui--view-opts-default opts :items)))
          (sort (if (lem-user-view-sort-type-p sort)
                    sort
