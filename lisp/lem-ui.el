@@ -614,7 +614,8 @@ Optionally return default sort type for VIEW."
   ;; calqued off the webUI iirc
   (let ((view (or view (lem-ui--view-type))))
     (cond ((or (eq view 'user)
-               (eq view 'current-user))
+               (eq view 'current-user)
+               (eq view 'saved-items))
            (car lem-user-view-sort-types)) ;"New"
           ((eq view 'post)
            (car lem-comment-sort-types)) ; "Hot"
@@ -710,12 +711,14 @@ support that option."
              (:sort :types lem-sort-types :default ,lem-default-communities-sort-type)))
           ((eq view 'inbox)
            `((:inbox :types lem-inbox-types :default all)
-             (:sort :types lem-inbox-sort-types :default ,default-sort))))))
+             (:sort :types lem-inbox-sort-types :default ,default-sort)))
+          ((eq view 'saved-items)
+           `((:sort :types lem-user-view-sort-types :default ,default-sort))))))
 
 (defun lem-ui--view-opts-type (view-opts kind)
   "Return the the :types variable, from KIND in VIEW-OPTS.
 KIND is the type of view options, such as :listing, or :sort.
-VIEW-OPTS is a nested plist as returned by `lem-ui-view-options'."
+VIEW-OPTS is a nested plist as returned by `lem-ui--view-options'."
   (eval
    (plist-get
     (alist-get kind view-opts)
@@ -1926,20 +1929,27 @@ If UNSAVE, unsave the item instead."
   "View saved items of the current user, or of user with ID.
 SORT. LIMIT. PAGE."
   (interactive)
-  (let* ((saved-only (lem-api-get-person-saved-only
+  (let* ((opts (lem-ui--view-options 'saved-items))
+         (sort (or sort (lem-ui--view-opts-default opts :sort)))
+         (saved-only (lem-api-get-person-saved-only
                       (or id lem-user-id)
                       sort (or limit lem-ui-comments-limit) page))
          (posts (alist-get 'posts saved-only))
          (comments (alist-get 'comments saved-only))
          (buf "*lem-saved-items*"))
     (lem-ui-with-buffer buf 'lem-mode nil nil
-      (lem-ui-insert-heading "SAVED POSTS")
-      (lem-ui-render-posts posts)
-      (lem-ui-insert-heading "SAVED COMMENTS")
-      (lem-ui-render-comments comments :details)
-      (lem-ui--init-view)
-      (lem-ui-set-buffer-spec nil (or sort "Active")
-                              #'lem-ui-view-saved-items))))
+      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-saved-items)
+      (let* ((choices `(,sort))
+             (widget-args (lem-ui-build-view-widget-args opts choices)))
+        (lem-ui-widgets-create widget-args))
+      ;; TODO: keep an option for showing only comments/posts (like user-view)
+      (lem-ui-render-overview saved-only)
+      ;; (lem-ui-insert-heading "SAVED POSTS")
+      ;; (lem-ui-render-posts posts)
+      ;; (lem-ui-insert-heading "SAVED COMMENTS")
+      ;; (lem-ui-render-comments comments :details)
+
+      (lem-ui--init-view))))
 
 ;;; COMPLETION FOR ACTIONS
 
@@ -3683,7 +3693,7 @@ Decide whether X comes before Y, based on timestamp."
 (defun lem-ui-render-overview (user-json)
   "Return an overview of mixed posts and comments from USER-JSON."
   (let-alist user-json
-    ;; FIXME: we need to respect sort type when doing our combining here!
+    ;; TODO: either sort overview by timestamp, or by counts:
     (let* ((merged (append .comments .posts))
            (sorted (sort merged #'lem-ui-published-sort-predicate)))
       (cl-loop for item in sorted
