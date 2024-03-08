@@ -1938,17 +1938,17 @@ SORT. LIMIT. PAGE."
          (comments (alist-get 'comments saved-only))
          (buf "*lem-saved-items*"))
     (lem-ui-with-buffer buf 'lem-mode nil nil
-      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-saved-items)
+      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-saved-items "overview")
       (let* ((choices `(,sort))
              (widget-args (lem-ui-build-view-widget-args opts choices)))
         (lem-ui-widgets-create widget-args))
-      ;; TODO: keep an option for showing only comments/posts (like user-view)
+      ;; TODO: cycle overview/comments/posts (like user-view)
       (lem-ui-render-overview saved-only)
+      (lem-ui--widget-deactivate "overview" "Sort")
       ;; (lem-ui-insert-heading "SAVED POSTS")
       ;; (lem-ui-render-posts posts)
       ;; (lem-ui-insert-heading "SAVED COMMENTS")
       ;; (lem-ui-render-comments comments :details)
-
       (lem-ui--init-view))))
 
 ;;; COMPLETION FOR ACTIONS
