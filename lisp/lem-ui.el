@@ -477,9 +477,9 @@ ITEM must be a member of `lem-items-types'."
          (instance (lem-get-instance))
          (sort (if (lem-sort-type-p sort)
                    sort
-                 (lem-ui-view-opts-default opts :sort)))
-         (type (or type (lem-ui-view-opts-default opts :listing)))
-         (item (or item (lem-ui-view-opts-default opts :items)))
+                 (lem-ui--view-opts-default opts :sort)))
+         (type (or type (lem-ui--view-opts-default opts :listing)))
+         (item (or item (lem-ui--view-opts-default opts :items)))
          (items-data (if (equal item "comments")
                          (lem-get-comments nil nil type sort limit page)
                        (lem-get-posts type sort limit page)))
@@ -1759,7 +1759,7 @@ LIMIT."
              (post (alist-get 'post_view post-view))
              (community-id (alist-get 'community_id
                                       (alist-get 'post post)))
-             (sort (or sort (lem-ui-view-opts-default opts :sort)))
+             (sort (or sort (lem-ui--view-opts-default opts :sort)))
              (bindings opts)
              (buf (format "*lem-post-%s*" id)))
         (lem-ui-with-buffer buf 'lem-mode nil bindings
@@ -2230,8 +2230,8 @@ SORT must be one of `lem-sort-types'.
 LIMIT is the max results to return."
   (interactive)
   (let* ((opts (lem-ui-view-options 'communities))
-         (type (or type (lem-ui-view-opts-default opts :listing)))
-         (sort (or sort (lem-ui-view-opts-default opts :sort)))
+         (type (or type (lem-ui--view-opts-default opts :listing)))
+         (sort (or sort (lem-ui--view-opts-default opts :sort)))
          (limit (or limit "50")) ; max
          (json (lem-list-communities type sort limit))
          (instance (lem-get-instance))
@@ -2373,10 +2373,10 @@ PAGE is the page number of items to display, a string."
   (let* ((opts (lem-ui-view-options 'community))
          (community (lem-get-community id))
          (buf (format "*lem-community-%s*" id))
-         (item (or item (lem-ui-view-opts-default opts :items)))
+         (item (or item (lem-ui--view-opts-default opts :items)))
          (sort (if (lem-sort-type-p sort)
                    sort
-                 (lem-ui-view-opts-default opts :sort)))
+                 (lem-ui--view-opts-default opts :sort)))
          (items (if (equal item "comments")
                     (alist-get 'comments
                                (lem-api-get-community-comments
@@ -2646,8 +2646,8 @@ Sorting is not available for private messages, nor for all."
   ;; Web UI offers all of `lem-inbox-sort-types' for sorting, but API
   ;; doesn't offer sorting for get private messages.
   (let* ((opts (lem-ui-view-options 'inbox))
-         (sort (or sort (lem-ui-view-opts-default opts :sort)))
-         (items (or items (lem-ui-view-opts-default opts :inbox)))
+         (sort (or sort (lem-ui--view-opts-default opts :sort)))
+         (items (or items (lem-ui--view-opts-default opts :inbox)))
          (unread-str (if unread "true" nil))
          (item-fun (if (eq items 'all)
                        'lem-ui-get-inbox-all
@@ -3691,10 +3691,10 @@ ITEM must be a member of `lem-user-items-types'.
 SORT must be a member of `lem-user-view-sort-types'.
 LIMIT is max items to show."
   (let* ((opts (lem-ui-view-options 'user))
-         (item (or item (lem-ui-view-opts-default opts :items)))
+         (item (or item (lem-ui--view-opts-default opts :items)))
          (sort (if (lem-user-view-sort-type-p sort)
                    sort
-                 (lem-ui-view-opts-default opts :sort)))
+                 (lem-ui--view-opts-default opts :sort)))
          (user-json (lem-api-get-person-by-id id sort limit))
          (buf "*lem-user*")
          (view-fun (if (eq id lem-user-id)
