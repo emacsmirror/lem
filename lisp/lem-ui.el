@@ -1986,25 +1986,6 @@ SORT. LIMIT. PAGE."
            collect (let-alist (alist-get 'instance i)
                      (list .domain .id))))
 
-;;; COMMUNITIES
-
-(defun lem-ui-view-communities (&optional type sort limit)
-  "View Lemmy communities.
-TYPE must be one of `lem-listing-types'.
-SORT must be one of `lem-sort-types'.
-LIMIT is the max results to return."
-  (interactive)
-  (let* ((json (lem-list-communities type sort limit))
-         (list (alist-get 'communities json))
-         (buf "*lem-communities*"))
-    (lem-ui-with-buffer buf 'lem-mode nil nil
-      (cl-loop for c in list
-               for id = (alist-get 'id (alist-get 'community c))
-               for view = (lem-get-community id nil)
-               do (lem-ui-render-community view :stats :view))
-      (lem-ui-set-buffer-spec
-       type sort #'lem-ui-view-communities 'communities))))
-
 ;;; PATCH VTABLE (fixed in 30.0.50, needed in 29.1):
 
 (defvar-keymap lem-vtable-map
@@ -2238,6 +2219,25 @@ arguments for `lem-ui-widget-create'."
            do (funcall #'lem-ui-widget-create
                        (nth 0 w) (nth 1 w) (nth 2 w)))
   (insert "\n\n"))
+
+;;; COMMUNITIES
+
+(defun lem-ui-view-communities (&optional type sort limit)
+  "View Lemmy communities.
+TYPE must be one of `lem-listing-types'.
+SORT must be one of `lem-sort-types'.
+LIMIT is the max results to return."
+  (interactive)
+  (let* ((json (lem-list-communities type sort limit))
+         (list (alist-get 'communities json))
+         (buf "*lem-communities*"))
+    (lem-ui-with-buffer buf 'lem-mode nil nil
+      (cl-loop for c in list
+               for id = (alist-get 'id (alist-get 'community c))
+               for view = (lem-get-community id nil)
+               do (lem-ui-render-community view :stats :view))
+      (lem-ui-set-buffer-spec
+       type sort #'lem-ui-view-communities 'communities))))
 
 (defun lem-ui-browse-communities (&optional type sort limit)
   "View Lemmy communities in a sortable tabulated list.
