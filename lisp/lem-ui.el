@@ -691,8 +691,8 @@ support that option."
            `((:sort :types lem-comment-sort-types :default ,default-sort)))
           ((eq view 'instance)
            `((:items :types lem-items-types :default ,lem-default-items-type)
-             (:sort :types lem-sort-types :default ,default-sort)
-             (:listing :types lem-listing-types :default ,lem-default-listing-type)))
+             (:listing :types lem-listing-types :default ,lem-default-listing-type)
+             (:sort :types lem-sort-types :default ,default-sort)))
           ((eq view 'search)
            `((:search  :types lem-search-types-implemented
                        :default
