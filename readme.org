@@ -237,6 +237,7 @@ I don't have a tech worker's income, so even a small tip would help out.
 | f         | lem-ui-comment-tree-fold               | Toggle invisibility of current comment and all its children.              |
 |           | lem-ui-copy-item-url                   | Copy the URL (ap_id) of the post or comment at point.                     |
 |           | lem-ui-cycle-inbox                     | Cycle inbox to next item view in `lem-inbox-types'.                       |
+| C-c C-v   | lem-ui-cycle-items                     | Switch between displaying posts or comments.                              |
 | C-c C-c   | lem-ui-cycle-listing-type              | Cycle view between `lem-listing-types'.                                   |
 | C-c C-h   | lem-ui-cycle-search                    | Cycle current search.                                                     |
 | C-c C-s   | lem-ui-cycle-sort                      | Cycle view between some `lem-sort-types'.                                 |
@@ -262,10 +263,8 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-more                            | Append more items to the current view.                                    |
 | M-n       | lem-ui-next-same-level                 | Move to next same level comment.                                          |
 | TAB       | lem-ui-next-tab-item                   | Jump to next tab item.                                                    |
-|           | lem-ui-next-top-level                  | Move to next top level comment.                                           |
 | M-p       | lem-ui-prev-same-level                 | Move to previous same level comment.                                      |
 | <backtab> | lem-ui-prev-tab-item                   | Jump to prev tab item.                                                    |
-|           | lem-ui-prev-top-level                  | Move to previous top level comment.                                       |
 |           | lem-ui-print-json                      | Fetch the JSON of item at point and pretty print it in a new buffer.      |
 | g         | lem-ui-reload-view                     | Reload the current view.                                                  |
 |           | lem-ui-remove-comment                  | Remove the comment at point.                                              |
@@ -281,13 +280,11 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-subscribe-to-community          | Subscribe to a community, using ID or prompt for a handle.                |
 | s         | lem-ui-subscribe-to-community-at-point | Subscribe to community at point.                                          |
 |           | lem-ui-subscribe-to-item-community     | Subscribe to community of item at point.                                  |
-| C-c C-v   | lem-ui-toggle-posts-comments           | Switch between displaying posts or comments.                              |
 |           | lem-ui-unblock-community               | Prompt for a blocked community, and unblock it.                           |
 |           | lem-ui-unblock-instance                | Prompt for a blocked instance and unblock it.                             |
 |           | lem-ui-unblock-user                    | Prompt for a blocked user, and unblock them.                              |
 |           | lem-ui-unfeature-post                  | Unfeature (unpin) post at point.                                          |
 |           | lem-ui-unfold-all-comments             | Unfold all comment branches in the current buffer.                        |
-|           | lem-ui-unfold-buffer                   | Unfold all comment branches in the current buffer.                        |
 |           | lem-ui-unlike-item                     | Unlike item at point.                                                     |
 |           | lem-ui-unsave-item                     | Unsave item at point.                                                     |
 |           | lem-ui-unsubscribe-from-community      | Prompt for a subscribed community and unsubscribe from it.                |
