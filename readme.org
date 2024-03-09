@@ -83,11 +83,17 @@ Lemmy makes heavy use of sorting. Item (posts, comments, users, communities) vie
 
 - =C-c C-c= - =lem-ui-cycle-listing-type= - cycle between results from local/subscribed/all/moderated communities. To directly set a listing type, call =lem-ui-choose-listing-type=. In your inbox view, cycle between replies, mentions, and private messages.
 - =C-c C-s= - =lem-ui-cycle-sort= - cycle between sort types (new, hot, active, top, old, etc.). To directly set sort, call =o=, or =lem-ui-choose-sort=. Full sort type lists are found in =lem-sort-types= and =lem-comment-sort-types=, the list is chosen according to the present view.
-- =C-c C-v= - =lem-ui-toggle-posts-comments= - toggle between posts or comments, or optionally overview if the view supports it (e.g. for user views).
+- =C-c C-v= - =lem-ui-cycle-items= - toggle between posts or comments, and optionally overview if the view supports it (e.g. user views). In the inbox, cycle between inbox items.
 
 Additionally, for search there is:
 
 - =C-c C-h= - =lem-ui-cycle-search= - cycle between search result types for the current query.
+
+
+** sorting via widgets
+
+Listing, sort, item, and search types are also visible and modifiable by drop-down widgets that appear near the top of a given view's buffer. A widget appears for each option that is applicable to the view. Click (or hit =RET=) on a widget to change it and reload the view.
+
 
 ** folding and navigating comment trees
 
