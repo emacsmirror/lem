@@ -3059,11 +3059,15 @@ OLD-VALUE is the widget's value before being changed."
   `(lambda (widget &rest ignore)
      (let ((value (widget-value widget)))
        ;; FIXME: only works on second click? but RET works
+       ;; this is only called on second click!
+       ;; middle-click doesn't have the problem
        (condition-case x
            (save-excursion
-             ;; it seems like point is momentarily moved to widget
-             ;; on click event or RET, so safe to just move to byline-top
-             ;; then fold:
+             ;; ideally we would have our widget propertized like the
+             ;; top-byline, but it's no so easy to propertize the widget.
+
+             ;; point is momentarily moved to widget on click event
+             ;; or RET, so safe to just move to byline-top then fold:
              (lem-next-item)
              (lem-ui-comment-tree-fold))
          (user-error ; don't update widget if cycle-sort fails:
