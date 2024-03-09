@@ -694,11 +694,11 @@ support that option."
              (:sort :types lem-sort-types :default ,default-sort)
              (:listing :types lem-listing-types :default ,lem-default-listing-type)))
           ((eq view 'search)
-           `((:listing :types lem-listing-types :default ,lem-default-listing-type)
-             (:sort :types lem-sort-types :default ,default-sort)
-             (:search  :types lem-search-types-implemented
+           `((:search  :types lem-search-types-implemented
                        :default
-                       ,(car lem-search-types-implemented))))
+                       ,(car lem-search-types-implemented))
+             (:listing :types lem-listing-types :default ,lem-default-listing-type)
+             (:sort :types lem-sort-types :default ,default-sort)))
           ((or (eq view 'user)
                (eq view 'current-user))
            `((:items :types lem-user-items-types :default ,lem-default-user-items-type)
