@@ -496,7 +496,7 @@ ITEM must be a member of `lem-items-types'."
       (lem-ui-set-buffer-spec
        type sort #'lem-ui-view-instance item page)
       ;; FIXME: choices must be same length and item order as opts:
-      (let* ((choices `(,item ,sort ,type))
+      (let* ((choices `(,item ,type ,sort))
              (widgets-list (lem-ui-build-view-widget-args opts choices)))
         (lem-ui-widgets-create widgets-list))
       (if (equal item "comments")
@@ -989,7 +989,7 @@ CREATOR-ID is same to limit search to a user."
                               #'lem-ui-search
                               search-type page nil query)
       ;; FIXME: choices must be same length and item order as opts:
-      (let* ((choices `(,listing-type ,sort ,search-type))
+      (let* ((choices `(,search-type ,listing-type ,sort))
              (widgets-list (lem-ui-build-view-widget-args opts choices)))
         (lem-ui-widgets-create widgets-list))
       ;; and say a prayer to the function signature gods:
