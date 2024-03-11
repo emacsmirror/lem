@@ -1934,8 +1934,8 @@ SORT. LIMIT. PAGE."
          (saved-only (lem-api-get-person-saved-only
                       (or id lem-user-id)
                       sort (or limit lem-ui-comments-limit) page))
-         (posts (alist-get 'posts saved-only))
-         (comments (alist-get 'comments saved-only))
+         ;; (posts (alist-get 'posts saved-only))
+         ;; (comments (alist-get 'comments saved-only))
          (buf "*lem-saved-items*"))
     (lem-ui-with-buffer buf 'lem-mode nil nil
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-saved-items "overview")
