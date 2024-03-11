@@ -3042,16 +3042,47 @@ Parent-fun for `hierarchy-add-tree'."
        str))
     str))
 
-(defun lem-ui-widget-fold-format (&optional indent)
+(defun lem-ui--widget-fold-format (&optional indent folded)
   "Format a toggle widget for comment folding.
-INDENT is a string for `line-prefix' property."
+INDENT is a string for `line-prefix' property.
+FOLDED is a flag, to display either + or -."
+  ;; ideally we could + when folded and - when unfolded
+  ;; but i don't know how to re-format on notify
   (concat
-   (propertize (concat "%[" (lem-ui-symbol 'plus)
+   (propertize (concat "%[" (if folded
+                                (lem-ui-symbol 'plus)
+                              (lem-ui-symbol 'minus))
                        "%]")
                'face '(lem-ui-widget-face :box t)
                'line-prefix indent
                'lem-tab-stop t)
-   " ")) ;: %v"))
+   " "))
+
+(defun lem-ui--widget-fold-and-update (widget)
+  "Un/Fold WIDGET and update its display."
+  ;; point is momentarily moved to widget on click event
+  ;; or RET, so safe to just move to byline-top then fold:
+  (lem-next-item)
+  (lem-ui-comment-tree-fold)
+  (lem-ui--widget-update-on-fold widget))
+
+(defun lem-ui--widget-update-on-fold (widget)
+  "Update format of WIDGET (after folding).
+Widget format is updated according to folded property, deleted
+and recreated."
+  ;; format isn't a fun, so we can't widget-apply it
+  ;; FIXME: save us from this awful hack:
+  ;; we update, copy, delete, create just to update widget's
+  ;; display:
+  ;; we should also do this for all folded children! ghastly
+  ;; ie in `lem-ui-comment-fold-toggle'
+  (let* ((folded-p (lem-ui--property 'folded))
+         (indent (lem-ui--property 'line-prefix)))
+    (widget-put widget :format
+                (lem-ui--widget-fold-format indent folded-p))
+    (let ((w2 (widget-copy widget)))
+      (widget-delete widget)
+      (widget-default-create w2))))
 
 (defun lem-ui-widget-fold-notify-fun (&optional old-value)
   "Return a notify function for a toggle fold widget.
@@ -3064,12 +3095,8 @@ OLD-VALUE is the widget's value before being changed."
        (condition-case x
            (save-excursion
              ;; ideally we would have our widget propertized like the
-             ;; top-byline, but it's no so easy to propertize the widget.
-
-             ;; point is momentarily moved to widget on click event
-             ;; or RET, so safe to just move to byline-top then fold:
-             (lem-next-item)
-             (lem-ui-comment-tree-fold))
+             ;; top-byline, but it's not so easy to propertize the widget.
+             (lem-ui--widget-fold-and-update widget))
          (user-error ; don't update widget if cycle-sort fails:
           (lem-ui-widget-reset-value widget ,old-value x))))))
 
@@ -3101,7 +3128,7 @@ WIDGET is a flag, and means create a toggle fold widget."
       (when widget
         (widget-create 'toggle
                        :help-echo (format "Toggle comment folding")
-                       :format (lem-ui-widget-fold-format indent-str)
+                       :format (lem-ui--widget-fold-format indent-str)
                        :notify (lem-ui-widget-fold-notify-fun)
                        :keymap lem-widget-keymap))
       (propertize
@@ -3468,6 +3495,11 @@ a keyword."
          (cdr byline-bottom)
          `(invisible
            ,(lem-ui--set-invis-prop invis (car byline-bottom))))
+        ;; update child widgets:
+        (let ((widget (save-excursion
+                        (beginning-of-line)
+                        (widget-at))))
+          (lem-ui--widget-update-on-fold widget))
         ;; return result of toggle as kw:
         (or invis ; kw
             (if invis-before
