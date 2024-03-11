@@ -207,7 +207,7 @@ RESPONSE is the comment_view data returned by the server."
   (with-current-buffer lem-post-last-buffer
     (let-alist response
       (let ((indent (length (lem-ui--property 'line-prefix)))
-            (view (lem-ui-view-type)))
+            (view (lem-ui--view-type)))
         (lem-ui-response-msg
          response 'comment_view :non-nil
          (format "Comment edited: %s" .comment_view.comment.content))
@@ -234,7 +234,7 @@ RESPONSE is the comment_view data returned by the server."
       ;; just reload!
       ;; (lem-ui-insert-comment-after-parent response) ; parent-id)
       (lem-ui-reload-view)
-      (when (eq (lem-ui-view-type) 'post)
+      (when (eq (lem-ui--view-type) 'post)
         (lem-prev-item)))))
 
 ;;; SUBMITTING ITEMS
