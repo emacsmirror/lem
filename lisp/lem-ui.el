@@ -2155,14 +2155,12 @@ SORT. LIMIT. PAGE."
   (cl-loop for x in list
            collect `(choice-item :value ,x :format "%[%v%] ")))
 
-(defun lem-ui-widget-format (str &optional binding)
-  "Return a widget format string for STR, its name.
-BINDING is a string of a keybinding to cycle the widget's value."
+(defun lem-ui-widget-format (str)
+  "Return a widget format string for STR, its name."
   (concat "%[" (propertize str
                            'face 'lem-ui-widget-face
                            'lem-tab-stop t)
-          "%]: %v"
-          binding))
+          "%]: %v"))
 
 (defun lem-ui-widget-reset-value (widget value msg)
   "Reset WIDGET to its previous VALUE.
