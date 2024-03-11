@@ -713,7 +713,8 @@ support that option."
            `((:inbox :types lem-inbox-types :default all)
              (:sort :types lem-inbox-sort-types :default ,default-sort)))
           ((eq view 'saved-items)
-           `((:sort :types lem-user-view-sort-types :default ,default-sort))))))
+           `((:items :types lem-user-items-types :default ,lem-default-user-items-type)
+             (:sort :types lem-user-view-sort-types :default ,default-sort))))))
 
 (defun lem-ui--view-opts-type (view-opts kind)
   "Return the the :types variable, from KIND in VIEW-OPTS.
@@ -739,7 +740,8 @@ VIEW-OPTS is a nested plist as returned by `lem-ui--view-options'."
 (defun lem-ui-cycle-items (&optional set)
   "Switch between displaying posts or comments.
 Works on instance and community view.
-In user views, cycle between overview, posts and comments.
+In user views (including saved items), cycle between overview,
+posts and comments.
 In inbox view, cycle between `lem-inbox-types'.
 Optionally, SET to a certain item."
   (interactive)
@@ -760,7 +762,8 @@ Optionally, SET to a certain item."
          (type (lem-ui-get-buffer-spec :listing-type))
          (id (lem-ui-get-view-id))
          (item-types (if (or (eq view 'user)
-                             (eq view 'current-user))
+                             (eq view 'current-user)
+                             (eq view 'saved-items))
                          lem-user-items-types
                        lem-items-types))
          (item-next (or set (lem-ui-next-type item item-types))))
@@ -776,6 +779,8 @@ Optionally, SET to a certain item."
            (message "Viewing: %s" item-next))
           ((eq view 'inbox)
            (lem-ui-cycle-inbox))
+          ((eq view 'saved-items)
+           (lem-ui-cycle-saved-items item-next))
           (t
            (user-error "Posts/Comments toggle not available in this view")))))
 
@@ -1925,31 +1930,44 @@ If UNSAVE, unsave the item instead."
         (lem-ui-save-item)
       (lem-ui-unsave-item))))
 
-(defun lem-ui-view-saved-items (&optional id sort limit page)
+(defun lem-ui-view-saved-items (&optional items ;id
+                                          sort limit page)
   "View saved items of the current user, or of user with ID.
+ITEMS, as string, means to display only those items (posts or
+comments).
 SORT. LIMIT. PAGE."
   (interactive)
   (let* ((opts (lem-ui--view-options 'saved-items))
+         (items (or items "overview"))
          (sort (or sort (lem-ui--view-opts-default opts :sort)))
          (saved-only (lem-api-get-person-saved-only
-                      (or id lem-user-id)
+                      lem-user-id ;(or id lem-user-id)
                       sort (or limit lem-ui-comments-limit) page))
-         ;; (posts (alist-get 'posts saved-only))
-         ;; (comments (alist-get 'comments saved-only))
+         (data (if (equal items "overview")
+                   saved-only
+                 (alist-get (intern items) saved-only)))
          (buf "*lem-saved-items*"))
     (lem-ui-with-buffer buf 'lem-mode nil nil
-      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-saved-items "overview")
-      (let* ((choices `(,sort))
+      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-saved-items items)
+      (let* ((choices `(,items ,sort))
              (widget-args (lem-ui-build-view-widget-args opts choices)))
         (lem-ui-widgets-create widget-args))
-      ;; TODO: cycle overview/comments/posts (like user-view)
-      (lem-ui-render-overview saved-only)
+      (cond ((equal items "posts")
+             (lem-ui-render-posts data))
+            ((equal items "comments")
+             (lem-ui-render-comments data :details))
+            (t
+             (lem-ui-render-overview data)))
       (lem-ui--widget-deactivate "overview" "Sort")
-      ;; (lem-ui-insert-heading "SAVED POSTS")
-      ;; (lem-ui-render-posts posts)
-      ;; (lem-ui-insert-heading "SAVED COMMENTS")
-      ;; (lem-ui-render-comments comments :details)
       (lem-ui--init-view))))
+
+(defun lem-ui-cycle-saved-items (&optional item)
+  "Cycle saved items view or view type ITEM."
+  (interactive)
+  (let* ((last (lem-ui-get-buffer-spec :item))
+         (next (or item (lem-ui-next-type last lem-user-items-types)))
+         (sort (lem-ui-get-buffer-spec :sort)))
+    (lem-ui-view-saved-items next sort)))
 
 ;;; COMPLETION FOR ACTIONS
 
