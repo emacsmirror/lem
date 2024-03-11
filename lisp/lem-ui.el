@@ -2155,12 +2155,14 @@ SORT. LIMIT. PAGE."
   (cl-loop for x in list
            collect `(choice-item :value ,x :format "%[%v%] ")))
 
-(defun lem-ui-widget-format (str)
-  "Return a widget format string for STR, its name."
+(defun lem-ui-widget-format (str &optional padding)
+  "Return a widget format string for STR, its name.
+PADDING is an integer, for how much right-side padding to add."
   (concat "%[" (propertize str
                            'face 'lem-ui-widget-face
                            'lem-tab-stop t)
-          "%]: %v"))
+          "%]: %v"
+          (make-string padding ? )))
 
 (defun lem-ui-widget-reset-value (widget value msg)
   "Reset WIDGET to its previous VALUE.
@@ -2208,7 +2210,15 @@ OLD-VALUE is the widget's value before being changed."
 KIND is a string, either Listing, Sort, Items, or Inbox, and will
 be used for the widget's tag.
 VALUE is a string, a member of TYPE."
-  (let ((type-list (eval type)))
+  (let* ((val-length (length (if (symbolp value)
+                                 (symbol-name value)
+                               value)))
+         (type-list (eval type))
+         (longest (cl-reduce #'max (if (symbolp (car type-list))
+                                       (mapcar #'length
+                                               (mapcar #'symbol-name type-list))
+                                     (mapcar #'length type-list))))
+         (padding (- longest val-length)))
     (if (not (member value type-list))
         (error "%s is not a member of %s" value type-list)
       (widget-create 'menu-choice
@@ -2216,7 +2226,7 @@ VALUE is a string, a member of TYPE."
                      :value value
                      :args (lem-ui-return-item-widgets type-list)
                      :help-echo (format "Select a %s kind" kind)
-                     :format (lem-ui-widget-format kind)
+                     :format (lem-ui-widget-format kind padding)
                      :notify (lem-ui-widget-notify-fun value)
                      :keymap lem-widget-keymap))))
 
