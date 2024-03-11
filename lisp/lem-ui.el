@@ -87,8 +87,7 @@
 
 ;;; HIERARCHY PATCHES
 
-(defun lem--hierarchy-labelfn-indent (labelfn) ; &optional indent-string)
-  ;; prop attrib cycle-fun)
+(defun lem--hierarchy-labelfn-indent (labelfn)
   "Return a function rendering LABELFN indented with INDENT-STRING.
 
 INDENT-STRING defaults to a 2-space string.  Indentation is
@@ -99,36 +98,9 @@ ATTRIB is the prop's attribute, a kw symbol.
 CYCLE-FUN is called with one argument, the current indent level
 inside the loop, and is used to return the color for that indentation.
 Currently it is always `lem-ui-cycle-colors'."
-  ;; (let ((indent-string (or indent-string "  ")))
+  ;; we now just do line-prefix in `lem-ui-format-comment'
   (lambda (item indent)
-    ;; don't manually insert indent string here, as it isn't a line-prefix
-    ;; and so point can end up on it, which we don't want.
-    ;; comments "seem" to work fine without any of this?
-    ;; and our format-comment fun handles line-prefixing:
-    ;; (dotimes (index indent)
-    ;;   (insert
-    ;;    (funcall 'propertize indent-string
-    ;;             ;; theres a better way to do this, but we need to funcall
-    ;;             ;; cycle-fun on index to work
-    ;;             prop (list attrib
-    ;;                        (funcall cycle-fun index)))))
     (funcall labelfn item indent)))
-
-;; (defun lem--hierarchy-print (hierarchy &optional to-string)
-;;   "Insert HIERARCHY in current buffer as plain text.
-
-;; Use TO-STRING to convert each element to a string.  TO-STRING is
-;; a function taking an item of HIERARCHY as input and returning a
-;; string.
-
-;; Calls `lem--hierarchy-print-line' with `hierarchy-labelfn-indent' as
-;; second argument."
-;;   (let ((to-string (or to-string (lambda (item) (format "%s" item)))))
-;;     (lem--hierarchy-print-line
-;;      hierarchy
-;;      (lem--hierarchy-labelfn-indent
-;;       (lambda (item _)
-;;         (funcall to-string item))))))
 
 (defun lem--hierarchy-print-line (hierarchy &optional labelfn)
   "Insert HIERARCHY in current buffer as plain text.
@@ -145,26 +117,6 @@ achieved by providing a function such as
      (lambda (item indent)
        (insert (funcall labelfn item indent) "\n"))
      hierarchy)))
-
-;;; WIDGETS
-
-(defvar lem-widget-keymap
-  (let ((map (make-sparse-keymap)))
-    ;; (define-key map "\t" 'widget-forward)
-    ;; (define-key map "\e\t" 'widget-backward)
-    ;; (define-key map [(shift tab)] 'widget-backward)
-    ;; (put 'widget-backward :advertised-binding [(shift tab)])
-    ;; (define-key map [backtab] 'widget-backward)
-    (define-key map [down-mouse-2] 'widget-button-click)
-    (define-key map [down-mouse-1] 'widget-button-click)
-    (define-key map [touchscreen-begin] 'widget-button-click)
-    ;; The following definition needs to avoid using escape sequences that
-    ;; might get converted to ^M when building loaddefs.el
-    (define-key map [(control ?m)] 'widget-button-press)
-    map)
-  "Keymap containing useful binding for buffers containing widgets.
-Recommended as a parent keymap for modes using widgets.
-Note that such modes will need to require wid-edit.")
 
 ;;; VARS
 
@@ -468,141 +420,94 @@ If we hit `point-max', call `lem-ui-more' then `scroll-up-command'."
   "Jump to prev tab item."
   (interactive)
   (fedi-next-tab-item :prev 'lem-tab-stop))
+;;; VIEW TYPES
 
-;;; INSTANCE
+(defun lem-ui--view-type ()
+  "Return the current view, based on `lem-ui-buffer-spec'."
+  ;; TODO: minor ones
+  (let ((view-fun (lem-ui-get-buffer-spec :view-fun)))
+    (cond ((eq view-fun 'lem-ui-view-post)
+           'post)
+          ((eq view-fun 'lem-ui-view-community)
+           'community)
+          ((or (eq view-fun 'lem-ui-view-communities)
+               (eq view-fun 'lem-ui-browse-communities))
+           'communities)
+          ((eq view-fun 'lem-ui-view-user)
+           'user)
+          ((eq view-fun 'lem-ui-view-own-profile)
+           'current-user)
+          ((eq view-fun 'lem-ui-view-instance)
+           'instance)
+          ((eq view-fun 'lem-ui-search)
+           'search)
+          ((eq view-fun 'lem-ui-view-saved-items)
+           'saved-items)
+          ((eq view-fun 'lem-ui-view-inbox)
+           'inbox))))
 
-(defun lem-ui-view-instance (&optional type sort limit page item sidebar)
-  "View posts of current user's home instance.
-SORT must be a member of `lem-comment-sort-types' if item is
-\"comments\", otherwise it must be a member of `lem-sort-types'.
-TYPE must be member of `lem-listing-types'.
-ITEM must be a member of `lem-items-types'."
-  (interactive)
-  (let* ((opts (lem-ui--view-options 'instance))
-         (instance (lem-get-instance))
-         (sort (if (lem-sort-type-p sort)
-                   sort
-                 (lem-ui--view-opts-default opts :sort)))
-         (type (or type (lem-ui--view-opts-default opts :listing)))
-         (item (or item (lem-ui--view-opts-default opts :items)))
-         (items-data (if (equal item "comments")
-                         (lem-get-comments nil nil type sort limit page)
-                       (lem-get-posts type sort limit page)))
-         (items (alist-get (intern item) items-data))
-         (buf "*lem-instance*")
-         (bindings opts))
-    (lem-ui-with-buffer buf 'lem-mode nil bindings
-      (lem-ui-render-instance instance :stats sidebar)
-      (lem-ui-set-buffer-spec
-       type sort #'lem-ui-view-instance item page)
-      ;; FIXME: choices must be same length and item order as opts:
-      (let* ((choices `(,item ,type ,sort))
-             (widgets-list (lem-ui-build-view-widget-args opts choices)))
-        (lem-ui-widgets-create widgets-list))
-      (if (equal item "comments")
-          (lem-ui-render-comments items :details)
-        (lem-ui-render-posts-instance items))
-      (lem-ui--init-view))))
+(defun lem-ui--view-options (view)
+  "Return the various sorting and other options for VIEW.
+Returns a keyword plist of keyword plists holding the variables containing the
+specific options and their default values.
+If these options are queried and return nil, then they don't
+support that option."
+  ;; TODO: `lem-ui-get-sort-types' mandates `lem-comment-sort-types' for
+  ;; all comment views which require item, taken from buffer-spec. but that's
+  ;; wrong, going by the webUI `lem-comment-sort-types' only for post view!
 
-(defun lem-ui-view-instance-full ()
-  "View full instance details."
-  ;; TODO: full instance info: sidebar, full desc,
-  ;; trending communities, stats, admins
-  (interactive)
-  (lem-ui-view-instance nil nil nil nil nil :sidebar))
+  ;; NB: the order here is the widgets' order!
+  (let ((default-sort (lem-ui--view-default-sort view)))
+    (cond
+     ((eq view 'post)
+      `((:sort :types lem-comment-sort-types :default ,default-sort)))
+     ((eq view 'instance)
+      `((:items :types lem-items-types :default ,lem-default-items-type)
+        (:listing :types lem-listing-types :default ,lem-default-listing-type)
+        (:sort :types lem-sort-types :default ,default-sort)))
+     ((eq view 'search)
+      `((:search  :types lem-search-types-implemented
+                  :default
+                  ,(car lem-search-types-implemented))
+        (:listing :types lem-listing-types :default ,lem-default-listing-type)
+        (:sort :types lem-sort-types :default ,default-sort)))
+     ((or (eq view 'user)
+          (eq view 'current-user))
+      `((:items :types lem-user-items-types :default ,lem-default-user-items-type)
+        (:sort :types lem-user-view-sort-types :default ,default-sort)))
+     ((eq view 'community)
+      `((:items :types lem-items-types :default ,lem-default-items-type)
+        (:sort :types lem-sort-types :default ,default-sort)))
+     ((eq view 'communities)
+      `((:listing :types lem-listing-types :default ,lem-default-listing-type)
+        (:sort :types lem-sort-types :default ,lem-default-communities-sort-type)))
+     ((eq view 'inbox)
+      `((:inbox :types lem-inbox-types :default all)
+        (:sort :types lem-inbox-sort-types :default ,default-sort)))
+     ((eq view 'saved-items)
+      `((:items :types lem-user-items-types :default ,lem-default-user-items-type)
+        (:sort :types lem-user-view-sort-types :default ,default-sort))))))
 
-(defun lem-ui-view-modlog (_args)
-  "Docstring."
-  ;; TODO
-  )
+(defun lem-ui--view-opts-type (view-opts kind)
+  "Return the the :types variable, from KIND in VIEW-OPTS.
+KIND is the type of view options, such as :listing, or :sort.
+VIEW-OPTS is a nested plist as returned by `lem-ui--view-options'."
+  (eval
+   (plist-get
+    (alist-get kind view-opts)
+    :types)))
 
-(defun lem-ui-insert-people (list str)
-  "Insert propertized link for each person in LIST.
-Each person is a three item list of username, id, and URL, the
-value returned by `lem-ui--names-list'.
-STR is the preceding string to insert."
-  (insert
-   str
-   (mapconcat
-    (lambda (x)
-      (lem-ui--propertize-link (cl-first x)
-                               (cl-second x)
-                               'user
-                               nil ; no URL so follow-link doesn't do lookup
-                               'lem-ui-user-face
-                               (cl-third x)))
-    list " | ")))
+(defun lem-ui--view-opts-default (view-opts kind)
+  "Return the default option of KIND in VIEW-OPTS.
+KIND is the type of view options, such as :listing, or :sort.
+VIEW-OPTS is a nested plist as returned by `lem-ui--view-options'."
+  (plist-get
+   (alist-get kind view-opts)
+   :default))
 
-(defun lem-ui-render-instance (instance &optional stats sidebar)
-  "INSTANCE.
-STATS.
-SIDEBAR."
-  (let* ((admins-list (alist-get 'admins instance))
-         (admins (lem-ui--names-list admins-list 'person))
-         (inst (alist-get 'site_view instance)))
-    (let-alist inst
-      (let ((created (fedi--relative-time-description
-                      (date-to-time .site.published))))
-        (insert
-         (propertize
-          (concat
-           (propertize .site.name
-                       'face '(:weight bold))
-           " | "
-           (lem-ui-font-lock-comment .site.actor_id)
-           (lem-ui-font-lock-comment " created: " created);.site.published)
-           "\n"
-           .site.description "\n"
-           (if sidebar
-               (concat (lem-ui-render-body .site.sidebar)
-                       "\n")
-             "")
-           lem-ui-horiz-bar "\n")
-          'json instance
-          'byline-top t ; next/prev hack
-          'id .site.id
-          'lem-type 'instance))))
-    ;; stats:
-    (when stats
-      (let-alist (alist-get 'counts inst)
-        (lem-ui-render-stats .users
-                             .posts
-                             .comments
-                             .communities)))
-    ;; admins:
-    (when admins
-      (lem-ui-insert-people admins "admins: ")
-      (insert "\n" lem-ui-horiz-bar "\n"))
-    (insert "\n")))
-
-(defun lem-ui-block-item-instance ()
-  "Block instance of item at point.
-Blocking an instance means you wont see content from that
-instance, but will still see content from its users if they are
-active on other instances."
-  (interactive)
-  (lem-ui-with-item 'all
-    (let-alist (lem-ui--property 'json)
-      (let ((instance (url-host (url-generic-parse-url .post.ap_id))))
-        (when (y-or-n-p (format "Block instance %s?" instance))
-          (lem-ui-response-msg
-           (lem-block-instance .community.instance_id t)
-           'blocked t
-           (format "Instance %s blocked!" instance)))))
-    :number))
-
-(defun lem-ui-unblock-instance ()
-  "Prompt for a blocked instance and unblock it."
-  (interactive)
-  (lem-ui-do-item-completing
-   #'lem-api-get-blocked-instances
-   #'lem-ui--instances-list
-   "Unblock instance:"
-   (lambda (id choice)
-     (lem-ui-response-msg
-      (lem-block-instance id :json-false)
-      'blocked :json-false
-      (format "Instance %s unblocked!" choice)))))
+(defun lem-ui--get-opts-kind (opts kind)
+  "Return the KIND entry, a keyword from view-options list OPTS."
+  (plist-get (cdr opts) kind))
 
 ;;; CYCLE SORT, LISTING, and ITEMS TYPE
 
@@ -630,112 +535,6 @@ Optionally return default sort type for VIEW."
              (if (equal item "posts")
                  (car lem-sort-types) ; "Active"
                (car lem-comment-sort-types))))))) ; "Hot"
-
-(defun lem-ui--view-type ()
-  "Return the current view, based on `lem-ui-buffer-spec'."
-  ;; TODO: minor ones
-  (let ((view-fun (lem-ui-get-buffer-spec :view-fun)))
-    (cond ((eq view-fun 'lem-ui-view-post)
-           'post)
-          ((eq view-fun 'lem-ui-view-community)
-           'community)
-          ((or (eq view-fun 'lem-ui-view-communities)
-               (eq view-fun 'lem-ui-browse-communities))
-           'communities)
-          ((eq view-fun 'lem-ui-view-user)
-           'user)
-          ((eq view-fun 'lem-ui-view-own-profile)
-           'current-user)
-          ((eq view-fun 'lem-ui-view-instance)
-           'instance)
-          ((eq view-fun 'lem-ui-search)
-           'search)
-          ((eq view-fun 'lem-ui-view-saved-items)
-           'saved-items)
-          ((eq view-fun 'lem-ui-view-inbox)
-           'inbox))))
-
-;; from create-widget:
-;; (cond ((equal kind "Listing")
-;;        lem-listing-types)
-;;       ((equal kind "Sort")
-;;        (cond ((or (eq (lem-ui--view-type) 'post)
-;;                   (equal (lem-ui-get-buffer-spec :item) "comments"))
-;;               lem-comment-sort-types)
-;;              ((or (eq (lem-ui--view-type) 'user)
-;;                   (eq (lem-ui--view-type) 'current-user))
-;;               lem-user-view-sort-types)
-;;              (t
-;;               lem-sort-types)))
-;;       ((equal kind "Inbox")
-;;        lem-inbox-types)
-;;       ;; maybe items is useless as we have headings:
-;;       ((equal kind "Items")
-;;        lem-items-types)
-;;       ((equal kind "Search")
-;;        lem-search-types-implemented))
-
-(defun lem-ui--view-options (view)
-  "Return the various sorting and other options for VIEW.
-Returns a keyword plist of keyword plists holding the variables containing the
-specific options and their default values.
-If these options are queried and return nil, then they don't
-support that option."
-  ;; TODO: `lem-ui-get-sort-types' mandates `lem-comment-sort-types' for
-  ;; all comment views which require item, taken from buffer-spec. but that's
-  ;; wrong, going by the webUI `lem-comment-sort-types' only for post view!
-
-  ;; NB: the order here is the widgets' order!
-  (let ((default-sort (lem-ui--view-default-sort view)))
-    (cond ((eq view 'post)
-           `((:sort :types lem-comment-sort-types :default ,default-sort)))
-          ((eq view 'instance)
-           `((:items :types lem-items-types :default ,lem-default-items-type)
-             (:listing :types lem-listing-types :default ,lem-default-listing-type)
-             (:sort :types lem-sort-types :default ,default-sort)))
-          ((eq view 'search)
-           `((:search  :types lem-search-types-implemented
-                       :default
-                       ,(car lem-search-types-implemented))
-             (:listing :types lem-listing-types :default ,lem-default-listing-type)
-             (:sort :types lem-sort-types :default ,default-sort)))
-          ((or (eq view 'user)
-               (eq view 'current-user))
-           `((:items :types lem-user-items-types :default ,lem-default-user-items-type)
-             (:sort :types lem-user-view-sort-types :default ,default-sort)))
-          ((eq view 'community)
-           `((:items :types lem-items-types :default ,lem-default-items-type)
-             (:sort :types lem-sort-types :default ,default-sort)))
-          ((eq view 'communities)
-           `((:listing :types lem-listing-types :default ,lem-default-listing-type)
-             (:sort :types lem-sort-types :default ,lem-default-communities-sort-type)))
-          ((eq view 'inbox)
-           `((:inbox :types lem-inbox-types :default all)
-             (:sort :types lem-inbox-sort-types :default ,default-sort)))
-          ((eq view 'saved-items)
-           `((:items :types lem-user-items-types :default ,lem-default-user-items-type)
-             (:sort :types lem-user-view-sort-types :default ,default-sort))))))
-
-(defun lem-ui--view-opts-type (view-opts kind)
-  "Return the the :types variable, from KIND in VIEW-OPTS.
-KIND is the type of view options, such as :listing, or :sort.
-VIEW-OPTS is a nested plist as returned by `lem-ui--view-options'."
-  (eval
-   (plist-get
-    (alist-get kind view-opts)
-    :types)))
-
-(defun lem-ui--view-opts-default (view-opts kind)
-  "Return the default option of KIND in VIEW-OPTS.
-KIND is the type of view options, such as :listing, or :sort.
-VIEW-OPTS is a nested plist as returned by `lem-ui--view-options'."
-  (plist-get
-   (alist-get kind view-opts)
-   :default))
-
-(defun lem-ui--get-opts-kind (opts kind)
-  "Return the KIND entry, a keyword from view-options list OPTS."
-  (plist-get (cdr opts) kind))
 
 (defun lem-ui-cycle-items (&optional set)
   "Switch between displaying posts or comments.
@@ -907,29 +706,26 @@ Optionally, use SORT."
          (choice (completing-read "Sort by:" sort-list nil :match)))
     (lem-ui-cycle-sort choice)))
 
-;;; SEARCH
 
-(defun lem-ui-read-type (prompt types-list)
-  "Read a choice from TYPES-LIST using PROMPT."
-  (completing-read prompt
-                   types-list nil :match))
+;;; WIDGETS
 
-(defun lem-ui-choose-search-type ()
-  "Choose a search type from `lem-search-types' and repeat current query."
-  (interactive)
-  (if (not (eq (lem-ui--view-type) 'search))
-      (user-error "You can only choose search type in a search")
-    (let* ((types (remove "Url"
-                          (remove "All" lem-search-types)))
-           (choice (lem-ui-read-type "Search type:" types))
-           (sort (lem-ui-get-buffer-spec :sort))
-           (query (lem-ui-get-buffer-spec :query))
-           (listing-type (lem-ui-get-buffer-spec :listing-type)))
-      (lem-ui-search query choice listing-type sort))))
-
-(defun lem-ui-search-type-fun (search-type)
-  "Given SEARCH-TYPE, return a render function."
-  (intern (concat "lem-ui-render-" search-type)))
+(defvar lem-widget-keymap
+  (let ((map (make-sparse-keymap)))
+    ;; (define-key map "\t" 'widget-forward)
+    ;; (define-key map "\e\t" 'widget-backward)
+    ;; (define-key map [(shift tab)] 'widget-backward)
+    ;; (put 'widget-backward :advertised-binding [(shift tab)])
+    ;; (define-key map [backtab] 'widget-backward)
+    (define-key map [down-mouse-2] 'widget-button-click)
+    (define-key map [down-mouse-1] 'widget-button-click)
+    (define-key map [touchscreen-begin] 'widget-button-click)
+    ;; The following definition needs to avoid using escape sequences that
+    ;; might get converted to ^M when building loaddefs.el
+    (define-key map [(control ?m)] 'widget-button-press)
+    map)
+  "Keymap containing useful binding for buffers containing widgets.
+Recommended as a parent keymap for modes using widgets.
+Note that such modes will need to require wid-edit.")
 
 (defun lem-ui-kw-to-str (kw)
   "Convert KW, a keyword, into a capitalized string."
@@ -953,6 +749,256 @@ used to override default values."
   (cl-loop for o in view-opts
            for c in choices
            collect (lem-ui--return-widget-args o c)))
+
+(defun lem-ui-return-item-widgets (list)
+  "Return a list of item widgets for each item, a string, in LIST."
+  (cl-loop for x in list
+           collect `(choice-item :value ,x :format "%[%v%] ")))
+
+(defun lem-ui-widget-format (str &optional padding)
+  "Return a widget format string for STR, its name.
+PADDING is an integer, for how much right-side padding to add."
+  (concat "%[" (propertize str
+                           'face 'lem-ui-widget-face
+                           'lem-tab-stop t)
+          "%]: %v"
+          (make-string padding ? )))
+
+(defun lem-ui-widget-reset-value (widget value msg)
+  "Reset WIDGET to its previous VALUE.
+USED to not update widget display if the sort chosen is
+unavailable in the current view.
+MSG is the error message string to display."
+  (widget-value-set widget value)
+  (message "%s" (error-message-string msg)))
+
+(defun lem-ui-widget-notify-fun (old-value)
+  "Return a widget notify function.
+OLD-VALUE is the widget's value before being changed."
+  `(lambda (widget &rest ignore)
+     (let ((value (widget-value widget))
+           (tag (widget-get widget :tag)))
+       (cond ((equal tag "Listing")
+              (lem-ui-cycle-listing-type value))
+             ((equal tag "Sort")
+              (condition-case x
+                  (lem-ui-cycle-sort value)
+                (user-error ; don't update widget if cycle-sort fails:
+                 (lem-ui-widget-reset-value widget ,old-value x))))
+             ((equal tag "Search")
+              (lem-ui-cycle-search value))
+             ((equal tag "Items")
+              (lem-ui-cycle-items value))
+             ((equal tag "Inbox")
+              (lem-ui-cycle-inbox value))
+             (t (message "Widget kind not implemented yet"))))))
+
+(defun lem-ui--widget-deactivate (item-type widget-type)
+  "When item of view is ITEM-TYPE, deactivate widget of WIDGET-TYPE."
+  (let ((item (lem-ui-get-buffer-spec :item)))
+    (when (equal item item-type)
+      (save-excursion
+        (goto-char (point-min))
+        (while (text-property-search-forward 'face 'lem-ui-widget-face t)
+          (let* ((widget (widget-at (1- (point))))
+                 (tag (widget-get widget :tag)))
+            (when (equal tag widget-type)
+              (widget-apply widget :deactivate))))))))
+
+(defun lem-ui-widget-create (kind type value)
+  "Return a widget of KIND, with TYPE-LIST elements, and default VALUE.
+KIND is a string, either Listing, Sort, Items, or Inbox, and will
+be used for the widget's tag.
+VALUE is a string, a member of TYPE."
+  (let* ((val-length (length (if (symbolp value)
+                                 (symbol-name value)
+                               value)))
+         (type-list (eval type))
+         (longest (cl-reduce #'max (if (symbolp (car type-list))
+                                       (mapcar #'length
+                                               (mapcar #'symbol-name type-list))
+                                     (mapcar #'length type-list))))
+         (padding (- longest val-length)))
+    (if (not (member value type-list))
+        (error "%s is not a member of %s" value type-list)
+      (widget-create 'menu-choice
+                     :tag kind
+                     :value value
+                     :args (lem-ui-return-item-widgets type-list)
+                     :help-echo (format "Select a %s kind" kind)
+                     :format (lem-ui-widget-format kind padding)
+                     :notify (lem-ui-widget-notify-fun value)
+                     :keymap lem-widget-keymap))))
+
+(defun lem-ui-widgets-create (widgets-list)
+  "Create a number of dropdown widgets.
+WIDGETS-LIST is a nested list where each list contains three
+elements: a tag, a list of items, and a default value. They are
+arguments for `lem-ui-widget-create'."
+  (cl-loop for w in widgets-list
+           do (funcall #'lem-ui-widget-create
+                       (nth 0 w) (nth 1 w) (nth 2 w)))
+  (insert "\n\n"))
+
+;;; INSTANCE
+
+(defun lem-ui-view-instance (&optional type sort limit page item sidebar)
+  "View posts of current user's home instance.
+SORT must be a member of `lem-comment-sort-types' if item is
+\"comments\", otherwise it must be a member of `lem-sort-types'.
+TYPE must be member of `lem-listing-types'.
+ITEM must be a member of `lem-items-types'."
+  (interactive)
+  (let* ((opts (lem-ui--view-options 'instance))
+         (instance (lem-get-instance))
+         (sort (if (lem-sort-type-p sort)
+                   sort
+                 (lem-ui--view-opts-default opts :sort)))
+         (type (or type (lem-ui--view-opts-default opts :listing)))
+         (item (or item (lem-ui--view-opts-default opts :items)))
+         (items-data (if (equal item "comments")
+                         (lem-get-comments nil nil type sort limit page)
+                       (lem-get-posts type sort limit page)))
+         (items (alist-get (intern item) items-data))
+         (buf "*lem-instance*")
+         (bindings opts))
+    (lem-ui-with-buffer buf 'lem-mode nil bindings
+      (lem-ui-render-instance instance :stats sidebar)
+      (lem-ui-set-buffer-spec
+       type sort #'lem-ui-view-instance item page)
+      ;; FIXME: choices must be same length and item order as opts:
+      (let* ((choices `(,item ,type ,sort))
+             (widgets-list (lem-ui-build-view-widget-args opts choices)))
+        (lem-ui-widgets-create widgets-list))
+      (if (equal item "comments")
+          (lem-ui-render-comments items :details)
+        (lem-ui-render-posts-instance items))
+      (lem-ui--init-view))))
+
+(defun lem-ui-view-instance-full ()
+  "View full instance details."
+  ;; TODO: full instance info: sidebar, full desc,
+  ;; trending communities, stats, admins
+  (interactive)
+  (lem-ui-view-instance nil nil nil nil nil :sidebar))
+
+(defun lem-ui-view-modlog (_args)
+  "Docstring."
+  ;; TODO
+  )
+
+(defun lem-ui-insert-people (list str)
+  "Insert propertized link for each person in LIST.
+Each person is a three item list of username, id, and URL, the
+value returned by `lem-ui--names-list'.
+STR is the preceding string to insert."
+  (insert
+   str
+   (mapconcat
+    (lambda (x)
+      (lem-ui--propertize-link (cl-first x)
+                               (cl-second x)
+                               'user
+                               nil ; no URL so follow-link doesn't do lookup
+                               'lem-ui-user-face
+                               (cl-third x)))
+    list " | ")))
+
+(defun lem-ui-render-instance (instance &optional stats sidebar)
+  "INSTANCE.
+STATS.
+SIDEBAR."
+  (let* ((admins-list (alist-get 'admins instance))
+         (admins (lem-ui--names-list admins-list 'person))
+         (inst (alist-get 'site_view instance)))
+    (let-alist inst
+      (let ((created (fedi--relative-time-description
+                      (date-to-time .site.published))))
+        (insert
+         (propertize
+          (concat
+           (propertize .site.name
+                       'face '(:weight bold))
+           " | "
+           (lem-ui-font-lock-comment .site.actor_id)
+           (lem-ui-font-lock-comment " created: " created);.site.published)
+           "\n"
+           .site.description "\n"
+           (if sidebar
+               (concat (lem-ui-render-body .site.sidebar)
+                       "\n")
+             "")
+           lem-ui-horiz-bar "\n")
+          'json instance
+          'byline-top t ; next/prev hack
+          'id .site.id
+          'lem-type 'instance))))
+    ;; stats:
+    (when stats
+      (let-alist (alist-get 'counts inst)
+        (lem-ui-render-stats .users
+                             .posts
+                             .comments
+                             .communities)))
+    ;; admins:
+    (when admins
+      (lem-ui-insert-people admins "admins: ")
+      (insert "\n" lem-ui-horiz-bar "\n"))
+    (insert "\n")))
+
+(defun lem-ui-block-item-instance ()
+  "Block instance of item at point.
+Blocking an instance means you wont see content from that
+instance, but will still see content from its users if they are
+active on other instances."
+  (interactive)
+  (lem-ui-with-item 'all
+    (let-alist (lem-ui--property 'json)
+      (let ((instance (url-host (url-generic-parse-url .post.ap_id))))
+        (when (y-or-n-p (format "Block instance %s?" instance))
+          (lem-ui-response-msg
+           (lem-block-instance .community.instance_id t)
+           'blocked t
+           (format "Instance %s blocked!" instance)))))
+    :number))
+
+(defun lem-ui-unblock-instance ()
+  "Prompt for a blocked instance and unblock it."
+  (interactive)
+  (lem-ui-do-item-completing
+   #'lem-api-get-blocked-instances
+   #'lem-ui--instances-list
+   "Unblock instance:"
+   (lambda (id choice)
+     (lem-ui-response-msg
+      (lem-block-instance id :json-false)
+      'blocked :json-false
+      (format "Instance %s unblocked!" choice)))))
+
+
+;;; SEARCH
+
+(defun lem-ui-read-type (prompt types-list)
+  "Read a choice from TYPES-LIST using PROMPT."
+  (completing-read prompt
+                   types-list nil :match))
+
+(defun lem-ui-choose-search-type ()
+  "Choose a search type from `lem-search-types' and repeat current query."
+  (interactive)
+  (if (not (eq (lem-ui--view-type) 'search))
+      (user-error "You can only choose search type in a search")
+    (let* ((types (remove "Url"
+                          (remove "All" lem-search-types)))
+           (choice (lem-ui-read-type "Search type:" types))
+           (sort (lem-ui-get-buffer-spec :sort))
+           (query (lem-ui-get-buffer-spec :query))
+           (listing-type (lem-ui-get-buffer-spec :listing-type)))
+      (lem-ui-search query choice listing-type sort))))
+
+(defun lem-ui-search-type-fun (search-type)
+  "Given SEARCH-TYPE, return a render function."
+  (intern (concat "lem-ui-render-" search-type)))
 
 (defun lem-ui-search (&optional query search-type
                                 listing-type sort limit page
@@ -1117,74 +1163,6 @@ Lemmy supports lookups for users, posts, comments and communities."
                (message "unknown lookup response.")
                (browse-url query)))))))
 
-;;; FEATURE (PIN) POSTS
-
-(defun lem-ui-do-feature (id arg type str)
-  "Call `lem-feature-post' and handle the response.
-ID, ARG TYPE are for that function.
-STR is for message."
-  (let ((response (lem-feature-post id arg type))
-        (view (lem-ui-get-buffer-spec :view-fun)))
-    (lem-ui-response-msg
-     response
-     'post_view :non-nil
-     (format "Post %s!" str))
-    (lem-ui--update-item-json (alist-get 'post_view response))
-    (lem-ui-update-item-from-json
-     'byline-top
-     (lambda (json)
-       (lem-ui-top-byline-replace
-        json
-        (unless (eq view 'lem-ui-view-community)
-          :community))))))
-
-(defun lem-ui-feature-post (&optional unfeature)
-  "Feature (pin) a post, either to its instance or community.
-UNFEATURE means we are unfeaturing a post."
-  (interactive)
-  (lem-ui-with-item 'post
-    (let* ((json (lem-ui--property 'json))
-           (post (alist-get 'post json))
-           (id (lem-ui--property 'id))
-           (mod-p (alist-get 'creator_is_moderator json))
-           (admin-p (alist-get 'creator_is_admin json))
-           (feat-comm (alist-get 'featured_community post))
-           (feat-loc (alist-get 'featured_local post))
-           ;; TODO: annotate Local with "instance":
-           (feat-type
-            (if unfeature
-                (cond ((eq t feat-comm) "Community")
-                      ((eq t feat-loc) "Local")
-                      (t
-                       (user-error "Post not featured?")))
-              (completing-read "Feature type: "
-                               '("Local" "Community"))))
-           (feat-arg (if unfeature :json-false t))
-           (feat-str (if unfeature "unfeatured" "featured")))
-      (if (equal feat-type "Community")
-          ;; TODO: refactor conds:
-          (cond (unfeature
-                 (lem-ui-do-feature id feat-arg feat-type feat-str))
-                ((not (eq t mod-p))
-                 (user-error "You need to be a mod to feature to community"))
-                ((eq t feat-comm)
-                 (user-error "Post already featured?"))
-                (t
-                 (lem-ui-do-feature id feat-arg feat-type feat-str)))
-        (cond (unfeature
-               (lem-ui-do-feature id feat-arg feat-type feat-str))
-              ((not (eq t admin-p))
-               (user-error "You need to be an admin to feature to instance"))
-              ((eq t feat-loc)
-               (user-error "Post already featured?"))
-              (t
-               (lem-ui-do-feature id feat-arg feat-type feat-str)))))
-    :number))
-
-(defun lem-ui-unfeature-post ()
-  "Unfeature (unpin) post at point."
-  (interactive)
-  (lem-ui-feature-post :unfeature))
 
 ;;; LINKS
 
@@ -1454,123 +1432,8 @@ PREFIX is a \"line-prefix\" property to add."
                 'byline-bottom t
                 'line-prefix prefix)))
 
-;;; UPDATING ITEMS
 
-;; currently if we need to update something after an action we update that
-;; item's json, then update the item or part thereof from the updated json.
-;; because we always update the json prop for the whole item, but then
-;; sometimes only update a part of the item, e.g. bylines.
-
-(defalias 'lem-ui-update-item-from-json 'fedi-update-item-from-json)
-
-(defalias 'lem-ui--replace-region-contents 'fedi--replace-region-contents)
-
-(defalias 'lem-ui--update-item-json 'fedi--update-item-json)
-
-(defun lem-ui-bt-byline-replace (json &optional vote saved prefix)
-  "Call `lem-ui-bt-byline' to update the bottom byline.
-JSON is the item's json.
-VOTE, SAVED, and PREFIX are arguments for `lem-ui-bt-byline'."
-  ;; FIXME: this assumes post object
-  (let-alist json
-    (let ((vote (or vote .my_vote))
-          (saved (or saved .saved))
-          (prefix (or prefix (lem-ui--property 'line-prefix))))
-      (propertize
-       (lem-ui-bt-byline .counts.score
-                         (or .counts.child_count
-                             .counts.comments)
-                         vote saved prefix)
-       ;; properties from render-post/comment (need to be checked):
-       'json json
-       'id (or .post.id .comment.id)
-       'community-id .post.community_id
-       'creator-id .creator.id
-       'lem-type (caar json)))))
-
-(defun lem-ui-top-byline-replace (json &optional community)
-  "Call `lem-ui-top-byline' and add post properties to it.
-JSON is the data to use.
-COMMUNITY means display the community posted to."
-  (let-alist json
-    (propertize
-     (lem-ui-top-byline .post.name
-                        (or .post.url "")
-                        (or .creator.display_name .creator.name)
-                        .counts.score
-                        .post.published
-                        (when community .community.name)
-                        (when community .community.actor_id)
-                        (or (eq t .post.featured_community) ; pinned community
-                            (eq t .post.featured_local)) ; pinned instance
-                        nil
-                        (eq t .creator_is_admin)
-                        (or (eq t .creator_is_moderator)
-                            (cl-member .creator.id lem-ui-post-community-mods-ids))
-                        (eq t .post.deleted)
-                        (lem-ui--handle-from-user-url .creator.actor_id))
-     ;; add render-post props:
-     'json json
-     'id .post.id
-     'community-id .post.community_id
-     'creator-id .creator.id
-     'lem-type (caar json))))
-
-(defun lem-ui-update-parent-item-maybe ()
-  "Go to buffer's first element, and reload its json data and bottom byline."
-  ;; FIXME: only running in post views till we improve things.
-  (when (eq (lem-ui--view-type) 'post)
-    (save-restriction
-      (save-excursion
-        (widen)
-        (goto-char (point-min))
-        (forward-char)
-        ;; FIXME: we have user item type, but "person_view",
-        ;; so this isn't working for users
-        (let* ((item-type (lem-ui--property 'lem-type))
-               (id (lem-ui--property 'id))
-               (item-fun (lem-ui-make-fun "lem-get-" item-type))
-               (item-data (funcall item-fun id))
-               (item (alist-get (intern
-                                 (concat (symbol-name item-type)
-                                         "_view"))
-                                item-data)))
-          ;; for now, just update parent posts:
-          ;; as lem-ui-bt-byline-replace wrongly assumes posts
-          (when (eq (lem-ui--view-type) 'post)
-            (lem-ui--update-item-json item)
-            (lem-ui-update-item-from-json
-             'byline-bottom
-             (lambda (json)
-               (lem-ui-bt-byline-replace json)))))))))
-
-(defun lem-ui-reload-view ()
-  "Reload the current view."
-  (interactive)
-  (let ((type (lem-ui--view-type))
-        (item (lem-ui-get-buffer-spec :item))
-        (sort (lem-ui-get-buffer-spec :sort))
-        (listing (lem-ui-get-buffer-spec :listing-type))
-        (page (lem-ui-get-buffer-spec :page))
-        (limit (lem-ui-get-buffer-spec :limit))
-        (id (save-excursion
-              (goto-char (point-min))
-              (lem-ui--property 'id))))
-    (cond ((eq type 'post)
-           (lem-ui-view-post id sort limit))
-          ((eq type 'instance)
-           (lem-ui-view-instance listing sort limit page item))
-          ((eq type 'community)
-           (lem-ui-view-community id item sort limit page))
-          ((or (eq type 'user)
-               (eq type 'current-user))
-           (lem-ui-view-user id item sort limit))
-          ((eq type 'inbox)
-           (lem-ui-view-inbox item sort))
-          (t
-           (user-error "Unable to reload view type %s" type)))))
-
-;; MARKDOWN BODY RENDERING
+;;; MARKDOWN BODY RENDERING
 
 (defun lem-ui-render-url (url &optional no-shorten)
   "Render URL, a plain non-html string.
@@ -1875,134 +1738,843 @@ TRIM means trim each post for length."
   (cl-loop for x in posts
            do (lem-ui-render-post x community trim)))
 
-;;; SAVING
+;;; COMMENTS
 
-(defun lem-ui-save-item (&optional unsave)
-  "Save item at point.
-Saved items can be viewed in your profile, like bookmarks.
-If UNSAVE, unsave the item instead."
+(defun lem-ui-render-comment (comment &optional reply details)
+  "Render single COMMENT.
+REPLY means it is a comment-reply object.
+DETAILS means display what community and post the comment is linked to."
+  (insert
+   (lem-ui-format-comment comment nil reply details)
+   "\n"))
+
+(defun lem-ui-render-comments (comments &optional details)
+  "Render COMMENTS, a list of comment objects.
+;; TYPE
+;; SORT.
+For viewing a plain list of comments, not a hierarchy.
+DETAILS means display what community and post the comment is linked to."
+  (cl-loop for x in comments
+           do (lem-ui-render-comment x nil details)))
+
+;;; THREADED COMMENTS
+;; Path: "The path / tree location of a comment, separated by dots, ending
+;; with the comment's id. Ex: 0.24.27"
+;; https://github.com/LemmyNet/lemmy/blob/63d3759c481ff2d7594d391ae86e881e2aeca56d/crates/db_schema/src/source/comment.rs#L39
+(defvar-local lem-comments-hierarchy nil)
+(defvar-local lem-comments-raw nil)
+
+(defun lem-ui--build-and-render-comments-hierarchy (comments id)
+  "Build `lem-comments-hierarchy', a hierarchy, from COMMENTS, and render.
+ID is the post's id, used for unique buffer names."
+  (setq lem-comments-raw comments)
+  (let ((list (alist-get 'comments comments))
+        (buf (format "*lem-post-%s*" id)))
+    (lem-ui--build-hierarchy list) ; sets `lem-comments-hierarchy'
+    (with-current-buffer (get-buffer-create buf)
+      (let ((inhibit-read-only t))
+        (lem--hierarchy-print-line
+         lem-comments-hierarchy
+         (lem--hierarchy-labelfn-indent
+          (lambda (item indent)
+            ;; `lem--hierarchy-labelfn-indent' no longer handles line-prefixing:
+            (lem-ui-format-comment item indent nil nil :widget))))))))
+
+(defun lem-ui-get-comment-path (comment)
+  "Get path value from COMMENT."
+  (alist-get 'path
+             (alist-get 'comment comment)))
+
+(defun lem-ui--parent-id (comment)
+  "Return the parent id of COMMENT as a number.
+Return nil if comment is only a child of the root post."
+  (let* ((path (lem-ui-get-comment-path comment))
+         (split (lem-ui-split-path path))
+         (id (string-to-number
+              (car (last split 2)))))
+    (if (eq id 0)
+        nil
+      id)))
+
+(defun lem-ui--parentfun (child)
+  "Return the parent of CHILD in `lemmy-comments-hierarchy', recursively.
+Parent-fun for `hierarchy-add-tree'."
+  (let* ((parent-id (lem-ui--parent-id child))
+         (list (alist-get 'comments lem-comments-raw)))
+    (cl-find-if
+     (lambda (comment)
+       (let ((com (alist-get 'comment comment)))
+         (equal parent-id
+                (alist-get 'id com))))
+     list)))
+
+(defun lem-ui-split-path (path)
+  "Call split string on PATH with \".\" separator."
+  (split-string path "\\."))
+
+(defun lem-ui--build-hierarchy (comments)
+  "Build a hierarchy of COMMENTS using `hierarchy.el'."
+  ;; (hierarchy-add-trees lem-comments-hierarchy
+  ;; list
+  ;; #'lem-ui--parentfun)))
+  (setq lem-comments-hierarchy (hierarchy-new))
+  (cl-loop for comment in comments
+           do (hierarchy-add-tree lem-comments-hierarchy
+                                  comment
+                                  #'lem-ui--parentfun)))
+
+(defun lem-ui--handle-from-user-url (url)
+  "Return a formatted user handle from user URL."
+  (let* ((parsed (url-generic-parse-url url))
+         (host (url-host parsed))
+         (file (url-filename parsed))
+         (case-fold-search t))
+    (save-match-data
+      ;; TODO: add further legit urls:
+      (when (string-match "^/u\\(sers\\)?/[_[:alnum:]]+$" file)
+        (let ((split (split-string file "/" t)))
+          (propertize
+           (concat "@" (cadr split) "@" host)
+           ;; props
+           ))))))
+
+(defvar lem-ui-indent-colors
+  '("red3" "orange3" "green3" "yellow3" "blue3")
+  ;; Tried with rainbow-delimiters colors but they don't match the actual
+  ;; display of my lovely parens?!
+  ;; '("#707183"
+  ;;   "#7388d6" "#909183" "#709870" "#907373"
+  ;;   "#6276ba" "#858580" "#80a880" "#887070")
+  ;; '("grey55" "#93a8c6" "#b0b1a3" "#97b098" "#aebed8"
+  ;;   "#b0b0b3" "#90a890" "#a2b6da" "#9cb6ad")
+  "List of colors for indent bars, subsequent items repeat.")
+
+(defun lem-ui-cycle-colors (index)
+  "Given INDEX, a number, cycle through `lem-ui-indent-colors'."
+  (nth
+   (mod index
+        (length
+         lem-ui-indent-colors))
+   lem-ui-indent-colors))
+
+(defun lem-ui--make-colored-indent-str (indent)
+  "INDENT is the number of indent bars to return."
+  (let ((str (make-string indent
+                          (string-to-char
+                           (lem-ui-symbol 'reply-bar)))))
+    (dotimes (index indent)
+      (add-text-properties
+       index (1+ index)
+       `(face (:foreground ,(lem-ui-cycle-colors index)))
+       str))
+    str))
+
+(defun lem-ui-format-comment (comment &optional indent reply details widget)
+  "Format COMMENT, optionally with INDENT amount of indent bars.
+REPLY means it is a comment-reply object.
+DETAILS means display what community and post the comment is linked to.
+WIDGET is a flag, and means create a toggle fold widget."
+  ;; NB: no stray requests in here.
+  (let-alist comment
+    (let ((content (when .comment.content
+                     (lem-ui-render-body .comment.content
+                                         (alist-get 'comment comment)
+                                         indent)))
+          (indent-str (when indent
+                        (lem-ui--make-colored-indent-str indent)))
+          (handle (lem-ui--handle-from-user-url .creator.actor_id))
+          (post-title (when details .post.name))
+          (community-name (when details (or .community.title
+                                            .community.name)))
+          (community-url (when details .community.actor_id))
+          (admin-p (eq t .creator_is_admin))
+          (mod-p (or (cl-member .creator.id lem-ui-post-community-mods-ids)
+                     (eq t .creator_is_moderator)))
+          (op-p (eq .comment.creator_id .post.creator_id))
+          (deleted .comment.deleted)
+          (removed .comment.removed))
+      (push .comment.id lem-ui-current-items) ; pagination
+      (when widget
+        (widget-create 'toggle
+                       :help-echo (format "Toggle comment folding")
+                       :format (lem-ui--widget-fold-format indent-str)
+                       :notify (lem-ui-widget-fold-notify-fun)
+                       :keymap lem-widget-keymap))
+      (propertize
+       (concat
+        (lem-ui-top-byline nil nil
+                           (or .creator.display_name .creator.name)
+                           .counts.score
+                           .comment.published
+                           community-name community-url
+                           nil op-p admin-p mod-p nil handle
+                           post-title .comment.updated)
+        "\n"
+        (if (or (eq t deleted) (eq t removed))
+            (lem-ui-format-display-prop deleted removed)
+          (propertize (or content "")
+                      'body t))
+        (propertize
+         (concat
+          "\n"
+          (lem-ui-bt-byline .counts.score .counts.child_count .my_vote .saved)
+          "\n" lem-ui-horiz-bar
+          "\n")
+         'byline-bt-fold t))
+       'json comment
+       ;; in replies view we need the actual id for like-toggling:
+       'id .comment.id ;(if reply .comment_reply.id .comment.id)
+       'post-id .comment.post_id
+       'community-id .post.community_id
+       'creator-id .creator.id
+       'lem-type (if reply 'comment-reply 'comment)
+       'line-prefix indent-str))))
+
+(defun lem-ui-format-display-prop (del rem)
+  "Format a string for display property.
+DEL and REM are the values of the deleted and removed attributes
+in an item's data."
+  (cond ((eq del t)
+         (propertize "[deleted by user]\n"
+                     'face '(:slant italic)
+                     'body t))
+        ((eq rem t)
+         (propertize "[removed by mod]\n"
+                     'face '(:slant italic)
+                     'body t))
+        (t nil)))
+
+(defun lem-ui-render-post-comments (post-id &optional sort limit)
+  "Render a hierarchy of post's comments.
+POST-ID is the post's id.
+SORT must be a member of `lem-sort-types'.
+LIMIT is the amount of items to return."
+  ;; NB: max_depth, required for comment trees, breaks limit
+  ;; and that's why huge threads are slow to load :/
+  (let* ((comments (lem-api-get-post-comments
+                    post-id "All" sort (or limit lem-ui-comments-limit)
+                    nil nil lem-api-comments-max-depth)))
+    (if (eq 'string (type-of comments))
+        (message comments) ; server error
+      (let ((unique-comments (cl-remove-duplicates comments)))
+        (lem-ui--build-and-render-comments-hierarchy unique-comments
+                                                     post-id)))))
+
+(defun lem-ui-plural-symbol (symbol)
+  "Return a plural of SYMBOL."
+  (cond ((eq symbol 'community)
+         'communities)
+        ((or (eq symbol 'replies)
+             (eq symbol 'replies)
+             (eq symbol 'mentions)
+             (eq symbol 'private-messages))
+         symbol)
+        (t
+         (intern
+          (concat (symbol-name symbol) "s")))))
+
+(defun lem-ui-remove-displayed-items (items type)
+  "Remove item from ITEMS if it is in `lem-ui-current-items'.
+TYPE is the item type.
+ITEMS should be an alist of the form '\=(plural-name ((items-list)))'."
+  (cl-remove-if
+   (lambda (x)
+     (let ((id (alist-get 'id
+                          (alist-get type x))))
+       (cl-member id lem-ui-current-items)))
+   (alist-get (lem-ui-plural-symbol type)
+              items)))
+
+(defun lem-ui-search-type-symbol (type)
+  "Make TYPE, a string, singular and a symbol."
+  (cond ((equal type "communities")
+         'community)
+        ((equal type "posts")
+         'post)
+        ((equal type "users")
+         'user)
+        ((equal type "comments")
+         'comment)))
+
+(defun lem-ui-more ()
+  "Append more items to the current view."
+  (interactive)
+  (let ((item (lem-ui-get-buffer-spec :item))
+        ;; TODO: use `lem-ui--view-type' instead
+        (view-fun (lem-ui-get-buffer-spec :view-fun)))
+    (cond ((eq view-fun 'lem-ui-view-post)
+           ;; nb max-depth doesn't work with pagination yet:
+           ;; https://github.com/LemmyNet/lemmy/issues/3585
+           (lem-ui-more-items 'comment 'lem-api-get-post-comments
+                              'lem-ui--build-and-render-comments-hierarchy))
+          ((eq view-fun 'lem-ui-view-community)
+           (if (equal item "posts")
+               (lem-ui-more-items 'post 'lem-api-get-community-posts-by-id
+                                  'lem-ui-render-posts)
+             (lem-ui-more-items 'comment 'lem-api-get-community-comments-by-id
+                                'lem-ui-render-comments)))
+          ((eq view-fun 'lem-ui-view-instance)
+           (lem-ui-more-items 'post 'lem-api-get-instance-posts
+                              'lem-ui-render-posts-instance))
+          ((eq view-fun 'lem-ui-view-user)
+           ;; TODO: user overview view type:
+           (if (equal item "posts")
+               (lem-ui-more-items 'post 'lem-api-get-person-posts
+                                  'lem-ui-render-posts)
+             (lem-ui-more-items 'comment 'lem-api-get-person-comments
+                                'lem-ui-render-comments)))
+          ((eq item 'lem-ui-view-communities)
+           (lem-ui-more-items 'community 'lem-list-communities
+                              'lem-ui-render-communities))
+          ((eq view-fun 'lem-ui-search)
+           (let* ((search-type (lem-ui-get-buffer-spec :item))
+                  (render-fun (lem-ui-search-type-fun search-type))
+                  (search-type-symbol (lem-ui-search-type-symbol search-type)))
+             (lem-ui-more-items search-type-symbol 'lem-search render-fun)))
+          ((eq view-fun 'lem-ui-view-inbox)
+           (let* ((items (lem-ui-get-buffer-spec :item))
+                  (get-fun (lem-ui-make-fun "lem-get-" items))
+                  (render-fun (lem-ui-make-fun "lem-ui-render-" items)))
+             (lem-ui-more-items items get-fun render-fun)))
+          (t (message "More type not implemented yet")))))
+
+(defun lem-ui-more-items (type get-fun render-fun)
+  "Add one more page of items of TYPE to the current view.
+GET-FUN is the name of a function to fetch more items.
+RENDER-FUN is the name of a function to render them."
+  (message "Loading more items...")
+  (let* ((listing (lem-ui-get-buffer-spec :listing-type))
+         (view-fun (lem-ui-get-buffer-spec :view-fun))
+         (page (1+ (lem-ui-get-buffer-spec :page)))
+         (item (lem-ui-get-buffer-spec :item))
+         (sort (lem-ui-get-buffer-spec :sort))
+         (query (lem-ui-get-buffer-spec :query))
+         (id (save-excursion
+               (goto-char (point-min))
+               (lem-ui--property 'id)))
+         (all-items
+          ;; get-instance-posts have no need of id arg:
+          (cond ((or (eq get-fun 'lem-api-get-instance-posts)
+                     (eq get-fun 'lem-list-communities))
+                 (funcall get-fun
+                          (or listing "All")
+                          sort
+                          lem-ui-comments-limit
+                          page))
+                ;; user funs have no list-type arg:
+                ((eq view-fun 'lem-ui-view-user)
+                 (funcall get-fun id sort
+                          lem-ui-comments-limit page))
+                ((eq view-fun 'lem-ui-search)
+                 (funcall get-fun query (capitalize item) listing sort
+                          lem-ui-comments-limit
+                          page))
+                ((eq view-fun 'lem-ui-view-inbox)
+                 ;; mentions/replies: sort page limit unread-only
+                 ;; pms: unread-only page limit creator-id
+                 (funcall get-fun nil page))
+                (t
+                 (funcall get-fun
+                          id
+                          (or listing "All")
+                          sort
+                          lem-ui-comments-limit
+                          page))))
+         (no-duplicates (lem-ui-remove-displayed-items all-items type)))
+    (setf (alist-get (lem-ui-plural-symbol type) all-items)
+          no-duplicates)
+    (lem-ui-set-buffer-spec listing
+                            sort
+                            view-fun
+                            item
+                            page
+                            nil
+                            query)
+    (goto-char (point-max))
+    (let ((old-max (point))
+          (inhibit-read-only t))
+      ;; NB: `lem-ui-current-items' is updated during rendering:
+      (if (eq render-fun 'lem-ui--build-and-render-comments-hierarchy)
+          (funcall render-fun all-items id)
+        (funcall render-fun (alist-get (lem-ui-plural-symbol type)
+                                       all-items)))
+      (goto-char old-max)
+      (lem-ui--init-view)
+      (message "Loading more items... [done]"))))
+
+(defun lem-ui-post-goto-comment (comment-id post-id &optional no-recenter)
+  "Move point to comment with COMMENT-ID, a number, if possible.
+POST-ID is the post's id, used to fetch the right buffer.
+NO-RECENTER means don't call `recenter-top-bottom'."
+  ;; TODO: implement forward-search/pagination
+  (with-current-buffer (format "*lem-post-%s*" post-id)
+    (goto-char (point-min))
+    (when-let ((match (text-property-search-forward 'id comment-id t)))
+      (goto-char (prop-match-beginning match))
+      (unless no-recenter
+        (recenter-top-bottom '(4))))))
+
+(defun lem-ui-view-comment-post (&optional post-id comment-id)
+  "View post of comment at point, or of POST-ID.
+If COMMENT-ID is provided, move point to that comment."
+  (interactive)
+  (let ((comment-p (or (eq (lem-ui--item-type) 'comment)
+                       (eq (lem-ui--item-type) 'comment-reply))))
+    (if (not (or post-id
+                 comment-p))
+        (message "Not at a comment?")
+      (let* ((post-id (or post-id (lem-ui--property 'post-id)))
+             (comment-id (or comment-id
+                             (when comment-p
+                               (lem-ui--property 'id))))
+             (buf (lem-ui-view-post post-id)))
+        (when comment-id
+          ;; FIXME: only fold if comment is actually loaded in the view
+          (lem-ui-fold-all-comments buf)
+          (lem-ui-post-goto-comment comment-id post-id)
+          (lem-ui-fold-current-branch buf))))))
+
+(defun lem-ui-prev-same-level ()
+  "Move to previous same level comment.
+If no same level comment is found, move to the previous higher level one."
+  (interactive)
+  (lem-ui-with-view 'post
+    (let ((orig-indent (lem-ui--current-indent)))
+      (lem-prev-item)
+      (while (not (>= orig-indent
+                      (lem-ui--current-indent)))
+        (lem-prev-item)))))
+
+(defun lem-ui-next-same-level ()
+  "Move to next same level comment.
+If no same level comment is found, move to the next higher level one."
+  (interactive)
+  (lem-ui-with-view 'post
+    (let ((orig-indent (lem-ui--current-indent)))
+      (lem-next-item)
+      (while (not (>= orig-indent
+                      (lem-ui--current-indent)))
+        (lem-next-item)))))
+
+(defun lem-ui--goto-parent-comment ()
+  "Move point to parent comment.
+Stop moving up at a top level comment."
+  (lem-ui-with-view 'post
+    (let ((parent-id (lem-ui--parent-id (lem-ui--property 'json)))
+          (post-id (lem-ui--property 'post-id)))
+      (if (not parent-id)
+          (message "At top level")
+        (lem-ui-post-goto-comment parent-id post-id :no-recenter)))))
+
+(defun lem-ui-branch-top-level ()
+  "Move point to the top of the branch of comment at point."
+  (interactive)
+  (lem-ui-with-view 'post
+    ;; (lem-ui-with-item 'comment
+    (while (lem-ui--parent-id (or (lem-ui--property 'json)
+                                  (progn
+                                    (forward-line -1)
+                                    (lem-ui--property 'json))))
+      (lem-ui--goto-parent-comment))))
+
+;;; FOLDING COMMENTS
+
+(defun lem-ui--set-invis-prop (invis pos)
+  "Return value of INVIS as a boolean.
+If INVIS is nil, return the opposite of the invisibility property at
+POS."
+  (cond ((eq invis :invisible)
+         t)
+        ((eq invis :not-invisible)
+         nil)
+        (t
+         (not
+          (get-text-property pos
+                             'invisible)))))
+
+(defun lem-ui-comment-fold-toggle (&optional invis)
+  "Toggle invisibility of the comment at point.
+Optionally set it to INVIS, a keyword.
+Return the value of the invisibility property after toggling as
+a keyword."
+  (interactive)
+  (lem-ui-with-item 'comment
+    (let* ((inhibit-read-only t)
+           ;; if point is after relevant property, search backwards:
+           (byline-bt-p (lem-ui--property 'byline-bt-fold))
+           (body-p (lem-ui--property 'body))
+           (comment-range (lem-ui--find-property-range 'body
+                                                       (point)
+                                                       byline-bt-p))
+           (byline-top (lem-ui--find-property-range 'byline-top
+                                                    (point)
+                                                    (or byline-bt-p
+                                                        body-p)))
+           (byline-bottom (lem-ui--find-property-range 'byline-bt-fold
+                                                       (point)))
+           (invis-before (when comment-range
+                           (get-text-property (car comment-range)
+                                              'invisible))))
+      (when byline-top
+        ;; set top byline
+        (add-text-properties
+         (car byline-top)
+         (cdr byline-top)
+         `(folded
+           ,(lem-ui--set-invis-prop invis (car comment-range))))
+        ;; set body:
+        (add-text-properties
+         (car comment-range)
+         (cdr comment-range)
+         `(invisible
+           ,(lem-ui--set-invis-prop invis (car comment-range))))
+        ;; set bottom byline:
+        (add-text-properties
+         (car byline-bottom)
+         (cdr byline-bottom)
+         `(invisible
+           ,(lem-ui--set-invis-prop invis (car byline-bottom))))
+        ;; update child widgets:
+        (let ((widget (save-excursion
+                        (beginning-of-line)
+                        (widget-at))))
+          (lem-ui--widget-update-on-fold widget))
+        ;; return result of toggle as kw:
+        (or invis ; kw
+            (if invis-before
+                :not-invisible
+              :invisible))))))
+
+(defun lem-ui-comment-tree-fold (&optional invis indent)
+  "Toggle invisibility of current comment and all its children.
+Optionally set INVIS, a keyword (used for recursion).
+The invisibility of children should not necessarily be toggled,
+but should adopt the invisibility of the top-most item. So if
+some children comments have been toggled, toggling their parent
+should return all items in the branch to the same invisibility.
+INDENT is the level of the top level comment to be folded."
+  (interactive)
+  (lem-ui-with-view 'post
+    (let* ((top-indent (or indent (lem-ui--current-indent)))
+           ;; fold current item:
+           (invis-after (lem-ui-comment-fold-toggle invis)))
+      (save-excursion
+        ;; maybe recur into subsequent items:
+        (unless (equal "Nothing further" ; stop at last item
+                       (lem-next-item :no-refresh))
+          (let ((indent (lem-ui--current-indent)))
+            (when (> indent top-indent)
+              (lem-ui-comment-tree-fold invis-after top-indent))))))))
+
+(defun lem-ui-fold-current-branch (&optional buf)
+  "Toggle folding the branch of comment at point.
+Optionally ensure buffer BUF is current."
+  (interactive)
+  (with-current-buffer (or buf (current-buffer))
+    (lem-ui-with-view 'post
+      (save-excursion
+        (lem-ui-branch-top-level)
+        (lem-ui-comment-tree-fold)))))
+
+(defun lem-ui-fold-all-comments (&optional buf)
+  "Fold all comments in current buffer.
+BUF is the buffer to fold in."
+  (interactive)
+  (with-current-buffer (or buf (current-buffer))
+    (lem-ui-with-view 'post
+      (save-excursion
+        (goto-char (point-min))
+        (while (not (equal "Nothing further" ; stop at last item
+                           (lem-next-item :no-refresh)))
+          (unless (eq t (get-text-property (point) 'folded))
+            (lem-ui-comment-tree-fold)))))))
+
+(defun lem-ui-unfold-all-comments ()
+  "Unfold all comment branches in the current buffer."
+  (interactive)
+  (lem-ui-with-view 'post
+    (save-excursion
+      (goto-char (point-min))
+      (while (not (equal "Nothing further" ; stop at last item
+                         (lem-next-item :no-refresh)))
+        (when (eq t (get-text-property (point) 'folded))
+          (lem-ui-comment-tree-fold :not-invisible))))))
+
+(defun lem-ui-fold-all-toggle ()
+  "Toggle folding status of all comments in the buffer.
+We set folding status to the opposite of what the first comment
+currently is."
+  (interactive)
+  (lem-ui-with-view 'post
+    (let ((first (save-excursion
+                   (goto-char (point-min))
+                   (lem-next-item)
+                   (lem-ui--property 'folded))))
+      (if first
+          (lem-ui-unfold-all-comments)
+        (lem-ui-fold-all-comments)))))
+
+;;; FOLDING WIDGETS
+
+(defun lem-ui--widget-fold-format (&optional indent folded)
+  "Format a toggle widget for comment folding.
+INDENT is a string for `line-prefix' property.
+FOLDED is a flag, to display either + or -."
+  ;; ideally we could + when folded and - when unfolded
+  ;; but i don't know how to re-format on notify
+  (concat
+   (propertize (concat "%[" (if folded
+                                (lem-ui-symbol 'plus)
+                              (lem-ui-symbol 'minus))
+                       "%]")
+               'face '(lem-ui-widget-face :box t)
+               'line-prefix indent
+               'lem-tab-stop t)
+   " "))
+
+(defun lem-ui--widget-fold-and-update (widget)
+  "Un/Fold WIDGET and update its display."
+  ;; point is momentarily moved to widget on click event
+  ;; or RET, so safe to just move to byline-top then fold:
+  (lem-next-item)
+  (lem-ui-comment-tree-fold)
+  (lem-ui--widget-update-on-fold widget))
+
+(defun lem-ui--widget-update-on-fold (widget)
+  "Update format of WIDGET (after folding).
+Widget format is updated according to folded property, deleted
+and recreated."
+  ;; format isn't a fun, so we can't widget-apply it
+  ;; help! save us from this awful hack:
+  ;; we update, copy, delete, create just to update widget's
+  ;; display:
+  (let* ((folded-p (lem-ui--property 'folded))
+         (indent (lem-ui--property 'line-prefix)))
+    (widget-put widget :format
+                (lem-ui--widget-fold-format indent folded-p))
+    (let ((w2 (widget-copy widget)))
+      (widget-delete widget)
+      (widget-default-create w2))))
+
+(defun lem-ui-widget-fold-notify-fun (&optional old-value)
+  "Return a notify function for a toggle fold widget.
+OLD-VALUE is the widget's value before being changed."
+  `(lambda (widget &rest ignore)
+     (let ((value (widget-value widget)))
+       ;; FIXME: only works on second click? but RET works
+       ;; this is only called on second click!
+       ;; middle-click doesn't have the problem
+       (condition-case x
+           (save-excursion
+             ;; ideally we would have our widget propertized like the
+             ;; top-byline, but it's not so easy to propertize the widget.
+             (lem-ui--widget-fold-and-update widget))
+         (user-error ; don't update widget if cycle-sort fails:
+          (lem-ui-widget-reset-value widget ,old-value x))))))
+
+;;; USERS
+
+(defun lem-ui-render-users (json &optional search)
+  "Render JSON, a list of users.
+SEARCH means we are rendering a search result."
+  (cl-loop for user in json
+           do (progn (lem-ui-render-user user search)
+                     (insert "\n"))))
+
+(defun lem-ui--format-moderates (community)
+  "Format COMMUNITY as a link."
+  (let-alist community
+    (concat
+     (lem-ui--format-community-as-link .community.title
+                                       .community.id
+                                       .community.actor_id)
+     " ")))
+
+(defun lem-ui-render-user (json &optional search)
+  "Render user with data JSON.
+SEARCH means we are rendering a search result."
+  (let-alist (if search json (alist-get 'person_view json))
+    (insert
+     (propertize
+      (concat
+       (propertize (concat
+                    ;; top byline:
+                    ;; name:
+                    (propertize (or .person.display_name
+                                    .person.name)
+                                'face '(:weight bold))
+                    " "
+                    ;; admin box:
+                    (when (eq t .is_admin)
+                      (concat
+                       (lem-ui-propertize-admin-box)
+                       " "))
+                    ;; handle
+                    (propertize
+                     (lem-ui--handle-from-user-url .person.actor_id)
+                     'face 'font-lock-comment-face))
+                   'byline-top t) ; for prev/next cmds
+       ;; bio:
+       (if .person.bio
+           (concat "\n"
+                   (lem-ui-render-body .person.bio))
+         "\n")
+       ;; mods:
+       (when-let ((mods (alist-get 'moderates json)))
+         ;; needs wrapping or filling, maybe we `visual-line-mode' after all:
+         (concat "mods: "
+                 (cl-loop for c in mods
+                          concat (lem-ui--format-moderates c))
+                 "\n"))
+       ;; stats:
+       (lem-ui-symbol 'direct) " " ; FIXME: we need a post symbol
+       (number-to-string .counts.post_count) " | "
+       (lem-ui-symbol 'reply) " "
+       (number-to-string .counts.comment_count)
+       " | "
+       ;; join date
+       "joined: "
+       (fedi--relative-time-description
+        (date-to-time .person.published))
+       "\n"
+       lem-ui-horiz-bar
+       "\n\n")
+      'json json
+      'id .person.id
+      'lem-type 'user))))
+
+(defun lem-ui-render-user-subscriptions (json)
+  "Render subscribed communities from JSON data."
+  (cl-loop for community in json
+           do (lem-ui-render-community community nil nil :subscription)))
+
+(defun lem-ui-ts-to-secs (ts)
+  "Return TS, a timestamp, as seconds since the epoch, an integer."
+  (let ((lisp-ts (date-to-time ts)))
+    (string-to-number
+     (format-time-string "%s" lisp-ts))))
+
+(defun lem-ui--get-item-published (item)
+  "Return published timestamp of ITEM, either comment or post."
+  (let-alist item
+    ;; comments also have post data so comment first
+    (or .private_message.published
+        .comment_reply.published
+        .comment.published
+        .post.published)))
+
+(defun lem-ui-published-sort-predicate (x y)
+  "Predicate function for `sort'.
+Decide whether X comes before Y, based on timestamp."
+  (let ((pub1 (lem-ui-ts-to-secs
+               (lem-ui--get-item-published x)))
+        (pub2 (lem-ui-ts-to-secs
+               (lem-ui--get-item-published y))))
+    (> pub1 pub2)))
+
+(defun lem-ui-render-overview (user-json)
+  "Return an overview of mixed posts and comments from USER-JSON."
+  (let-alist user-json
+    ;; TODO: either sort overview by timestamp, or by counts:
+    (let* ((merged (append .comments .posts))
+           (sorted (sort merged #'lem-ui-published-sort-predicate)))
+      (cl-loop for item in sorted
+               do (let ((type (caar item))
+                        (reply-p (eq item 'comment-reply)))
+                    (if (eq type 'post)
+                        (lem-ui-render-post item :community :trim)
+                      (lem-ui-render-comment item reply-p :details)))))))
+
+(defun lem-ui-view-user (id &optional item sort limit)
+  "View user with ID.
+ITEM must be a member of `lem-user-items-types'.
+SORT must be a member of `lem-user-view-sort-types'.
+LIMIT is max items to show."
+  (let* ((opts (lem-ui--view-options 'user))
+         (item (or item (lem-ui--view-opts-default opts :items)))
+         (sort (if (lem-user-view-sort-type-p sort)
+                   sort
+                 (lem-ui--view-opts-default opts :sort)))
+         (user-json (lem-api-get-person-by-id id sort limit))
+         (buf "*lem-user*")
+         (view-fun (if (eq id lem-user-id)
+                       #'lem-ui-view-own-profile
+                     #'lem-ui-view-user))
+         (bindings opts))
+    (lem-ui-with-buffer buf 'lem-mode nil bindings
+      (let-alist user-json
+        (lem-ui-render-user user-json)
+        (lem-ui-set-buffer-spec nil sort view-fun item)
+        (let* ((choices `(,item ,sort))
+               (widget-args (lem-ui-build-view-widget-args opts choices)))
+          ;; TODO: deactivate SORT widget in OVERVIEW?
+          (lem-ui-widgets-create widget-args))
+        (cond ((equal item "posts")
+               (lem-ui-render-posts .posts :community :trim))
+              ((equal item "comments")
+               (lem-ui-render-comments .comments :details))
+              (t ; no arg: overview
+               (lem-ui-render-overview user-json)
+               (lem-ui--widget-deactivate "overview" "Sort")))
+        (lem-ui--init-view)))))
+
+(defun lem-ui-view-own-profile ()
+  "View profile of the current user."
+  (interactive)
+  (lem-ui-view-user lem-user-id))
+
+(defun lem-ui-view-item-user ()
+  "View user of item at point."
   (interactive)
   (lem-ui-with-item 'all
     (let* ((type (lem-ui--item-type))
-           (s-str (if unsave "unsaved" "saved"))
-           (s-bool (if unsave :json-false t))
+           (id (cond ((or (eq type 'user)
+                          (eq type 'person))
+                      (lem-ui--property 'id))
+                     ((or (eq type 'post)
+                          (eq type 'comment)
+                          (eq type 'comment-reply)
+                          (eq type 'private-message))
+                      (lem-ui--property 'creator-id))
+                     (t
+                      (user-error "Item has no user?")))))
+      (lem-ui-view-user id "overview"))))
+
+(defun lem-ui-message-user-at-point ()
+  "Send private message to user at point."
+  (interactive)
+  (lem-ui-with-item 'all
+    (let ((message (read-string "Private message: ")))
+      (lem-send-private-message message id))))
+
+(defun lem-ui-block-user ()
+  "Block author of item at point."
+  (interactive)
+  (lem-ui-with-item 'all
+    (let* ((id (lem-ui--property 'creator-id))
            (json (lem-ui--property 'json))
-           (saved-p (alist-get 'saved json)))
-      (cond ((and unsave (eq saved-p :json-false))
-             (message "You can only unsave saved items."))
-            ((eq type 'post)
-             (let ((json (lem-save-post id s-bool))
-                   (my-vote (alist-get 'my_vote json)))
-               (lem-ui-response-msg json
-                                    'post_view :non-nil
-                                    (format "%s %s %s!" type id s-str))
-               (lem-ui--update-item-json (alist-get 'post_view json))
-               (lem-ui-update-item-from-json
-                'byline-bottom
-                (lambda (json)
-                  (lem-ui-bt-byline-replace json my-vote s-bool)))))
-            ((eq type 'comment)
-             (let ((json (lem-save-comment id s-bool))
-                   (my-vote (alist-get 'my_vote json)))
-               (lem-ui-response-msg json
-                                    'comment_view :non-nil
-                                    (format "%s %s %s!" type id s-str))
-               (lem-ui--update-item-json (alist-get 'comment_view json))
-               (lem-ui-update-item-from-json
-                'byline-bottom
-                (lambda (json)
-                  (lem-ui-bt-byline-replace json my-vote s-bool)))))
-            (t
-             (message "You can only save posts and comments."))))
-    :number))
+           (name (alist-get 'name
+                            (alist-get 'creator json))))
+      (if (not name)
+          (user-error "Looks like no user at point?")
+        (when (y-or-n-p (format "Block %s?" name))
+          (lem-ui-response-msg
+           (lem-block-user id t)
+           'blocked 't
+           (format "User %s blocked!" name)))))))
 
-(defun lem-ui-unsave-item ()
-  "Unsave item at point."
+(defun lem-ui-unblock-user ()
+  "Prompt for a blocked user, and unblock them."
   (interactive)
-  (lem-ui-save-item :unsave))
-
-(defun lem-ui-save-item-toggle ()
-  "Toggle saved status of item at point."
-  (interactive)
-  (let* ((json (lem-ui--property 'json))
-         (saved-p (alist-get 'saved json)))
-    (if (eq saved-p :json-false)
-        (lem-ui-save-item)
-      (lem-ui-unsave-item))))
-
-(defun lem-ui-view-saved-items (&optional items ;id
-                                          sort limit page)
-  "View saved items of the current user, or of user with ID.
-ITEMS, as string, means to display only those items (posts or
-comments).
-SORT. LIMIT. PAGE."
-  (interactive)
-  (let* ((opts (lem-ui--view-options 'saved-items))
-         (items (or items "overview"))
-         (sort (or sort (lem-ui--view-opts-default opts :sort)))
-         (saved-only (lem-api-get-person-saved-only
-                      lem-user-id ;(or id lem-user-id)
-                      sort (or limit lem-ui-comments-limit) page))
-         (data (if (equal items "overview")
-                   saved-only
-                 (alist-get (intern items) saved-only)))
-         (buf "*lem-saved-items*"))
-    (lem-ui-with-buffer buf 'lem-mode nil nil
-      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-saved-items items)
-      (let* ((choices `(,items ,sort))
-             (widget-args (lem-ui-build-view-widget-args opts choices)))
-        (lem-ui-widgets-create widget-args))
-      (cond ((equal items "posts")
-             (lem-ui-render-posts data))
-            ((equal items "comments")
-             (lem-ui-render-comments data :details))
-            (t
-             (lem-ui-render-overview data)))
-      (lem-ui--widget-deactivate "overview" "Sort")
-      (lem-ui--init-view))))
-
-(defun lem-ui-cycle-saved-items (&optional item)
-  "Cycle saved items view or view type ITEM."
-  (interactive)
-  (let* ((last (lem-ui-get-buffer-spec :item))
-         (next (or item (lem-ui-next-type last lem-user-items-types)))
-         (sort (lem-ui-get-buffer-spec :sort)))
-    (lem-ui-view-saved-items next sort)))
-
-;;; COMPLETION FOR ACTIONS
-
-(defalias 'lem-ui-do-item-completing 'fedi-do-item-completing)
-
-(defun lem-ui--communities-list (communities)
-  "Return a list of name/description and ID from COMMUNITIES."
-  (cl-loop for item in communities
-           collect (let-alist item
-                     (list
-                      (lem-ui-handle-from-url .community.actor_id "!")
-                      .community.id
-                      .community.actor_id))))
-
-(defun lem-ui--users-list (users)
-  "For user in USERS, return name, URL, and id."
-  (cl-loop for item in users
-           collect (let-alist item
-                     (list (lem-ui-handle-from-url .actor_id "@")
-                           ;; .name
-                           ;; .actor_id
-                           .id))))
-
-(defun lem-ui--blocks-list (blocks)
-  "For user in BLOCKS, return handle, and id."
-  (cl-loop for item in blocks
-           collect (let-alist (alist-get 'target item)
-                     (list (lem-ui-handle-from-url .actor_id "@")
-                           .id))))
-
-(defun lem-ui--instances-list (instances)
-  "For each item in (blocked) INSTANCES, return domain and id."
-  (cl-loop for i in instances
-           collect (let-alist (alist-get 'instance i)
-                     (list .domain .id))))
+  (lem-ui-do-item-completing
+   #'lem-api-get-blocked-users
+   #'lem-ui--blocks-list
+   "Unlbock user: "
+   (lambda (id choice)
+     (lem-ui-response-msg
+      (lem-block-user id :json-false)
+      'blocked :json-false
+      (format "User %s unblocked!" choice)))))
 
 ;;; PATCH VTABLE (fixed in 30.0.50, needed in 29.1):
 
@@ -2166,98 +2738,6 @@ SORT. LIMIT. PAGE."
                                      'lem-type 'community)
                        i))))
 
-;;; WIDGETS
-
-(defun lem-ui-return-item-widgets (list)
-  "Return a list of item widgets for each item, a string, in LIST."
-  (cl-loop for x in list
-           collect `(choice-item :value ,x :format "%[%v%] ")))
-
-(defun lem-ui-widget-format (str &optional padding)
-  "Return a widget format string for STR, its name.
-PADDING is an integer, for how much right-side padding to add."
-  (concat "%[" (propertize str
-                           'face 'lem-ui-widget-face
-                           'lem-tab-stop t)
-          "%]: %v"
-          (make-string padding ? )))
-
-(defun lem-ui-widget-reset-value (widget value msg)
-  "Reset WIDGET to its previous VALUE.
-USED to not update widget display if the sort chosen is
-unavailable in the current view.
-MSG is the error message string to display."
-  (widget-value-set widget value)
-  (message "%s" (error-message-string msg)))
-
-(defun lem-ui-widget-notify-fun (old-value)
-  "Return a widget notify function.
-OLD-VALUE is the widget's value before being changed."
-  `(lambda (widget &rest ignore)
-     (let ((value (widget-value widget))
-           (tag (widget-get widget :tag)))
-       (cond ((equal tag "Listing")
-              (lem-ui-cycle-listing-type value))
-             ((equal tag "Sort")
-              (condition-case x
-                  (lem-ui-cycle-sort value)
-                (user-error ; don't update widget if cycle-sort fails:
-                 (lem-ui-widget-reset-value widget ,old-value x))))
-             ((equal tag "Search")
-              (lem-ui-cycle-search value))
-             ((equal tag "Items")
-              (lem-ui-cycle-items value))
-             ((equal tag "Inbox")
-              (lem-ui-cycle-inbox value))
-             (t (message "Widget kind not implemented yet"))))))
-
-(defun lem-ui--widget-deactivate (item-type widget-type)
-  "When item of view is ITEM-TYPE, deactivate widget of WIDGET-TYPE."
-  (let ((item (lem-ui-get-buffer-spec :item)))
-    (when (equal item item-type)
-      (save-excursion
-        (goto-char (point-min))
-        (while (text-property-search-forward 'face 'lem-ui-widget-face t)
-          (let* ((widget (widget-at (1- (point))))
-                 (tag (widget-get widget :tag)))
-            (when (equal tag widget-type)
-              (widget-apply widget :deactivate))))))))
-
-(defun lem-ui-widget-create (kind type value)
-  "Return a widget of KIND, with TYPE-LIST elements, and default VALUE.
-KIND is a string, either Listing, Sort, Items, or Inbox, and will
-be used for the widget's tag.
-VALUE is a string, a member of TYPE."
-  (let* ((val-length (length (if (symbolp value)
-                                 (symbol-name value)
-                               value)))
-         (type-list (eval type))
-         (longest (cl-reduce #'max (if (symbolp (car type-list))
-                                       (mapcar #'length
-                                               (mapcar #'symbol-name type-list))
-                                     (mapcar #'length type-list))))
-         (padding (- longest val-length)))
-    (if (not (member value type-list))
-        (error "%s is not a member of %s" value type-list)
-      (widget-create 'menu-choice
-                     :tag kind
-                     :value value
-                     :args (lem-ui-return-item-widgets type-list)
-                     :help-echo (format "Select a %s kind" kind)
-                     :format (lem-ui-widget-format kind padding)
-                     :notify (lem-ui-widget-notify-fun value)
-                     :keymap lem-widget-keymap))))
-
-(defun lem-ui-widgets-create (widgets-list)
-  "Create a number of dropdown widgets.
-WIDGETS-LIST is a nested list where each list contains three
-elements: a tag, a list of items, and a default value. They are
-arguments for `lem-ui-widget-create'."
-  (cl-loop for w in widgets-list
-           do (funcall #'lem-ui-widget-create
-                       (nth 0 w) (nth 1 w) (nth 2 w)))
-  (insert "\n\n"))
-
 ;;; COMMUNITIES
 
 (defun lem-ui-view-communities (&optional type sort limit)
@@ -2313,21 +2793,6 @@ LIMIT is the max results to return."
        :row-colors  '(nil highlight)    ; don't set vtable a second time
        :divider-width 1
        :keymap lem-vtable-map))))
-;; whey "actions" when we have map + our own props?:
-;; :actions '("RET" lem-ui-view-community-at-point-tl
-;; "s" lem-ui-subscribe-to-community-at-point-tl))
-
-;; actions are called on the column's object, but we use text props instead,
-;; so we have to reimplement these for tl:
-;; (defun lem-ui-view-community-at-point-tl (_)
-;;   "View community at point, from tabulated list."
-;;   (interactive)
-;;   (lem-ui-view-item-community))
-
-;; (defun lem-ui-subscribe-to-community-at-point-tl (_)
-;;   "Subscribe to community at point, from tabulated list."
-;;   (interactive)
-;;   (lem-ui-subscribe-to-community-at-point))
 
 (defun lem-ui-subscribe-to-community (&optional id)
   "Subscribe to a community, using ID or prompt for a handle."
@@ -2780,6 +3245,234 @@ Optionally set it to ITEM."
         (sort (lem-ui-get-buffer-spec :sort)))
     (lem-ui-view-inbox choice sort)))
 
+(defun lem-ui-format-private-message (private-message &optional indent)
+  "Format PRIVATE-MESSAGE, optionally with INDENT amount of indent bars."
+  (let-alist private-message
+    (let ((content (when .private_message.content
+                     (lem-ui-render-body
+                      .private_message.content
+                      (alist-get 'private_message private-message))))
+          (indent-str (when indent
+                        (make-string indent
+                                     (string-to-char
+                                      (lem-ui-symbol 'reply-bar))))))
+      (push .private_message.id lem-ui-current-items) ; pagination
+      (propertize
+       (concat
+        (lem-ui-top-byline nil nil
+                           (or .creator.display_name .creator.name)
+                           nil ;.counts.score
+                           .private_message.published)
+        "\n"
+        (or content "")
+        ;; "\n"
+        "\n"
+        lem-ui-horiz-bar
+        "\n")
+       'json private-message
+       'id .private_message.id
+       'creator-id .creator.id
+       'lem-type 'private-message
+       'line-prefix indent-str))))
+
+;;; COMPLETION FOR ACTIONS
+
+(defalias 'lem-ui-do-item-completing 'fedi-do-item-completing)
+
+(defun lem-ui--communities-list (communities)
+  "Return a list of name/description and ID from COMMUNITIES."
+  (cl-loop for item in communities
+           collect (let-alist item
+                     (list
+                      (lem-ui-handle-from-url .community.actor_id "!")
+                      .community.id
+                      .community.actor_id))))
+
+(defun lem-ui--users-list (users)
+  "For user in USERS, return name, URL, and id."
+  (cl-loop for item in users
+           collect (let-alist item
+                     (list (lem-ui-handle-from-url .actor_id "@")
+                           ;; .name
+                           ;; .actor_id
+                           .id))))
+
+(defun lem-ui--blocks-list (blocks)
+  "For user in BLOCKS, return handle, and id."
+  (cl-loop for item in blocks
+           collect (let-alist (alist-get 'target item)
+                     (list (lem-ui-handle-from-url .actor_id "@")
+                           .id))))
+
+(defun lem-ui--instances-list (instances)
+  "For each item in (blocked) INSTANCES, return domain and id."
+  (cl-loop for i in instances
+           collect (let-alist (alist-get 'instance i)
+                     (list .domain .id))))
+
+;;; FEATURE (PIN) POSTS
+
+(defun lem-ui-do-feature (id arg type str)
+  "Call `lem-feature-post' and handle the response.
+ID, ARG TYPE are for that function.
+STR is for message."
+  (let ((response (lem-feature-post id arg type))
+        (view (lem-ui-get-buffer-spec :view-fun)))
+    (lem-ui-response-msg
+     response
+     'post_view :non-nil
+     (format "Post %s!" str))
+    (lem-ui--update-item-json (alist-get 'post_view response))
+    (lem-ui-update-item-from-json
+     'byline-top
+     (lambda (json)
+       (lem-ui-top-byline-replace
+        json
+        (unless (eq view 'lem-ui-view-community)
+          :community))))))
+
+(defun lem-ui-feature-post (&optional unfeature)
+  "Feature (pin) a post, either to its instance or community.
+UNFEATURE means we are unfeaturing a post."
+  (interactive)
+  (lem-ui-with-item 'post
+    (let* ((json (lem-ui--property 'json))
+           (post (alist-get 'post json))
+           (id (lem-ui--property 'id))
+           (mod-p (alist-get 'creator_is_moderator json))
+           (admin-p (alist-get 'creator_is_admin json))
+           (feat-comm (alist-get 'featured_community post))
+           (feat-loc (alist-get 'featured_local post))
+           ;; TODO: annotate Local with "instance":
+           (feat-type
+            (if unfeature
+                (cond ((eq t feat-comm) "Community")
+                      ((eq t feat-loc) "Local")
+                      (t
+                       (user-error "Post not featured?")))
+              (completing-read "Feature type: "
+                               '("Local" "Community"))))
+           (feat-arg (if unfeature :json-false t))
+           (feat-str (if unfeature "unfeatured" "featured")))
+      (if (equal feat-type "Community")
+          ;; TODO: refactor conds:
+          (cond (unfeature
+                 (lem-ui-do-feature id feat-arg feat-type feat-str))
+                ((not (eq t mod-p))
+                 (user-error "You need to be a mod to feature to community"))
+                ((eq t feat-comm)
+                 (user-error "Post already featured?"))
+                (t
+                 (lem-ui-do-feature id feat-arg feat-type feat-str)))
+        (cond (unfeature
+               (lem-ui-do-feature id feat-arg feat-type feat-str))
+              ((not (eq t admin-p))
+               (user-error "You need to be an admin to feature to instance"))
+              ((eq t feat-loc)
+               (user-error "Post already featured?"))
+              (t
+               (lem-ui-do-feature id feat-arg feat-type feat-str)))))
+    :number))
+
+(defun lem-ui-unfeature-post ()
+  "Unfeature (unpin) post at point."
+  (interactive)
+  (lem-ui-feature-post :unfeature))
+
+;;; SAVING
+
+(defun lem-ui-save-item (&optional unsave)
+  "Save item at point.
+Saved items can be viewed in your profile, like bookmarks.
+If UNSAVE, unsave the item instead."
+  (interactive)
+  (lem-ui-with-item 'all
+    (let* ((type (lem-ui--item-type))
+           (s-str (if unsave "unsaved" "saved"))
+           (s-bool (if unsave :json-false t))
+           (json (lem-ui--property 'json))
+           (saved-p (alist-get 'saved json)))
+      (cond ((and unsave (eq saved-p :json-false))
+             (message "You can only unsave saved items."))
+            ((eq type 'post)
+             (let ((json (lem-save-post id s-bool))
+                   (my-vote (alist-get 'my_vote json)))
+               (lem-ui-response-msg json
+                                    'post_view :non-nil
+                                    (format "%s %s %s!" type id s-str))
+               (lem-ui--update-item-json (alist-get 'post_view json))
+               (lem-ui-update-item-from-json
+                'byline-bottom
+                (lambda (json)
+                  (lem-ui-bt-byline-replace json my-vote s-bool)))))
+            ((eq type 'comment)
+             (let ((json (lem-save-comment id s-bool))
+                   (my-vote (alist-get 'my_vote json)))
+               (lem-ui-response-msg json
+                                    'comment_view :non-nil
+                                    (format "%s %s %s!" type id s-str))
+               (lem-ui--update-item-json (alist-get 'comment_view json))
+               (lem-ui-update-item-from-json
+                'byline-bottom
+                (lambda (json)
+                  (lem-ui-bt-byline-replace json my-vote s-bool)))))
+            (t
+             (message "You can only save posts and comments."))))
+    :number))
+
+(defun lem-ui-unsave-item ()
+  "Unsave item at point."
+  (interactive)
+  (lem-ui-save-item :unsave))
+
+(defun lem-ui-save-item-toggle ()
+  "Toggle saved status of item at point."
+  (interactive)
+  (let* ((json (lem-ui--property 'json))
+         (saved-p (alist-get 'saved json)))
+    (if (eq saved-p :json-false)
+        (lem-ui-save-item)
+      (lem-ui-unsave-item))))
+
+(defun lem-ui-view-saved-items (&optional items ;id
+                                          sort limit page)
+  "View saved items of the current user, or of user with ID.
+ITEMS, as string, means to display only those items (posts or
+comments).
+SORT. LIMIT. PAGE."
+  (interactive)
+  (let* ((opts (lem-ui--view-options 'saved-items))
+         (items (or items "overview"))
+         (sort (or sort (lem-ui--view-opts-default opts :sort)))
+         (saved-only (lem-api-get-person-saved-only
+                      lem-user-id ;(or id lem-user-id)
+                      sort (or limit lem-ui-comments-limit) page))
+         (data (if (equal items "overview")
+                   saved-only
+                 (alist-get (intern items) saved-only)))
+         (buf "*lem-saved-items*"))
+    (lem-ui-with-buffer buf 'lem-mode nil nil
+      (lem-ui-set-buffer-spec nil sort #'lem-ui-view-saved-items items)
+      (let* ((choices `(,items ,sort))
+             (widget-args (lem-ui-build-view-widget-args opts choices)))
+        (lem-ui-widgets-create widget-args))
+      (cond ((equal items "posts")
+             (lem-ui-render-posts data))
+            ((equal items "comments")
+             (lem-ui-render-comments data :details))
+            (t
+             (lem-ui-render-overview data)))
+      (lem-ui--widget-deactivate "overview" "Sort")
+      (lem-ui--init-view))))
+
+(defun lem-ui-cycle-saved-items (&optional item)
+  "Cycle saved items view or view type ITEM."
+  (interactive)
+  (let* ((last (lem-ui-get-buffer-spec :item))
+         (next (or item (lem-ui-next-type last lem-user-items-types)))
+         (sort (lem-ui-get-buffer-spec :sort)))
+    (lem-ui-view-saved-items next sort)))
+
 ;;; EDIT/DELETE POSTS/COMMENTS
 
 (defun lem-ui-edit-comment-brief ()
@@ -2921,7 +3614,6 @@ To remove an item, you must be a moderator in its community."
           ;; TODO: refactor delete-item: "delete" str, and reload on remove.
           (lem-ui-delete-item 'post #'lem-remove-post))))))
 
-
 (defun lem-ui-remove-comment ()
   "Remove the comment at point.
 To remove an item, you must be a moderator in its community."
@@ -2935,671 +3627,122 @@ To remove an item, you must be a moderator in its community."
           ;; TODO: refactor delete-item: "delete" str, and reload on remove.
           (lem-ui-remove-item 'comment #'lem-remove-comment))))))
 
-;;; COMMENTS
+;;; UPDATING ITEMS
 
-(defun lem-ui-render-comment (comment &optional reply details)
-  "Render single COMMENT.
-REPLY means it is a comment-reply object.
-DETAILS means display what community and post the comment is linked to."
-  (insert
-   (lem-ui-format-comment comment nil reply details)
-   "\n"))
+;; currently if we need to update something after an action we update that
+;; item's json, then update the item or part thereof from the updated json.
+;; because we always update the json prop for the whole item, but then
+;; sometimes only update a part of the item, e.g. bylines.
 
-(defun lem-ui-render-comments (comments &optional details)
-  "Render COMMENTS, a list of comment objects.
-;; TYPE
-;; SORT.
-For viewing a plain list of comments, not a hierarchy.
-DETAILS means display what community and post the comment is linked to."
-  (cl-loop for x in comments
-           do (lem-ui-render-comment x nil details)))
+(defalias 'lem-ui-update-item-from-json 'fedi-update-item-from-json)
 
-;;; THREADED COMMENTS
-;; Path: "The path / tree location of a comment, separated by dots, ending
-;; with the comment's id. Ex: 0.24.27"
-;; https://github.com/LemmyNet/lemmy/blob/63d3759c481ff2d7594d391ae86e881e2aeca56d/crates/db_schema/src/source/comment.rs#L39
-(defvar-local lem-comments-hierarchy nil)
-(defvar-local lem-comments-raw nil)
+(defalias 'lem-ui--replace-region-contents 'fedi--replace-region-contents)
 
-(defun lem-ui--build-and-render-comments-hierarchy (comments id)
-  "Build `lem-comments-hierarchy', a hierarchy, from COMMENTS, and render.
-ID is the post's id, used for unique buffer names."
-  (setq lem-comments-raw comments)
-  (let ((list (alist-get 'comments comments))
-        (buf (format "*lem-post-%s*" id)))
-    (lem-ui--build-hierarchy list) ; sets `lem-comments-hierarchy'
-    (with-current-buffer (get-buffer-create buf)
-      (let ((inhibit-read-only t))
-        (lem--hierarchy-print-line
-         lem-comments-hierarchy
-         (lem--hierarchy-labelfn-indent
-          (lambda (item indent)
-            (lem-ui-format-comment item indent nil nil :widget))))))))
-;; `lem--hierarchy-labelfn-indent' no longer handles line-prefixing:
-;; (lem-ui-symbol 'reply-bar)
-;; 'face ':foreground 'lem-ui-cycle-colors))))))
+(defalias 'lem-ui--update-item-json 'fedi--update-item-json)
 
-(defun lem-ui-get-comment-path (comment)
-  "Get path value from COMMENT."
-  (alist-get 'path
-             (alist-get 'comment comment)))
-
-(defun lem-ui--parent-id (comment)
-  "Return the parent id of COMMENT as a number.
-Return nil if comment is only a child of the root post."
-  (let* ((path (lem-ui-get-comment-path comment))
-         (split (lem-ui-split-path path))
-         (id (string-to-number
-              (car (last split 2)))))
-    (if (eq id 0)
-        nil
-      id)))
-
-(defun lem-ui--parentfun (child)
-  "Return the parent of CHILD in `lemmy-comments-hierarchy', recursively.
-Parent-fun for `hierarchy-add-tree'."
-  (let* ((parent-id (lem-ui--parent-id child))
-         (list (alist-get 'comments lem-comments-raw)))
-    (cl-find-if
-     (lambda (comment)
-       (let ((com (alist-get 'comment comment)))
-         (equal parent-id
-                (alist-get 'id com))))
-     list)))
-
-(defun lem-ui-split-path (path)
-  "Call split string on PATH with \".\" separator."
-  (split-string path "\\."))
-
-(defun lem-ui--build-hierarchy (comments)
-  "Build a hierarchy of COMMENTS using `hierarchy.el'."
-  ;; (hierarchy-add-trees lem-comments-hierarchy
-  ;; list
-  ;; #'lem-ui--parentfun)))
-  (setq lem-comments-hierarchy (hierarchy-new))
-  (cl-loop for comment in comments
-           do (hierarchy-add-tree lem-comments-hierarchy
-                                  comment
-                                  #'lem-ui--parentfun)))
-
-(defun lem-ui--handle-from-user-url (url)
-  "Return a formatted user handle from user URL."
-  (let* ((parsed (url-generic-parse-url url))
-         (host (url-host parsed))
-         (file (url-filename parsed))
-         (case-fold-search t))
-    (save-match-data
-      ;; TODO: add further legit urls:
-      (when (string-match "^/u\\(sers\\)?/[_[:alnum:]]+$" file)
-        (let ((split (split-string file "/" t)))
-          (propertize
-           (concat "@" (cadr split) "@" host)
-           ;; props
-           ))))))
-
-(defvar lem-ui-indent-colors
-  '("red3" "orange3" "green3" "yellow3" "blue3")
-  ;; Tried with rainbow-delimiters colors but they don't match the actual
-  ;; display of my lovely parens?!
-  ;; '("#707183"
-  ;;   "#7388d6" "#909183" "#709870" "#907373"
-  ;;   "#6276ba" "#858580" "#80a880" "#887070")
-  ;; '("grey55" "#93a8c6" "#b0b1a3" "#97b098" "#aebed8"
-  ;;   "#b0b0b3" "#90a890" "#a2b6da" "#9cb6ad")
-  "List of colors for indent bars, subsequent items repeat.")
-
-(defun lem-ui-cycle-colors (index)
-  "Given INDEX, a number, cycle through `lem-ui-indent-colors'."
-  (nth
-   (mod index
-        (length
-         lem-ui-indent-colors))
-   lem-ui-indent-colors))
-
-(defun lem-ui--make-colored-indent-str (indent)
-  "INDENT is the number of indent bars to return."
-  (let ((str (make-string indent
-                          (string-to-char
-                           (lem-ui-symbol 'reply-bar)))))
-    (dotimes (index indent)
-      (add-text-properties
-       index (1+ index)
-       `(face (:foreground ,(lem-ui-cycle-colors index)))
-       str))
-    str))
-
-(defun lem-ui--widget-fold-format (&optional indent folded)
-  "Format a toggle widget for comment folding.
-INDENT is a string for `line-prefix' property.
-FOLDED is a flag, to display either + or -."
-  ;; ideally we could + when folded and - when unfolded
-  ;; but i don't know how to re-format on notify
-  (concat
-   (propertize (concat "%[" (if folded
-                                (lem-ui-symbol 'plus)
-                              (lem-ui-symbol 'minus))
-                       "%]")
-               'face '(lem-ui-widget-face :box t)
-               'line-prefix indent
-               'lem-tab-stop t)
-   " "))
-
-(defun lem-ui--widget-fold-and-update (widget)
-  "Un/Fold WIDGET and update its display."
-  ;; point is momentarily moved to widget on click event
-  ;; or RET, so safe to just move to byline-top then fold:
-  (lem-next-item)
-  (lem-ui-comment-tree-fold)
-  (lem-ui--widget-update-on-fold widget))
-
-(defun lem-ui--widget-update-on-fold (widget)
-  "Update format of WIDGET (after folding).
-Widget format is updated according to folded property, deleted
-and recreated."
-  ;; format isn't a fun, so we can't widget-apply it
-  ;; FIXME: save us from this awful hack:
-  ;; we update, copy, delete, create just to update widget's
-  ;; display:
-  ;; we should also do this for all folded children! ghastly
-  ;; ie in `lem-ui-comment-fold-toggle'
-  (let* ((folded-p (lem-ui--property 'folded))
-         (indent (lem-ui--property 'line-prefix)))
-    (widget-put widget :format
-                (lem-ui--widget-fold-format indent folded-p))
-    (let ((w2 (widget-copy widget)))
-      (widget-delete widget)
-      (widget-default-create w2))))
-
-(defun lem-ui-widget-fold-notify-fun (&optional old-value)
-  "Return a notify function for a toggle fold widget.
-OLD-VALUE is the widget's value before being changed."
-  `(lambda (widget &rest ignore)
-     (let ((value (widget-value widget)))
-       ;; FIXME: only works on second click? but RET works
-       ;; this is only called on second click!
-       ;; middle-click doesn't have the problem
-       (condition-case x
-           (save-excursion
-             ;; ideally we would have our widget propertized like the
-             ;; top-byline, but it's not so easy to propertize the widget.
-             (lem-ui--widget-fold-and-update widget))
-         (user-error ; don't update widget if cycle-sort fails:
-          (lem-ui-widget-reset-value widget ,old-value x))))))
-
-(defun lem-ui-format-comment (comment &optional indent reply details widget)
-  "Format COMMENT, optionally with INDENT amount of indent bars.
-REPLY means it is a comment-reply object.
-DETAILS means display what community and post the comment is linked to.
-WIDGET is a flag, and means create a toggle fold widget."
-  ;; NB: no stray requests in here.
-  (let-alist comment
-    (let ((content (when .comment.content
-                     (lem-ui-render-body .comment.content
-                                         (alist-get 'comment comment)
-                                         indent)))
-          (indent-str (when indent
-                        (lem-ui--make-colored-indent-str indent)))
-          (handle (lem-ui--handle-from-user-url .creator.actor_id))
-          (post-title (when details .post.name))
-          (community-name (when details (or .community.title
-                                            .community.name)))
-          (community-url (when details .community.actor_id))
-          (admin-p (eq t .creator_is_admin))
-          (mod-p (or (cl-member .creator.id lem-ui-post-community-mods-ids)
-                     (eq t .creator_is_moderator)))
-          (op-p (eq .comment.creator_id .post.creator_id))
-          (deleted .comment.deleted)
-          (removed .comment.removed))
-      (push .comment.id lem-ui-current-items) ; pagination
-      (when widget
-        (widget-create 'toggle
-                       :help-echo (format "Toggle comment folding")
-                       :format (lem-ui--widget-fold-format indent-str)
-                       :notify (lem-ui-widget-fold-notify-fun)
-                       :keymap lem-widget-keymap))
+(defun lem-ui-bt-byline-replace (json &optional vote saved prefix)
+  "Call `lem-ui-bt-byline' to update the bottom byline.
+JSON is the item's json.
+VOTE, SAVED, and PREFIX are arguments for `lem-ui-bt-byline'."
+  ;; FIXME: this assumes post object
+  (let-alist json
+    (let ((vote (or vote .my_vote))
+          (saved (or saved .saved))
+          (prefix (or prefix (lem-ui--property 'line-prefix))))
       (propertize
-       (concat
-        (lem-ui-top-byline nil nil
-                           (or .creator.display_name .creator.name)
-                           .counts.score
-                           .comment.published
-                           community-name community-url
-                           nil op-p admin-p mod-p nil handle
-                           post-title .comment.updated)
-        "\n"
-        (if (or (eq t deleted) (eq t removed))
-            (lem-ui-format-display-prop deleted removed)
-          (propertize (or content "")
-                      'body t))
-        (propertize
-         (concat
-          "\n"
-          (lem-ui-bt-byline .counts.score .counts.child_count .my_vote .saved)
-          "\n" lem-ui-horiz-bar
-          "\n")
-         'byline-bt-fold t))
-       'json comment
-       ;; in replies view we need the actual id for like-toggling:
-       'id .comment.id ;(if reply .comment_reply.id .comment.id)
-       'post-id .comment.post_id
+       (lem-ui-bt-byline .counts.score
+                         (or .counts.child_count
+                             .counts.comments)
+                         vote saved prefix)
+       ;; properties from render-post/comment (need to be checked):
+       'json json
+       'id (or .post.id .comment.id)
        'community-id .post.community_id
        'creator-id .creator.id
-       'lem-type (if reply 'comment-reply 'comment)
-       'line-prefix indent-str))))
+       'lem-type (caar json)))))
 
-(defun lem-ui-format-display-prop (del rem)
-  "Format a string for display property.
-DEL and REM are the values of the deleted and removed attributes
-in an item's data."
-  (cond ((eq del t)
-         (propertize "[deleted by user]\n"
-                     'face '(:slant italic)
-                     'body t))
-        ((eq rem t)
-         (propertize "[removed by mod]\n"
-                     'face '(:slant italic)
-                     'body t))
-        (t nil)))
+(defun lem-ui-top-byline-replace (json &optional community)
+  "Call `lem-ui-top-byline' and add post properties to it.
+JSON is the data to use.
+COMMUNITY means display the community posted to."
+  (let-alist json
+    (propertize
+     (lem-ui-top-byline .post.name
+                        (or .post.url "")
+                        (or .creator.display_name .creator.name)
+                        .counts.score
+                        .post.published
+                        (when community .community.name)
+                        (when community .community.actor_id)
+                        (or (eq t .post.featured_community) ; pinned community
+                            (eq t .post.featured_local)) ; pinned instance
+                        nil
+                        (eq t .creator_is_admin)
+                        (or (eq t .creator_is_moderator)
+                            (cl-member .creator.id lem-ui-post-community-mods-ids))
+                        (eq t .post.deleted)
+                        (lem-ui--handle-from-user-url .creator.actor_id))
+     ;; add render-post props:
+     'json json
+     'id .post.id
+     'community-id .post.community_id
+     'creator-id .creator.id
+     'lem-type (caar json))))
 
-(defun lem-ui-format-private-message (private-message &optional indent)
-  "Format PRIVATE-MESSAGE, optionally with INDENT amount of indent bars."
-  (let-alist private-message
-    (let ((content (when .private_message.content
-                     (lem-ui-render-body
-                      .private_message.content
-                      (alist-get 'private_message private-message))))
-          (indent-str (when indent
-                        (make-string indent
-                                     (string-to-char
-                                      (lem-ui-symbol 'reply-bar))))))
-      (push .private_message.id lem-ui-current-items) ; pagination
-      (propertize
-       (concat
-        (lem-ui-top-byline nil nil
-                           (or .creator.display_name .creator.name)
-                           nil ;.counts.score
-                           .private_message.published)
-        "\n"
-        (or content "")
-        ;; "\n"
-        "\n"
-        lem-ui-horiz-bar
-        "\n")
-       'json private-message
-       'id .private_message.id
-       'creator-id .creator.id
-       'lem-type 'private-message
-       'line-prefix indent-str))))
-
-(defun lem-ui-render-post-comments (post-id &optional sort limit)
-  "Render a hierarchy of post's comments.
-POST-ID is the post's id.
-SORT must be a member of `lem-sort-types'.
-LIMIT is the amount of items to return."
-  ;; NB: max_depth, required for comment trees, breaks limit
-  ;; and that's why huge threads are slow to load :/
-  (let* ((comments (lem-api-get-post-comments
-                    post-id "All" sort (or limit lem-ui-comments-limit)
-                    nil nil lem-api-comments-max-depth)))
-    (if (eq 'string (type-of comments))
-        (message comments) ; server error
-      (let ((unique-comments (cl-remove-duplicates comments)))
-        (lem-ui--build-and-render-comments-hierarchy unique-comments
-                                                     post-id)))))
-
-(defun lem-ui-plural-symbol (symbol)
-  "Return a plural of SYMBOL."
-  (cond ((eq symbol 'community)
-         'communities)
-        ((or (eq symbol 'replies)
-             (eq symbol 'replies)
-             (eq symbol 'mentions)
-             (eq symbol 'private-messages))
-         symbol)
-        (t
-         (intern
-          (concat (symbol-name symbol) "s")))))
-
-(defun lem-ui-remove-displayed-items (items type)
-  "Remove item from ITEMS if it is in `lem-ui-current-items'.
-TYPE is the item type.
-ITEMS should be an alist of the form '\=(plural-name ((items-list)))'."
-  (cl-remove-if
-   (lambda (x)
-     (let ((id (alist-get 'id
-                          (alist-get type x))))
-       (cl-member id lem-ui-current-items)))
-   (alist-get (lem-ui-plural-symbol type)
-              items)))
-
-(defun lem-ui-search-type-symbol (type)
-  "Make TYPE, a string, singular and a symbol."
-  (cond ((equal type "communities")
-         'community)
-        ((equal type "posts")
-         'post)
-        ((equal type "users")
-         'user)
-        ((equal type "comments")
-         'comment)))
-
-(defun lem-ui-more ()
-  "Append more items to the current view."
-  (interactive)
-  (let ((item (lem-ui-get-buffer-spec :item))
-        ;; TODO: use `lem-ui--view-type' instead
-        (view-fun (lem-ui-get-buffer-spec :view-fun)))
-    (cond ((eq view-fun 'lem-ui-view-post)
-           ;; nb max-depth doesn't work with pagination yet:
-           ;; https://github.com/LemmyNet/lemmy/issues/3585
-           (lem-ui-more-items 'comment 'lem-api-get-post-comments
-                              'lem-ui--build-and-render-comments-hierarchy))
-          ((eq view-fun 'lem-ui-view-community)
-           (if (equal item "posts")
-               (lem-ui-more-items 'post 'lem-api-get-community-posts-by-id
-                                  'lem-ui-render-posts)
-             (lem-ui-more-items 'comment 'lem-api-get-community-comments-by-id
-                                'lem-ui-render-comments)))
-          ((eq view-fun 'lem-ui-view-instance)
-           (lem-ui-more-items 'post 'lem-api-get-instance-posts
-                              'lem-ui-render-posts-instance))
-          ((eq view-fun 'lem-ui-view-user)
-           ;; TODO: user overview view type:
-           (if (equal item "posts")
-               (lem-ui-more-items 'post 'lem-api-get-person-posts
-                                  'lem-ui-render-posts)
-             (lem-ui-more-items 'comment 'lem-api-get-person-comments
-                                'lem-ui-render-comments)))
-          ((eq item 'lem-ui-view-communities)
-           (lem-ui-more-items 'community 'lem-list-communities
-                              'lem-ui-render-communities))
-          ((eq view-fun 'lem-ui-search)
-           (let* ((search-type (lem-ui-get-buffer-spec :item))
-                  (render-fun (lem-ui-search-type-fun search-type))
-                  (search-type-symbol (lem-ui-search-type-symbol search-type)))
-             (lem-ui-more-items search-type-symbol 'lem-search render-fun)))
-          ((eq view-fun 'lem-ui-view-inbox)
-           (let* ((items (lem-ui-get-buffer-spec :item))
-                  (get-fun (lem-ui-make-fun "lem-get-" items))
-                  (render-fun (lem-ui-make-fun "lem-ui-render-" items)))
-             (lem-ui-more-items items get-fun render-fun)))
-          (t (message "More type not implemented yet")))))
-
-(defun lem-ui-more-items (type get-fun render-fun)
-  "Add one more page of items of TYPE to the current view.
-GET-FUN is the name of a function to fetch more items.
-RENDER-FUN is the name of a function to render them."
-  (message "Loading more items...")
-  (let* ((listing (lem-ui-get-buffer-spec :listing-type))
-         (view-fun (lem-ui-get-buffer-spec :view-fun))
-         (page (1+ (lem-ui-get-buffer-spec :page)))
-         (item (lem-ui-get-buffer-spec :item))
-         (sort (lem-ui-get-buffer-spec :sort))
-         (query (lem-ui-get-buffer-spec :query))
-         (id (save-excursion
-               (goto-char (point-min))
-               (lem-ui--property 'id)))
-         (all-items
-          ;; get-instance-posts have no need of id arg:
-          (cond ((or (eq get-fun 'lem-api-get-instance-posts)
-                     (eq get-fun 'lem-list-communities))
-                 (funcall get-fun
-                          (or listing "All")
-                          sort
-                          lem-ui-comments-limit
-                          page))
-                ;; user funs have no list-type arg:
-                ((eq view-fun 'lem-ui-view-user)
-                 (funcall get-fun id sort
-                          lem-ui-comments-limit page))
-                ((eq view-fun 'lem-ui-search)
-                 (funcall get-fun query (capitalize item) listing sort
-                          lem-ui-comments-limit
-                          page))
-                ((eq view-fun 'lem-ui-view-inbox)
-                 ;; mentions/replies: sort page limit unread-only
-                 ;; pms: unread-only page limit creator-id
-                 (funcall get-fun nil page))
-                (t
-                 (funcall get-fun
-                          id
-                          (or listing "All")
-                          sort
-                          lem-ui-comments-limit
-                          page))))
-         (no-duplicates (lem-ui-remove-displayed-items all-items type)))
-    (setf (alist-get (lem-ui-plural-symbol type) all-items)
-          no-duplicates)
-    (lem-ui-set-buffer-spec listing
-                            sort
-                            view-fun
-                            item
-                            page
-                            nil
-                            query)
-    (goto-char (point-max))
-    (let ((old-max (point))
-          (inhibit-read-only t))
-      ;; NB: `lem-ui-current-items' is updated during rendering:
-      (if (eq render-fun 'lem-ui--build-and-render-comments-hierarchy)
-          (funcall render-fun all-items id)
-        (funcall render-fun (alist-get (lem-ui-plural-symbol type)
-                                       all-items)))
-      (goto-char old-max)
-      (lem-ui--init-view)
-      (message "Loading more items... [done]"))))
-
-(defun lem-ui-post-goto-comment (comment-id post-id &optional no-recenter)
-  "Move point to comment with COMMENT-ID, a number, if possible.
-POST-ID is the post's id, used to fetch the right buffer.
-NO-RECENTER means don't call `recenter-top-bottom'."
-  ;; TODO: implement forward-search/pagination
-  (with-current-buffer (format "*lem-post-%s*" post-id)
-    (goto-char (point-min))
-    (when-let ((match (text-property-search-forward 'id comment-id t)))
-      (goto-char (prop-match-beginning match))
-      (unless no-recenter
-        (recenter-top-bottom '(4))))))
-
-(defun lem-ui-view-comment-post (&optional post-id comment-id)
-  "View post of comment at point, or of POST-ID.
-If COMMENT-ID is provided, move point to that comment."
-  (interactive)
-  (let ((comment-p (or (eq (lem-ui--item-type) 'comment)
-                       (eq (lem-ui--item-type) 'comment-reply))))
-    (if (not (or post-id
-                 comment-p))
-        (message "Not at a comment?")
-      (let* ((post-id (or post-id (lem-ui--property 'post-id)))
-             (comment-id (or comment-id
-                             (when comment-p
-                               (lem-ui--property 'id))))
-             (buf (lem-ui-view-post post-id)))
-        (when comment-id
-          ;; FIXME: only fold if comment is actually loaded in the view
-          (lem-ui-fold-all-comments buf)
-          (lem-ui-post-goto-comment comment-id post-id)
-          (lem-ui-fold-current-branch buf))))))
-
-(defun lem-ui-prev-same-level ()
-  "Move to previous same level comment.
-If no same level comment is found, move to the previous higher level one."
-  (interactive)
-  (lem-ui-with-view 'post
-    (let ((orig-indent (lem-ui--current-indent)))
-      (lem-prev-item)
-      (while (not (>= orig-indent
-                      (lem-ui--current-indent)))
-        (lem-prev-item)))))
-
-(defun lem-ui-next-same-level ()
-  "Move to next same level comment.
-If no same level comment is found, move to the next higher level one."
-  (interactive)
-  (lem-ui-with-view 'post
-    (let ((orig-indent (lem-ui--current-indent)))
-      (lem-next-item)
-      (while (not (>= orig-indent
-                      (lem-ui--current-indent)))
-        (lem-next-item)))))
-
-(defun lem-ui--goto-parent-comment ()
-  "Move point to parent comment.
-Stop moving up at a top level comment."
-  (lem-ui-with-view 'post
-    (let ((parent-id (lem-ui--parent-id (lem-ui--property 'json)))
-          (post-id (lem-ui--property 'post-id)))
-      (if (not parent-id)
-          (message "At top level")
-        (lem-ui-post-goto-comment parent-id post-id :no-recenter)))))
-
-(defun lem-ui-branch-top-level ()
-  "Move point to the top of the branch of comment at point."
-  (interactive)
-  (lem-ui-with-view 'post
-    ;; (lem-ui-with-item 'comment
-    (while (lem-ui--parent-id (or (lem-ui--property 'json)
-                                  (progn
-                                    (forward-line -1)
-                                    (lem-ui--property 'json))))
-      (lem-ui--goto-parent-comment))))
-
-;;; FOLDING COMMENTS
-
-(defun lem-ui--set-invis-prop (invis pos)
-  "Return value of INVIS as a boolean.
-If INVIS is nil, return the opposite of the invisibility property at
-POS."
-  (cond ((eq invis :invisible)
-         t)
-        ((eq invis :not-invisible)
-         nil)
-        (t
-         (not
-          (get-text-property pos
-                             'invisible)))))
-
-(defun lem-ui-comment-fold-toggle (&optional invis)
-  "Toggle invisibility of the comment at point.
-Optionally set it to INVIS, a keyword.
-Return the value of the invisibility property after toggling as
-a keyword."
-  (interactive)
-  (lem-ui-with-item 'comment
-    (let* ((inhibit-read-only t)
-           ;; if point is after relevant property, search backwards:
-           (byline-bt-p (lem-ui--property 'byline-bt-fold))
-           (body-p (lem-ui--property 'body))
-           (comment-range (lem-ui--find-property-range 'body
-                                                       (point)
-                                                       byline-bt-p))
-           (byline-top (lem-ui--find-property-range 'byline-top
-                                                    (point)
-                                                    (or byline-bt-p
-                                                        body-p)))
-           (byline-bottom (lem-ui--find-property-range 'byline-bt-fold
-                                                       (point)))
-           (invis-before (when comment-range
-                           (get-text-property (car comment-range)
-                                              'invisible))))
-      (when byline-top
-        ;; set top byline
-        (add-text-properties
-         (car byline-top)
-         (cdr byline-top)
-         `(folded
-           ,(lem-ui--set-invis-prop invis (car comment-range))))
-        ;; set body:
-        (add-text-properties
-         (car comment-range)
-         (cdr comment-range)
-         `(invisible
-           ,(lem-ui--set-invis-prop invis (car comment-range))))
-        ;; set bottom byline:
-        (add-text-properties
-         (car byline-bottom)
-         (cdr byline-bottom)
-         `(invisible
-           ,(lem-ui--set-invis-prop invis (car byline-bottom))))
-        ;; update child widgets:
-        (let ((widget (save-excursion
-                        (beginning-of-line)
-                        (widget-at))))
-          (lem-ui--widget-update-on-fold widget))
-        ;; return result of toggle as kw:
-        (or invis ; kw
-            (if invis-before
-                :not-invisible
-              :invisible))))))
-
-(defun lem-ui-comment-tree-fold (&optional invis indent)
-  "Toggle invisibility of current comment and all its children.
-Optionally set INVIS, a keyword (used for recursion).
-The invisibility of children should not necessarily be toggled,
-but should adopt the invisibility of the top-most item. So if
-some children comments have been toggled, toggling their parent
-should return all items in the branch to the same invisibility.
-INDENT is the level of the top level comment to be folded."
-  (interactive)
-  (lem-ui-with-view 'post
-    (let* ((top-indent (or indent (lem-ui--current-indent)))
-           ;; fold current item:
-           (invis-after (lem-ui-comment-fold-toggle invis)))
+(defun lem-ui-update-parent-item-maybe ()
+  "Go to buffer's first element, and reload its json data and bottom byline."
+  ;; FIXME: only running in post views till we improve things.
+  (when (eq (lem-ui--view-type) 'post)
+    (save-restriction
       (save-excursion
-        ;; maybe recur into subsequent items:
-        (unless (equal "Nothing further" ; stop at last item
-                       (lem-next-item :no-refresh))
-          (let ((indent (lem-ui--current-indent)))
-            (when (> indent top-indent)
-              (lem-ui-comment-tree-fold invis-after top-indent))))))))
-
-(defun lem-ui-fold-current-branch (&optional buf)
-  "Toggle folding the branch of comment at point.
-Optionally ensure buffer BUF is current."
-  (interactive)
-  (with-current-buffer (or buf (current-buffer))
-    (lem-ui-with-view 'post
-      (save-excursion
-        (lem-ui-branch-top-level)
-        (lem-ui-comment-tree-fold)))))
-
-(defun lem-ui-fold-all-comments (&optional buf)
-  "Fold all comments in current buffer.
-BUF is the buffer to fold in."
-  (interactive)
-  (with-current-buffer (or buf (current-buffer))
-    (lem-ui-with-view 'post
-      (save-excursion
+        (widen)
         (goto-char (point-min))
-        (while (not (equal "Nothing further" ; stop at last item
-                           (lem-next-item :no-refresh)))
-          (unless (eq t (get-text-property (point) 'folded))
-            (lem-ui-comment-tree-fold)))))))
+        (forward-char)
+        ;; FIXME: we have user item type, but "person_view",
+        ;; so this isn't working for users
+        (let* ((item-type (lem-ui--property 'lem-type))
+               (id (lem-ui--property 'id))
+               (item-fun (lem-ui-make-fun "lem-get-" item-type))
+               (item-data (funcall item-fun id))
+               (item (alist-get (intern
+                                 (concat (symbol-name item-type)
+                                         "_view"))
+                                item-data)))
+          ;; for now, just update parent posts:
+          ;; as lem-ui-bt-byline-replace wrongly assumes posts
+          (when (eq (lem-ui--view-type) 'post)
+            (lem-ui--update-item-json item)
+            (lem-ui-update-item-from-json
+             'byline-bottom
+             (lambda (json)
+               (lem-ui-bt-byline-replace json)))))))))
 
-(defun lem-ui-unfold-all-comments ()
-  "Unfold all comment branches in the current buffer."
+(defun lem-ui-reload-view ()
+  "Reload the current view."
   (interactive)
-  (lem-ui-with-view 'post
-    (save-excursion
-      (goto-char (point-min))
-      (while (not (equal "Nothing further" ; stop at last item
-                         (lem-next-item :no-refresh)))
-        (when (eq t (get-text-property (point) 'folded))
-          (lem-ui-comment-tree-fold :not-invisible))))))
+  (let ((type (lem-ui--view-type))
+        (item (lem-ui-get-buffer-spec :item))
+        (sort (lem-ui-get-buffer-spec :sort))
+        (listing (lem-ui-get-buffer-spec :listing-type))
+        (page (lem-ui-get-buffer-spec :page))
+        (limit (lem-ui-get-buffer-spec :limit))
+        (id (save-excursion
+              (goto-char (point-min))
+              (lem-ui--property 'id))))
+    (cond ((eq type 'post)
+           (lem-ui-view-post id sort limit))
+          ((eq type 'instance)
+           (lem-ui-view-instance listing sort limit page item))
+          ((eq type 'community)
+           (lem-ui-view-community id item sort limit page))
+          ((or (eq type 'user)
+               (eq type 'current-user))
+           (lem-ui-view-user id item sort limit))
+          ((eq type 'inbox)
+           (lem-ui-view-inbox item sort))
+          (t
+           (user-error "Unable to reload view type %s" type)))))
 
-(defun lem-ui-fold-all-toggle ()
-  "Toggle folding status of all comments in the buffer.
-We set folding status to the opposite of what the first comment
-currently is."
-  (interactive)
-  (lem-ui-with-view 'post
-    (let ((first (save-excursion
-                   (goto-char (point-min))
-                   (lem-next-item)
-                   (lem-ui--property 'folded))))
-      (if first
-          (lem-ui-unfold-all-comments)
-        (lem-ui-fold-all-comments)))))
 
 ;;; LIKES / VOTES
 
@@ -3664,210 +3807,6 @@ TYPE should be either :unlike, :dislike, or nil to like."
                 ((or (eq my-vote nil)
                      (eq my-vote 0))
                  (lem-ui-like-item)))))))
-
-;;; USERS
-
-(defun lem-ui-render-users (json &optional search)
-  "Render JSON, a list of users.
-SEARCH means we are rendering a search result."
-  (cl-loop for user in json
-           do (progn (lem-ui-render-user user search)
-                     (insert "\n"))))
-
-(defun lem-ui--format-moderates (community)
-  "Format COMMUNITY as a link."
-  (let-alist community
-    (concat
-     (lem-ui--format-community-as-link .community.title
-                                       .community.id
-                                       .community.actor_id)
-     " ")))
-
-(defun lem-ui-render-user (json &optional search)
-  "Render user with data JSON.
-SEARCH means we are rendering a search result."
-  (let-alist (if search json (alist-get 'person_view json))
-    (insert
-     (propertize
-      (concat
-       (propertize (concat
-                    ;; top byline:
-                    ;; name:
-                    (propertize (or .person.display_name
-                                    .person.name)
-                                'face '(:weight bold))
-                    " "
-                    ;; admin box:
-                    (when (eq t .is_admin)
-                      (concat
-                       (lem-ui-propertize-admin-box)
-                       " "))
-                    ;; handle
-                    (propertize
-                     (lem-ui--handle-from-user-url .person.actor_id)
-                     'face 'font-lock-comment-face))
-                   'byline-top t) ; for prev/next cmds
-       ;; bio:
-       (if .person.bio
-           (concat "\n"
-                   (lem-ui-render-body .person.bio))
-         "\n")
-       ;; mods:
-       (when-let ((mods (alist-get 'moderates json)))
-         ;; needs wrapping or filling, maybe we `visual-line-mode' after all:
-         (concat "mods: "
-                 (cl-loop for c in mods
-                          concat (lem-ui--format-moderates c))
-                 "\n"))
-       ;; stats:
-       (lem-ui-symbol 'direct) " " ; FIXME: we need a post symbol
-       (number-to-string .counts.post_count) " | "
-       (lem-ui-symbol 'reply) " "
-       (number-to-string .counts.comment_count)
-       " | "
-       ;; join date
-       "joined: "
-       (fedi--relative-time-description
-        (date-to-time .person.published))
-       "\n"
-       lem-ui-horiz-bar
-       "\n\n")
-      'json json
-      'id .person.id
-      'lem-type 'user))))
-
-(defun lem-ui-render-user-subscriptions (json)
-  "Render subscribed communities from JSON data."
-  (cl-loop for community in json
-           do (lem-ui-render-community community nil nil :subscription)))
-
-(defun lem-ui-ts-to-secs (ts)
-  "Return TS, a timestamp, as seconds since the epoch, an integer."
-  (let ((lisp-ts (date-to-time ts)))
-    (string-to-number
-     (format-time-string "%s" lisp-ts))))
-
-(defun lem-ui--get-item-published (item)
-  "Return published timestamp of ITEM, either comment or post."
-  (let-alist item
-    ;; comments also have post data so comment first
-    (or .private_message.published
-        .comment_reply.published
-        .comment.published
-        .post.published)))
-
-(defun lem-ui-published-sort-predicate (x y)
-  "Predicate function for `sort'.
-Decide whether X comes before Y, based on timestamp."
-  (let ((pub1 (lem-ui-ts-to-secs
-               (lem-ui--get-item-published x)))
-        (pub2 (lem-ui-ts-to-secs
-               (lem-ui--get-item-published y))))
-    (> pub1 pub2)))
-
-(defun lem-ui-render-overview (user-json)
-  "Return an overview of mixed posts and comments from USER-JSON."
-  (let-alist user-json
-    ;; TODO: either sort overview by timestamp, or by counts:
-    (let* ((merged (append .comments .posts))
-           (sorted (sort merged #'lem-ui-published-sort-predicate)))
-      (cl-loop for item in sorted
-               do (let ((type (caar item))
-                        (reply-p (eq item 'comment-reply)))
-                    (if (eq type 'post)
-                        (lem-ui-render-post item :community :trim)
-                      (lem-ui-render-comment item reply-p :details)))))))
-
-(defun lem-ui-view-user (id &optional item sort limit)
-  "View user with ID.
-ITEM must be a member of `lem-user-items-types'.
-SORT must be a member of `lem-user-view-sort-types'.
-LIMIT is max items to show."
-  (let* ((opts (lem-ui--view-options 'user))
-         (item (or item (lem-ui--view-opts-default opts :items)))
-         (sort (if (lem-user-view-sort-type-p sort)
-                   sort
-                 (lem-ui--view-opts-default opts :sort)))
-         (user-json (lem-api-get-person-by-id id sort limit))
-         (buf "*lem-user*")
-         (view-fun (if (eq id lem-user-id)
-                       #'lem-ui-view-own-profile
-                     #'lem-ui-view-user))
-         (bindings opts))
-    (lem-ui-with-buffer buf 'lem-mode nil bindings
-      (let-alist user-json
-        (lem-ui-render-user user-json)
-        (lem-ui-set-buffer-spec nil sort view-fun item)
-        (let* ((choices `(,item ,sort))
-               (widget-args (lem-ui-build-view-widget-args opts choices)))
-          ;; TODO: deactivate SORT widget in OVERVIEW?
-          (lem-ui-widgets-create widget-args))
-        (cond ((equal item "posts")
-               (lem-ui-render-posts .posts :community :trim))
-              ((equal item "comments")
-               (lem-ui-render-comments .comments :details))
-              (t ; no arg: overview
-               (lem-ui-render-overview user-json)
-               (lem-ui--widget-deactivate "overview" "Sort")))
-        (lem-ui--init-view)))))
-
-(defun lem-ui-view-own-profile ()
-  "View profile of the current user."
-  (interactive)
-  (lem-ui-view-user lem-user-id))
-
-(defun lem-ui-view-item-user ()
-  "View user of item at point."
-  (interactive)
-  (lem-ui-with-item 'all
-    (let* ((type (lem-ui--item-type))
-           (id (cond ((or (eq type 'user)
-                          (eq type 'person))
-                      (lem-ui--property 'id))
-                     ((or (eq type 'post)
-                          (eq type 'comment)
-                          (eq type 'comment-reply)
-                          (eq type 'private-message))
-                      (lem-ui--property 'creator-id))
-                     (t
-                      (user-error "Item has no user?")))))
-      (lem-ui-view-user id "overview"))))
-
-(defun lem-ui-message-user-at-point ()
-  "Send private message to user at point."
-  (interactive)
-  (lem-ui-with-item 'all
-    (let ((message (read-string "Private message: ")))
-      (lem-send-private-message message id))))
-
-(defun lem-ui-block-user ()
-  "Block author of item at point."
-  (interactive)
-  (lem-ui-with-item 'all
-    (let* ((id (lem-ui--property 'creator-id))
-           (json (lem-ui--property 'json))
-           (name (alist-get 'name
-                            (alist-get 'creator json))))
-      (if (not name)
-          (user-error "Looks like no user at point?")
-        (when (y-or-n-p (format "Block %s?" name))
-          (lem-ui-response-msg
-           (lem-block-user id t)
-           'blocked 't
-           (format "User %s blocked!" name)))))))
-
-(defun lem-ui-unblock-user ()
-  "Prompt for a blocked user, and unblock them."
-  (interactive)
-  (lem-ui-do-item-completing
-   #'lem-api-get-blocked-users
-   #'lem-ui--blocks-list
-   "Unlbock user: "
-   (lambda (id choice)
-     (lem-ui-response-msg
-      (lem-block-user id :json-false)
-      'blocked :json-false
-      (format "User %s unblocked!" choice)))))
 
 ;;; IMAGES
 
