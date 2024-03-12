@@ -207,7 +207,7 @@ RESPONSE is the comment_view data returned by the server."
   (with-current-buffer lem-post-last-buffer
     (let-alist response
       (let ((indent (length (lem-ui--property 'line-prefix)))
-            (view (lem-ui-view-type)))
+            (view (lem-ui--view-type)))
         (lem-ui-response-msg
          response 'comment_view :non-nil
          (format "Comment edited: %s" .comment_view.comment.content))
@@ -220,8 +220,23 @@ RESPONSE is the comment_view data returned by the server."
                                                   (eq view 'community))
                                         :details))))))))
 
+(defun lem-ui-insert-comment-after-parent (response) ; parent-id)
+  "Insert new reply comment after its parent.
+RESPONSE is the JSON data of the newly created comment.
+PARENT-ID is that of its parent comment or post."
+  (with-current-buffer lem-post-last-buffer
+    (let* ((inhibit-read-only t)
+           (comment-view (alist-get 'comment_view response))
+           ;; (comment (alist-get 'comment comment-view))
+           (indent (1+ (length (lem-ui--property 'line-prefix)))))
+      ;; go to end of parent item:
+      (goto-char
+       (next-single-property-change (point) 'id))
+      (insert "\n"
+              (lem-ui-format-comment comment-view indent)))))
+
 (defun lem-post--create-comment-response (response)
-  "Call response functions upon editing a comment.
+  "Call response functions upon creating a comment.
 RESPONSE is the comment_view data returned by the server."
   (with-current-buffer lem-post-last-buffer
     (let-alist response
@@ -229,12 +244,10 @@ RESPONSE is the comment_view data returned by the server."
        response 'comment_view :non-nil
        (format "Comment created: %s" .comment_view.comment.content))
       (lem-ui--update-item-json .comment_view)
-      ;; its not clear if we should always dump new comment right after its
-      ;; parent, or somewhere else in the tree.
-      ;; just reload!
-      ;; (lem-ui-insert-comment-after-parent response) ; parent-id)
+      ;; FIXME: reloading is very slow in large threads, much better to insert
+      ;; (lem-ui-insert-comment-after-parent response)))) ; parent-id)
       (lem-ui-reload-view)
-      (when (eq (lem-ui-view-type) 'post)
+      (when (eq (lem-ui--view-type) 'post)
         (lem-prev-item)))))
 
 ;;; SUBMITTING ITEMS

@@ -67,6 +67,9 @@
   "Non-nil if STR is in `lem-listing-types'."
   (cl-member str lem-listing-types :test 'equal))
 
+(defconst lem-search-listing-types
+  '("All" "Local"))
+
 (defconst lem-sort-types
   '("Active" "Hot" "New" "Old" "Controversial" "Scaled"
     "TopDay" "TopWeek" "TopMonth" "TopYear" "TopAll"
@@ -85,6 +88,9 @@
   (cl-member str lem-comment-sort-types :test 'equal))
 
 ;; as per web UI:
+;; the API shows that users and seach views have normal sort types,
+;; but the web UI gives these options
+;; (API may not be up to date?)
 (defconst lem-user-view-sort-types
   '("New" "Old" "Controversial"
     "TopDay" "TopWeek" "TopMonth" "TopYear" "TopAll"
@@ -95,6 +101,7 @@
   "Non-nil if STR is in `lem-user-view-sort-types'."
   (cl-member str lem-user-view-sort-types :test 'equal))
 
+;; FIXME same as `lem-comment-sort-types' but diff order?
 (defconst lem-inbox-sort-types
   '("New" "Hot" "Top" "Old" "Controversial"))
 
@@ -105,14 +112,17 @@
 (defconst lem-search-types
   '("All" "Comments" "Posts" "Communities" "Users" "Url"))
 
+(defconst lem-search-types-implemented
+  '("Comments" "Posts" "Communities" "Users"))
+
 (defun lem-search-type-p (str)
   "Non-nil if STR is in `lem-search-types'."
   (cl-member str lem-search-types :test 'equal))
 
-(defconst lem-items-types ; instance/community no overview
+(defconst lem-items-types
   '("posts" "comments"))
 
-(defconst lem-user-items-types ; users have overview
+(defconst lem-user-items-types
   '("overview" "posts" "comments"))
 
 (defun lem-user-view-type-p (str)
@@ -148,12 +158,24 @@
   "The default comment sort type to use."
   :type (lem-map-customize-options lem-comment-sort-types))
 
+(defcustom lem-default-communities-sort-type "TopMonth"
+  "The default sort type for `lem-ui-browse-communities'."
+  :type (lem-map-customize-options lem-sort-types))
+
 (defcustom lem-default-listing-type "All"
   "The default listing type to use."
   :type (lem-map-customize-options lem-listing-types))
 
+(defcustom lem-default-items-type "posts"
+  "The default item (posts or comments) for community and instance views."
+  :type (lem-map-customize-options lem-items-types))
+
+(defcustom lem-default-user-items-type "overview"
+  "The default item (overview, posts, or comments) for user views."
+  :type (lem-map-customize-options lem-user-items-types))
+
 (defcustom lem-use-emojify nil
-  "Whether to enable `emojify-mode' in lem buffers."
+  "Whether to enable `emojify-mode' in lem.el buffers."
   :type 'boolean)
 
 (defcustom lem-enable-relative-timestamps t
@@ -182,7 +204,8 @@ the file ~/.emacs.d/lem.plstore and log in again."
     ;; nav/sort:
     (define-key map (kbd "C-c C-c") #'lem-ui-cycle-listing-type)
     (define-key map (kbd "C-c C-s") #'lem-ui-cycle-sort)
-    (define-key map (kbd "C-c C-v") #'lem-ui-toggle-posts-comments)
+    (define-key map (kbd "C-c C-v") #'lem-ui-cycle-items)
+    (define-key map (kbd "C-c C-h") #'lem-ui-cycle-search)
     (define-key map (kbd "o") #'lem-ui-choose-sort)
     (define-key map (kbd "n") #'lem-next-item)
     (define-key map (kbd "p") #'lem-prev-item)
