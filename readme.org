@@ -245,6 +245,7 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-cycle-inbox                     | Cycle inbox to next item view in `lem-inbox-types'.                       |
 | C-c C-v   | lem-ui-cycle-items                     | Switch between displaying posts or comments.                              |
 | C-c C-c   | lem-ui-cycle-listing-type              | Cycle view between `lem-listing-types'.                                   |
+|           | lem-ui-cycle-saved-items               | Cycle saved items view or view type ITEM.                                 |
 | C-c C-h   | lem-ui-cycle-search                    | Cycle current search.                                                     |
 | C-c C-s   | lem-ui-cycle-sort                      | Cycle view between some `lem-sort-types'.                                 |
 |           | lem-ui-delete-comment                  | Delete comment at point.                                                  |
