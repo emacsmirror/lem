@@ -1337,7 +1337,7 @@ EDITED is a timestamp."
       (if title
           ;; TODO: preserve shr-props and add bold?
           (lem-ui-propertize-title
-           (lem-ui-render-body title))
+           (lem-ui-render-body title nil nil :title))
         "")
       (if url
           (concat url "\n")
@@ -1503,10 +1503,11 @@ Adds lem-tab-stop and `lem-ui-link-map' to rendered urls."
         ;; (replace-match "\\\\@")
         ))))
 
-(defun lem-ui-render-body (body &optional json indent)
+(defun lem-ui-render-body (body &optional json indent title)
   "Render item BODY as markdowned html.
 JSON is the item's data to process the link with.
-INDENT is a number, the level of indent for the item."
+INDENT is a number, the level of indent for the item.
+TITLE means we are rendering a title, so fill accordingly."
   (let ((buf "*lem-md*")
         str)
     ;; 1: temp buffer, prepare for md
@@ -1526,8 +1527,12 @@ INDENT is a number, the level of indent for the item."
              (insert old-buf)))))
       ;; 3: shr-render the md
       (with-current-buffer buf
-        (let ((shr-width (when indent
-                           (- (window-width) (+ 1 indent))))
+        (switch-to-buffer buf)
+        (let ((shr-width (cond (indent
+                                (- (window-width) (+ 1 indent)))
+                               (title ; is bold, not variable pitchI
+                                (- (window-width) 8))
+                               (t (window-width))))
               (shr-discard-aria-hidden t)) ; for pandoc md image output
           ;; shr render:
           (shr-render-buffer (current-buffer))))
@@ -1666,8 +1671,7 @@ Optionally render post's COMMUNITY.
 Optionally TRIM post length.
 SORT must be a member of `lem-sort-types'."
   (let-alist post
-    (let* (;(url (lem-ui-render-url .post.url))
-           (body (when .post.body
+    (let* ((body (when .post.body
                    (lem-ui-render-body .post.body (alist-get 'post post))))
            (handle (lem-ui--handle-from-user-url .creator.actor_id))
            (admin-p (eq t .creator_is_admin))
@@ -2234,16 +2238,31 @@ a keyword."
          (cdr byline-bottom)
          `(invisible
            ,(lem-ui--set-invis-prop invis (car byline-bottom))))
-        ;; update child widgets:
-        (let ((widget (save-excursion
-                        (beginning-of-line)
-                        (widget-at))))
-          (lem-ui--widget-update-on-fold widget))
+        ;; update widget:
+        (lem-ui--goto-widget-and-update-on-fold body-p byline-bt-p)
         ;; return result of toggle as kw:
         (or invis ; kw
             (if invis-before
                 :not-invisible
               :invisible))))))
+
+(defun lem-ui--goto-widget-and-update-on-fold (body bottom-byline)
+  "Go to item's widget and call its update function.
+BODY and BOTTOM-BYLINE are flag args for the value of those
+properties at the starting point."
+  ;; del/insert widget breaks save-excursion, so we manually have to
+  ;; return to starting pos for now
+  (let ((start-pos (point))
+        byline-pos w-pos)
+    (save-excursion
+      (when (or body bottom-byline)
+        (lem-prev-item))
+      (setq byline-pos (point))
+      (beginning-of-line)
+      (setq w-pos (point))
+      (goto-char byline-pos)
+      (lem-ui--widget-update-on-fold (widget-at w-pos)))
+    (goto-char start-pos)))
 
 (defun lem-ui-comment-tree-fold (&optional invis indent)
   "Toggle invisibility of current comment and all its children.
@@ -2272,9 +2291,13 @@ Optionally ensure buffer BUF is current."
   (interactive)
   (with-current-buffer (or buf (current-buffer))
     (lem-ui-with-view 'post
-      (save-excursion
-        (lem-ui-branch-top-level)
-        (lem-ui-comment-tree-fold)))))
+      ;; del/insert widget breaks save-excursion, so we manually
+      ;; return to starting pos for now
+      (let ((start-pos (point)))
+        (save-excursion
+          (lem-ui-branch-top-level)
+          (lem-ui-comment-tree-fold))
+        (goto-char start-pos)))))
 
 (defun lem-ui-fold-all-comments (&optional buf)
   "Fold all comments in current buffer.
@@ -2348,12 +2371,20 @@ and recreated."
   ;; help! save us from this awful hack:
   ;; we update, copy, delete, create just to update widget's
   ;; display:
-  (let* ((folded-p (lem-ui--property 'folded))
+  (let* ((folded-p (save-excursion
+                     (unless (lem-ui--property 'byline-top)
+                       (lem-prev-item))
+                     (lem-ui--property 'folded)))
          (indent (lem-ui--property 'line-prefix)))
     (widget-put widget :format
                 (lem-ui--widget-fold-format indent folded-p))
     (let ((w2 (widget-copy widget)))
       (widget-delete widget)
+      ;; this breaks the save-excusion call of our caller!
+      ;; we needed to do this to make sure we insert the new widget at the
+      ;; position of the old one, when we fold with point in the comment body
+      ;; (save-excursion
+      ;; (goto-char pos)
       (widget-default-create w2))))
 
 (defun lem-ui-widget-fold-notify-fun (&optional old-value)
