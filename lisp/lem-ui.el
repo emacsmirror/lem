@@ -1337,7 +1337,7 @@ EDITED is a timestamp."
       (if title
           ;; TODO: preserve shr-props and add bold?
           (lem-ui-propertize-title
-           (lem-ui-render-body title))
+           (lem-ui-render-body title nil nil :title))
         "")
       (if url
           (concat url "\n")
@@ -1503,7 +1503,7 @@ Adds lem-tab-stop and `lem-ui-link-map' to rendered urls."
         ;; (replace-match "\\\\@")
         ))))
 
-(defun lem-ui-render-body (body &optional json indent)
+(defun lem-ui-render-body (body &optional json indent title)
   "Render item BODY as markdowned html.
 JSON is the item's data to process the link with.
 INDENT is a number, the level of indent for the item."
@@ -1526,8 +1526,12 @@ INDENT is a number, the level of indent for the item."
              (insert old-buf)))))
       ;; 3: shr-render the md
       (with-current-buffer buf
-        (let ((shr-width (when indent
-                           (- (window-width) (+ 1 indent))))
+        (switch-to-buffer buf)
+        (let ((shr-width (cond (indent
+                                (- (window-width) (+ 1 indent)))
+                               (title ; is bold, not variable pitchI
+                                (- (window-width) 8))
+                               (t (window-width))))
               (shr-discard-aria-hidden t)) ; for pandoc md image output
           ;; shr render:
           (shr-render-buffer (current-buffer))))
@@ -1666,8 +1670,7 @@ Optionally render post's COMMUNITY.
 Optionally TRIM post length.
 SORT must be a member of `lem-sort-types'."
   (let-alist post
-    (let* (;(url (lem-ui-render-url .post.url))
-           (body (when .post.body
+    (let* ((body (when .post.body
                    (lem-ui-render-body .post.body (alist-get 'post post))))
            (handle (lem-ui--handle-from-user-url .creator.actor_id))
            (admin-p (eq t .creator_is_admin))
