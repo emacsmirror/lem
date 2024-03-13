@@ -2386,6 +2386,7 @@ and recreated."
       ;; position of the old one, when we fold with point in the comment body
       ;; (save-excursion
       ;; (goto-char pos)
+      (beginning-of-line)
       (widget-default-create w2))))
 
 (defun lem-ui-widget-fold-notify-fun (&optional old-value)
