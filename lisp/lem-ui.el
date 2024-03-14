@@ -2142,7 +2142,6 @@ If COMMENT-ID is provided, move point to that comment."
           ;; FIXME: only fold if comment is actually loaded in the view
           (lem-ui-fold-all-comments buf)
           (lem-ui-post-goto-comment comment-id post-id)
-          ;; (lem-ui-fold-entire-parent-branch buf))))))
           (lem-ui-fold-current-branch buf))))))
 
 (defun lem-ui-prev-same-level ()
@@ -2292,15 +2291,16 @@ INDENT is the level of the top level comment to be folded."
             (when (> indent top-indent)
               (lem-ui-comment-tree-fold invis-after top-indent))))))))
 
-(defun lem-ui-fold-current-branch (buf)
-  "Toggle folding of comment at point and all its parents.
+(defun lem-ui-fold-current-branch (&optional buf)
+  "Toggle folding of comment at point and all its parents and children.
 Don't toggle folding of other sub-branches in the same top-level
 branch.
-BUFFER is the post view to fold in."
+BUF is the post view to fold in."
   (interactive)
   (with-current-buffer (or buf (current-buffer))
     (lem-ui-with-view 'post
-      (let ((start-pos (point)))
+      (let ((start-pos (point))
+            last-folded-indent)
         (save-excursion
           ;; ensure we are at byline top
           (when (or (lem-ui--property 'body)
@@ -2310,11 +2310,15 @@ BUFFER is the post view to fold in."
           (lem-ui-comment-tree-fold)
           ;; fold parents:
           (while (not (eq (lem-ui--current-indent) 0))
+            (setq last-folded-indent (lem-ui--current-indent))
             (lem-prev-item)
+            ;; continue backwards we find a foldable item:
+            (while (<= last-folded-indent (lem-ui--current-indent))
+              (lem-prev-item))
             (lem-ui-comment-fold-toggle)))
         (goto-char start-pos)))))
 
-(defun lem-ui-fold-entire-parent-branch (&optional buf)
+(defun lem-ui-fold-whole-top-level-branch (&optional buf)
   "Toggle folding the branch of comment at point.
 Optionally ensure buffer BUF is current."
   (interactive)
