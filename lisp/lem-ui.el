@@ -2409,12 +2409,7 @@ and recreated."
                 (lem-ui--widget-fold-format indent folded-p))
     (let ((w2 (widget-copy widget)))
       (widget-delete widget)
-      ;; this breaks the save-excusion call of our caller!
-      ;; we needed to do this to make sure we insert the new widget at the
-      ;; position of the old one, when we fold with point in the comment body
-      ;; (save-excursion
-      ;; (goto-char pos)
-      (beginning-of-line)
+      (beginning-of-line) ;; assumes we are on top byline
       (widget-default-create w2))))
 
 (defun lem-ui-widget-fold-notify-fun (&optional old-value)
@@ -2422,9 +2417,7 @@ and recreated."
 OLD-VALUE is the widget's value before being changed."
   `(lambda (widget &rest ignore)
      (let ((value (widget-value widget)))
-       ;; FIXME: only works on second click? but RET works
-       ;; this is only called on second click!
-       ;; middle-click doesn't have the problem
+       ;; FIXME: only called on second click? but RET/middle-click works
        (condition-case x
            (save-excursion
              ;; ideally we would have our widget propertized like the
