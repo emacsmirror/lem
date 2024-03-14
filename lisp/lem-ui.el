@@ -85,6 +85,10 @@
   '((t :inherit font-lock-function-name-face :weight bold :underline t))
   "Face used for widgets.")
 
+(defface lem-cursor-face
+  `((t :inherit highlight :extend t))
+  "Face for `lem-highlight-current-item'")
+
 ;;; HIERARCHY PATCHES
 
 (defun lem--hierarchy-labelfn-indent (labelfn)
@@ -1302,7 +1306,6 @@ START and END are the boundaries of the link in the post body."
   "Propertize TITLE-STR as a post title."
   (propertize title-str
               'mouse-face 'highlight
-              'cursor-face '(:inherit highlight :extend t)
               'title t
               'keymap lem-ui-link-map
               'face '(:weight bold)))
@@ -1703,13 +1706,14 @@ SORT must be a member of `lem-sort-types'."
          "\n"
          (lem-ui-bt-byline .counts.score .counts.comments .my_vote .saved)
          "\n"
-         lem-ui-horiz-bar
-         "\n\n")
+         lem-ui-horiz-bar)
         'json post
         'id .post.id
         'community-id .post.community_id
         'creator-id .creator.id
-        'lem-type (caar post))))))
+        'lem-type (caar post)
+        'cursor-face 'lem-cursor-face)
+       "\n\n"))))
 
 (defun lem-ui-insert-post-image-maybe (post) ; &optional alt)
   "Render URL of POST as an image if it resembles one."
@@ -1933,7 +1937,8 @@ WIDGET is a flag, and means create a toggle fold widget."
        'community-id .post.community_id
        'creator-id .creator.id
        'lem-type (if reply 'comment-reply 'comment)
-       'line-prefix indent-str))))
+       'line-prefix indent-str
+       'cursor-face 'lem-cursor-face))))
 
 (defun lem-ui-format-display-prop (del rem)
   "Format a string for display property.

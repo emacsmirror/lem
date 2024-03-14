@@ -184,11 +184,6 @@ This will require periodic updates of a timeline buffer to
 keep the timestamps current as time progresses."
   :type '(boolean :tag "Enable relative timestamps and background updater task"))
 
-(defcustom lem-highlight-current-post-title nil
-  "Whether to highlight the current post's title.
-Uses `cursor-face-highlight-mode'."
-  :type 'boolean)
-
 (defcustom lem-encrypt-auth-tokens nil
   "Whether to encrypt the user's authentication token in the plstore.
 If you set this to non-nil, you also likely need to set
@@ -196,6 +191,12 @@ If you set this to non-nil, you also likely need to set
 If you change the value of this variable, you need to also delete
 the file ~/.emacs.d/lem.plstore and log in again."
   :type 'boolean)
+
+(defcustom lem-highlight-current-item t
+  "Whether to highlight the item at point.
+Uses `cursor-face' special property. Highlights entire comment,
+and post title."
+  :type '(boolean))
 
 ;;; MAP
 
@@ -338,7 +339,7 @@ equal to `lem-instance-url'."
              (require 'emojify nil :no-error))
     (declare-function emojify-mode nil)
     (emojify-mode 1))
-  (when lem-highlight-current-post-title
+  (when lem-highlight-current-item
     (cursor-face-highlight-mode)))
 
 (provide 'lem)
