@@ -87,7 +87,7 @@
 
 (defface lem-cursor-face
   `((t :inherit highlight :extend t))
-  "Face for `lem-highlight-current-item'")
+  "Face for `lem-highlight-current-item'.")
 
 ;;; HIERARCHY PATCHES
 
@@ -2202,6 +2202,39 @@ POS."
           (get-text-property pos
                              'invisible)))))
 
+(defun lem-ui-fold-community-description (&optional invis)
+  "Fold community description in community view.
+INVIS is a keyword arg."
+  (interactive)
+  (lem-ui-with-view 'community
+    (save-excursion
+      (goto-char (point-min))
+      (let* ((inhibit-read-only t)
+             (desc-range (lem-ui--find-property-range 'community-description
+                                                      (point)))
+             (comm-range (lem-ui--find-property-range 'byline-top
+                                                      (point)))
+             (invis-before (when desc-range
+                             (get-text-property (car desc-range)
+                                                'invisible)))
+             (invis (or invis (if invis-before
+                                  :not-invisible
+                                :invisible))))
+        (when desc-range
+          (add-text-properties
+           (car desc-range) (cdr desc-range)
+           `(invisible
+             ,(lem-ui--set-invis-prop invis (car desc-range))))
+          (add-text-properties
+           (car comm-range)
+           (cdr comm-range)
+           `(folded
+             ,(lem-ui--set-invis-prop invis (car comm-range))))
+          (or invis ; kw
+              (if invis-before
+                  :not-invisible
+                :invisible)))))))
+
 (defun lem-ui-comment-fold-toggle (&optional invis)
   "Toggle invisibility of the comment at point.
 Optionally set it to INVIS, a keyword.
@@ -2392,8 +2425,10 @@ FOLDED is a flag, to display either + or -."
   "Un/Fold WIDGET and update its display."
   ;; point is momentarily moved to widget on click event
   ;; or RET, so safe to just move to byline-top then fold:
-  (lem-next-item)
-  (lem-ui-comment-tree-fold)
+  (if (eq (lem-ui--view-type) 'community)
+      (lem-ui-fold-community-description)
+    (lem-next-item)
+    (lem-ui-comment-tree-fold))
   (lem-ui--widget-update-on-fold widget))
 
 (defun lem-ui--widget-update-on-fold (widget)
@@ -2404,10 +2439,15 @@ and recreated."
   ;; help! save us from this awful hack:
   ;; we update, copy, delete, create just to update widget's
   ;; display:
-  (let* ((folded-p (save-excursion
-                     (unless (lem-ui--property 'byline-top)
-                       (lem-prev-item))
-                     (lem-ui--property 'folded)))
+  (let* ((folded-p
+          (if (eq (lem-ui--view-type) 'community)
+              (save-excursion
+                (goto-char (point-min))
+                (lem-ui--property 'folded))
+            (save-excursion
+              (unless (lem-ui--property 'byline-top)
+                (lem-prev-item))
+              (lem-ui--property 'folded))))
          (indent (lem-ui--property 'line-prefix)))
     (widget-put widget :format
                 (lem-ui--widget-fold-format indent folded-p))
@@ -2963,7 +3003,7 @@ PAGE is the page number of items to display, a string."
                               id nil sort limit page)))) ; no sorting
          (bindings opts))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
-      (lem-ui-render-community community :stats :view)
+      (lem-ui-render-community community :stats :view nil :folded)
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-community
                               item page)
       (let* ((choices `(,item ,sort))
@@ -3001,67 +3041,87 @@ TYPE is a symbol, either person or moderator."
                            .id
                            .actor_id))))
 
-(defun lem-ui-render-community (community &optional stats view brief)
+(defun lem-ui-render-community (community &optional stats view brief folded)
   "Render header details for COMMUNITY.
 BUFFER is the one to render in, a string.
 STATS are the community's stats to print.
 VIEW means COMMUNITY is a community_view.
 BRIEF means show fewer details, it is used on the current user's
-profile page."
+profile page.
+FOLDED is a flag to fold community description."
   (let* ((mods-list (unless brief (alist-get 'moderators community)))
          (mods (unless brief (lem-ui--names-list mods-list 'moderator)))
          (community (if view
                         (alist-get 'community_view community)
                       community)))
     (let-alist community
-      (let ((desc (if brief
-                      ""
-                    (if view
-                        (when .community.description
-                          (lem-ui-render-body .community.description
-                                              community))
-                      ;; more communities list means we have 'community
-                      ;; objects, requiring .community.description:
-                      (when-let ((desc (or .community.description
-                                           .description)))
-                        (lem-ui-render-body desc community))))))
+      (let* ((desc (if brief
+                       ""
+                     (if view
+                         (when .community.description
+                           (lem-ui-render-body .community.description
+                                               community))
+                       ;; more communities list means we have 'community
+                       ;; objects, requiring .community.description:
+                       (when-let ((desc (or .community.description
+                                            .description)))
+                         (lem-ui-render-body desc community)))))
+             (community-id .community.id)
+             (props `(json ,community
+                           mods ,mods-list
+                           ;; byline-top t
+                           id ,community-id
+                           lem-type community)))
         (insert
-         (propertize
-          (concat
-           (propertize .community.title
-                       'face '(:weight bold))
-           " | "
-           (lem-ui-font-lock-comment
-            (concat "!" .community.name))
-           (when (eq t .community.posting_restricted_to_mods)
-             (concat " " (lem-ui-symbol 'locked)))
-           "\n"
-           (lem-ui-font-lock-comment .community.actor_id)
-           (unless brief (concat "\n" desc "\n"
-                                 lem-ui-horiz-bar "\n")))
-          'json community
-          'mods mods-list
-          'byline-top t ; next/prev hack
-          'id .community.id
-          'lem-type 'community)))
-      ;; stats:
-      (when stats
-        (lem-ui-render-stats .counts.subscribers
-                             .counts.posts
-                             .counts.comments))
-      (unless brief
-        (insert (concat ;" "
-                 (when (eq .community.nsfw 't)
-                   (concat (propertize "NSFW"
-                                       'face 'success)
-                           " | "))
-                 .subscribed "\n"))))
-    ;; mods:
-    (when mods
-      (lem-ui-insert-people mods "mods: ")
-      (insert
-       "\n" lem-ui-horiz-bar "\n"))
-    (insert "\n")))
+         (apply #'propertize
+                (concat
+                 ;; title and name:
+                 (propertize .community.title
+                             'face '(:weight bold))
+                 " | "
+                 (lem-ui-font-lock-comment
+                  (concat "!" .community.name))
+                 (when (eq t .community.posting_restricted_to_mods)
+                   (concat " " (lem-ui-symbol 'locked)))
+                 "\n"
+                 ;; url
+                 (lem-ui-font-lock-comment .community.actor_id)
+                 "\n")
+                'byline-top t ; next/prev hack
+                props))
+        ;; description (foldable):
+        (unless brief
+          (widget-create 'toggle
+                         :help-echo (format "Toggle description folding")
+                         :format (lem-ui--widget-fold-format nil :folded)
+                         :notify (lem-ui-widget-fold-notify-fun)
+                         :keymap lem-widget-keymap)
+          (insert
+           (apply #'propertize
+                  (concat "\n"
+                          (propertize desc
+                                      'community-description t
+                                      'invisible folded)
+                          "\n" lem-ui-horiz-bar "\n")
+                  props)))
+        ;; ;; stats:
+        (when stats
+          (lem-ui-render-stats .counts.subscribers
+                               .counts.posts
+                               .counts.comments))
+        (unless brief
+          (insert (concat ;" "
+                   (when (eq .community.nsfw 't)
+                     (concat (propertize "NSFW"
+                                         'face 'success)
+                             " | "))
+                   .subscribed "\n")))
+        ;; mods:
+        (when mods
+          (lem-ui-insert-people mods "mods: ")
+          (insert
+           "\n" lem-ui-horiz-bar "\n"))
+        (insert "\n")))))
 
 (defun lem-ui-render-stats (subscribers posts comments
                                         &optional communities)
