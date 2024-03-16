@@ -258,7 +258,9 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-feature-post                    | Feature (pin) a post, either to its instance or community.                |
 |           | lem-ui-fold-all-comments               | Fold all comments in current buffer.                                      |
 | C-M-f     | lem-ui-fold-all-toggle                 | Toggle folding status of all comments in the buffer.                      |
-| M-f       | lem-ui-fold-current-branch             | Toggle folding the branch of comment at point.                            |
+|           | lem-ui-fold-community-description      | Fold community description in community view.                             |
+| M-f       | lem-ui-fold-current-branch             | Toggle folding of comment at point and all its parents and children.      |
+|           | lem-ui-fold-whole-top-level-branch     | Toggle folding the branch of comment at point.                            |
 |           | lem-ui-jump-to-moderated               | Prompt for a community moderated by the current user and view it.         |
 | S         | lem-ui-jump-to-subscribed              | Prompt for a subscribed community and view it.                            |
 |           | lem-ui-like-item                       | Like (upvote) item at point.                                              |
