@@ -1151,6 +1151,10 @@ Lemmy supports lookups for users, posts, comments and communities."
     (if (not (lem-fedilike-url-p query))
         (browse-url query)
       (message "Performing lookup...")
+      ;; ensure we are logged in in case called before any other lem.el
+      ;; function:
+      (unless lem-auth-token
+        (lem-login-set-token))
       (let ((response (lem-resolve-object query)))
         (cond ((stringp response)
                (progn
