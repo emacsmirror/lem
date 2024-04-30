@@ -1671,6 +1671,14 @@ Posts can be featured either for instance or community."
         (eq t .post.featured_local) ; pinned instance
       (eq t .post.featured_community)))) ; pinned community
 
+(defun lem-ui-home-instance-p (url)
+  "Return non-nil if URL is on the user's instance."
+  (let* ((parsed (url-generic-parse-url url))
+         (host (url-host parsed))
+         (own-parsed (url-generic-parse-url lem-instance-url))
+         (own-host (url-host own-parsed)))
+    (equal host own-host)))
+
 (defun lem-ui-render-post (post &optional community trim)
   ;; NB trim in instance, community, and user views
   ;; NB show community info in instance and in post views
@@ -1691,7 +1699,9 @@ SORT must be a member of `lem-sort-types'."
         (concat
          (lem-ui-top-byline .post.name
                             .post.url
-                            (or .creator.display_name .creator.name)
+                            (if (lem-ui-home-instance-p .creator.actor_id)
+                                (or .creator.display_name .creator.name)
+                              (lem-ui-handle-from-url .creator.actor_id))
                             .counts.score
                             .post.published
                             (when community (or .community.title
