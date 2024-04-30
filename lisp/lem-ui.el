@@ -3113,7 +3113,7 @@ FOLDED is a flag to fold community description."
           (insert
            (apply #'propertize
                   (concat "\n"
-                          (propertize desc
+                          (propertize (or desc "")
                                       'community-description t
                                       'invisible folded)
                           "\n" lem-ui-horiz-bar "\n")
