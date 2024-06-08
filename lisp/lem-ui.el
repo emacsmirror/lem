@@ -1784,23 +1784,23 @@ DETAILS means display what community and post the comment is linked to."
 ;; Path: "The path / tree location of a comment, separated by dots, ending
 ;; with the comment's id. Ex: 0.24.27"
 ;; https://github.com/LemmyNet/lemmy/blob/63d3759c481ff2d7594d391ae86e881e2aeca56d/crates/db_schema/src/source/comment.rs#L39
-(defvar-local lem-comments-hierarchy nil)
 (defvar-local lem-comments-raw nil)
 
 (defun lem-ui--build-and-render-comments-hierarchy (comments id)
-  "Build `lem-comments-hierarchy', a hierarchy, from COMMENTS, and render.
+  "Build a hierarchy from COMMENTS and render it.
 ID is the post's id, used for unique buffer names."
   (setq lem-comments-raw comments)
-  (let ((list (alist-get 'comments comments))
-        (buf (format "*lem-post-%s*" id)))
-    (lem-ui--build-hierarchy list) ; sets `lem-comments-hierarchy'
+  (let* ((list (alist-get 'comments comments))
+         (buf (format "*lem-post-%s*" id))
+         (hierarchy (lem-ui--build-hierarchy list)))
     (with-current-buffer (get-buffer-create buf)
       (let ((inhibit-read-only t))
         (lem--hierarchy-print-line
-         lem-comments-hierarchy
+         hierarchy
          (lem--hierarchy-labelfn-indent
           (lambda (item indent)
-            ;; `lem--hierarchy-labelfn-indent' no longer handles line-prefixing:
+            ;; `lem--hierarchy-labelfn-indent' no longer handles
+            ;; line-prefixing:
             (lem-ui-format-comment item indent nil nil :widget))))))))
 
 (defun lem-ui-get-comment-path (comment)
@@ -1820,7 +1820,7 @@ Return nil if comment is only a child of the root post."
       id)))
 
 (defun lem-ui--parentfun (child)
-  "Return the parent of CHILD in `lemmy-comments-hierarchy', recursively.
+  "Return the parent of CHILD, comment data, recursively.
 Parent-fun for `hierarchy-add-tree'."
   (let* ((parent-id (lem-ui--parent-id child))
          (list (alist-get 'comments lem-comments-raw)))
@@ -1836,15 +1836,13 @@ Parent-fun for `hierarchy-add-tree'."
   (split-string path "\\."))
 
 (defun lem-ui--build-hierarchy (comments)
-  "Build a hierarchy of COMMENTS using `hierarchy.el'."
-  ;; (hierarchy-add-trees lem-comments-hierarchy
-  ;; list
-  ;; #'lem-ui--parentfun)))
-  (setq lem-comments-hierarchy (hierarchy-new))
-  (cl-loop for comment in comments
-           do (hierarchy-add-tree lem-comments-hierarchy
-                                  comment
-                                  #'lem-ui--parentfun)))
+  "Build a hierarchy of COMMENTS using `hierarchy.el'.
+Return the hierarchy object"
+  (let ((hierarchy (hierarchy-new)))
+    (cl-loop for comment in comments
+             do (hierarchy-add-tree hierarchy comment
+                                    #'lem-ui--parentfun))
+    hierarchy))
 
 (defun lem-ui--handle-from-user-url (url)
   "Return a formatted user handle from user URL."
