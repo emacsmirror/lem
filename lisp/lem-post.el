@@ -246,6 +246,7 @@ RESPONSE is the comment_view data returned by the server."
       (lem-ui--update-item-json .comment_view)
       ;; FIXME: reloading is very slow in large threads, much better to insert
       ;; (lem-ui-insert-comment-after-parent response)))) ; parent-id)
+      ;; FIXME: if we reload, we whould remain where we were
       (lem-ui-reload-view)
       (when (eq (lem-ui--view-type) 'post)
         (lem-prev-item)))))
