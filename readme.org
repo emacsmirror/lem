@@ -149,6 +149,8 @@ Contributions are welcome. Open an issue to explain if you're working on
 something, and if you want to work on =lem-ui.el= make sure that what you're
 doing can't just be pulled in from =mastodon.el= to save work.
 
+For pull requests, please always open them against the develop branch.
+
 Also feel free to get in touch if you want to use =lem-api.el= to build another frontend.
 
 * Supporting =lem.el=
