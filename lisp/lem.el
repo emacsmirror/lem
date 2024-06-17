@@ -49,6 +49,8 @@
 
 (defvar lem-instance-url "https://lemmy.ml")
 
+(defvar lem-use-totp nil) ;; will ask for TOTP in login if non-nil
+
 (defvar lem-auth-token)
 
 (defvar lem-user-id nil
@@ -297,7 +299,9 @@ Load current user's instance posts."
                                   name (url-host
                                         (url-generic-parse-url
                                          lem-instance-url)))))
-               (login-response (lem-login name password))
+	       (totp (when lem-use-totp
+                        (read-string "TOTP: ")))
+               (login-response (lem-login name password totp))
                (token (alist-get 'jwt login-response)))
           (lem-auth-store-token name token)
           (setq lem-auth-token token

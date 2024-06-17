@@ -292,9 +292,9 @@ are for `lem-search'."
 
 ;;; AUTH
 (lem-def-request "post" "login" "user/login"
-  (username-or-email password)
-  "Log in to `lem-instance-url' with NAME and PASSWORD."
-  (username-or-email password)
+  (username-or-email password totp_2fa_token)
+  "Log in to `lem-instance-url' with NAME, PASSWORD, and (optional) TOTP_2FA_TOKEN."
+  (username-or-email password totp_2fa_token)
   nil nil :unauthed)
 
 (lem-def-request "get" "validate-auth" "user/validate_auth"
