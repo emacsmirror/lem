@@ -300,8 +300,9 @@ Load current user's instance posts."
                                         (url-generic-parse-url
                                          lem-instance-url)))))
 	       (totp (when lem-use-totp
-                        (read-string "TOTP: ")))
-               (login-response (lem-login name password totp))
+                       (read-string "TOTP: ")))
+               (login-response (lem-login name password
+                                          (when lem-use-totp totp)))
                (token (alist-get 'jwt login-response)))
           (lem-auth-store-token name token)
           (setq lem-auth-token token
