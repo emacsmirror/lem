@@ -1535,7 +1535,6 @@ TITLE means we are rendering a title, so fill accordingly."
              (insert old-buf)))))
       ;; 3: shr-render the md
       (with-current-buffer buf
-        (switch-to-buffer buf)
         (let ((shr-width (cond (indent
                                 (- (window-width) (+ 1 indent)))
                                (title ; is bold, not variable pitchI
