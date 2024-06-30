@@ -424,6 +424,7 @@ If we hit `point-max', call `lem-ui-more' then `scroll-up-command'."
   "Jump to prev tab item."
   (interactive)
   (fedi-next-tab-item :prev 'lem-tab-stop))
+
 ;;; VIEW TYPES
 
 (defun lem-ui--view-type ()
@@ -3138,17 +3139,14 @@ FOLDED is a flag to fold community description."
                                         &optional communities)
   "Render stats for SUBSCRIBERS, POSTS, COMMENTS.
 And optionally for instance COMMUNITIES."
-  (let ((s (number-to-string subscribers))
-        (s-sym (lem-ui-symbol 'person))
-        (p (number-to-string posts))
+  (let ((s-sym (lem-ui-symbol 'person))
         (p-sym (lem-ui-symbol 'direct))
-        (c (number-to-string comments))
         (c-sym (lem-ui-symbol 'reply))
         (ties (if communities (number-to-string communities) ""))
         (ties-sym (if communities (lem-ui-symbol 'community) "")))
     (insert
-     (format "%s %s | %s %s | %s %s | %s %s\n"
-             s-sym s p-sym p c-sym c ties-sym ties))))
+     (format "%s %d | %s %d | %s %d | %s %s\n"
+             s-sym subscribers p-sym posts c-sym comments ties-sym ties))))
 
 (defun lem-ui-view-item-community ()
   "View community of item at point."
