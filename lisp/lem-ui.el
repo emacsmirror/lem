@@ -85,6 +85,10 @@
   '((t :inherit font-lock-function-name-face :weight bold :underline t))
   "Face used for widgets.")
 
+(defface lem-cursor-face
+  `((t :inherit highlight :extend t))
+  "Face for `lem-highlight-current-item'.")
+
 ;;; HIERARCHY PATCHES
 
 (defun lem--hierarchy-labelfn-indent (labelfn)
@@ -420,6 +424,7 @@ If we hit `point-max', call `lem-ui-more' then `scroll-up-command'."
   "Jump to prev tab item."
   (interactive)
   (fedi-next-tab-item :prev 'lem-tab-stop))
+
 ;;; VIEW TYPES
 
 (defun lem-ui--view-type ()
@@ -1147,6 +1152,10 @@ Lemmy supports lookups for users, posts, comments and communities."
     (if (not (lem-fedilike-url-p query))
         (browse-url query)
       (message "Performing lookup...")
+      ;; ensure we are logged in in case called before any other lem.el
+      ;; function:
+      (unless lem-auth-token
+        (lem-login-set-token))
       (let ((response (lem-resolve-object query)))
         (cond ((stringp response)
                (progn
@@ -1302,7 +1311,6 @@ START and END are the boundaries of the link in the post body."
   "Propertize TITLE-STR as a post title."
   (propertize title-str
               'mouse-face 'highlight
-              'cursor-face '(:inherit highlight :extend t)
               'title t
               'keymap lem-ui-link-map
               'face '(:weight bold)))
@@ -1528,7 +1536,6 @@ TITLE means we are rendering a title, so fill accordingly."
              (insert old-buf)))))
       ;; 3: shr-render the md
       (with-current-buffer buf
-        (switch-to-buffer buf)
         (let ((shr-width (cond (indent
                                 (- (window-width) (+ 1 indent)))
                                (title ; is bold, not variable pitchI
@@ -1664,6 +1671,14 @@ Posts can be featured either for instance or community."
         (eq t .post.featured_local) ; pinned instance
       (eq t .post.featured_community)))) ; pinned community
 
+(defun lem-ui-home-instance-p (url)
+  "Return non-nil if URL is on the user's instance."
+  (let* ((parsed (url-generic-parse-url url))
+         (host (url-host parsed))
+         (own-parsed (url-generic-parse-url lem-instance-url))
+         (own-host (url-host own-parsed)))
+    (equal host own-host)))
+
 (defun lem-ui-render-post (post &optional community trim)
   ;; NB trim in instance, community, and user views
   ;; NB show community info in instance and in post views
@@ -1684,7 +1699,9 @@ SORT must be a member of `lem-sort-types'."
         (concat
          (lem-ui-top-byline .post.name
                             .post.url
-                            (or .creator.display_name .creator.name)
+                            (if (lem-ui-home-instance-p .creator.actor_id)
+                                (or .creator.display_name .creator.name)
+                              (lem-ui-handle-from-url .creator.actor_id))
                             .counts.score
                             .post.published
                             (when community (or .community.title
@@ -1703,13 +1720,14 @@ SORT must be a member of `lem-sort-types'."
          "\n"
          (lem-ui-bt-byline .counts.score .counts.comments .my_vote .saved)
          "\n"
-         lem-ui-horiz-bar
-         "\n\n")
+         lem-ui-horiz-bar)
         'json post
         'id .post.id
         'community-id .post.community_id
         'creator-id .creator.id
-        'lem-type (caar post))))))
+        'lem-type (caar post)
+        'cursor-face 'lem-cursor-face)
+       "\n\n"))))
 
 (defun lem-ui-insert-post-image-maybe (post) ; &optional alt)
   "Render URL of POST as an image if it resembles one."
@@ -1766,23 +1784,23 @@ DETAILS means display what community and post the comment is linked to."
 ;; Path: "The path / tree location of a comment, separated by dots, ending
 ;; with the comment's id. Ex: 0.24.27"
 ;; https://github.com/LemmyNet/lemmy/blob/63d3759c481ff2d7594d391ae86e881e2aeca56d/crates/db_schema/src/source/comment.rs#L39
-(defvar-local lem-comments-hierarchy nil)
 (defvar-local lem-comments-raw nil)
 
 (defun lem-ui--build-and-render-comments-hierarchy (comments id)
-  "Build `lem-comments-hierarchy', a hierarchy, from COMMENTS, and render.
+  "Build a hierarchy from COMMENTS and render it.
 ID is the post's id, used for unique buffer names."
   (setq lem-comments-raw comments)
-  (let ((list (alist-get 'comments comments))
-        (buf (format "*lem-post-%s*" id)))
-    (lem-ui--build-hierarchy list) ; sets `lem-comments-hierarchy'
+  (let* ((list (alist-get 'comments comments))
+         (buf (format "*lem-post-%s*" id))
+         (hierarchy (lem-ui--build-hierarchy list)))
     (with-current-buffer (get-buffer-create buf)
       (let ((inhibit-read-only t))
         (lem--hierarchy-print-line
-         lem-comments-hierarchy
+         hierarchy
          (lem--hierarchy-labelfn-indent
           (lambda (item indent)
-            ;; `lem--hierarchy-labelfn-indent' no longer handles line-prefixing:
+            ;; `lem--hierarchy-labelfn-indent' no longer handles
+            ;; line-prefixing:
             (lem-ui-format-comment item indent nil nil :widget))))))))
 
 (defun lem-ui-get-comment-path (comment)
@@ -1802,7 +1820,7 @@ Return nil if comment is only a child of the root post."
       id)))
 
 (defun lem-ui--parentfun (child)
-  "Return the parent of CHILD in `lemmy-comments-hierarchy', recursively.
+  "Return the parent of CHILD, comment data, recursively.
 Parent-fun for `hierarchy-add-tree'."
   (let* ((parent-id (lem-ui--parent-id child))
          (list (alist-get 'comments lem-comments-raw)))
@@ -1818,15 +1836,13 @@ Parent-fun for `hierarchy-add-tree'."
   (split-string path "\\."))
 
 (defun lem-ui--build-hierarchy (comments)
-  "Build a hierarchy of COMMENTS using `hierarchy.el'."
-  ;; (hierarchy-add-trees lem-comments-hierarchy
-  ;; list
-  ;; #'lem-ui--parentfun)))
-  (setq lem-comments-hierarchy (hierarchy-new))
-  (cl-loop for comment in comments
-           do (hierarchy-add-tree lem-comments-hierarchy
-                                  comment
-                                  #'lem-ui--parentfun)))
+  "Build a hierarchy of COMMENTS using `hierarchy.el'.
+Return the hierarchy object"
+  (let ((hierarchy (hierarchy-new)))
+    (cl-loop for comment in comments
+             do (hierarchy-add-tree hierarchy comment
+                                    #'lem-ui--parentfun))
+    hierarchy))
 
 (defun lem-ui--handle-from-user-url (url)
   "Return a formatted user handle from user URL."
@@ -1933,7 +1949,8 @@ WIDGET is a flag, and means create a toggle fold widget."
        'community-id .post.community_id
        'creator-id .creator.id
        'lem-type (if reply 'comment-reply 'comment)
-       'line-prefix indent-str))))
+       'line-prefix indent-str
+       'cursor-face 'lem-cursor-face))))
 
 (defun lem-ui-format-display-prop (del rem)
   "Format a string for display property.
@@ -2197,6 +2214,39 @@ POS."
           (get-text-property pos
                              'invisible)))))
 
+(defun lem-ui-fold-community-description (&optional invis)
+  "Fold community description in community view.
+INVIS is a keyword arg."
+  (interactive)
+  (lem-ui-with-view 'community
+    (save-excursion
+      (goto-char (point-min))
+      (let* ((inhibit-read-only t)
+             (desc-range (lem-ui--find-property-range 'community-description
+                                                      (point)))
+             (comm-range (lem-ui--find-property-range 'byline-top
+                                                      (point)))
+             (invis-before (when desc-range
+                             (get-text-property (car desc-range)
+                                                'invisible)))
+             (invis (or invis (if invis-before
+                                  :not-invisible
+                                :invisible))))
+        (when desc-range
+          (add-text-properties
+           (car desc-range) (cdr desc-range)
+           `(invisible
+             ,(lem-ui--set-invis-prop invis (car desc-range))))
+          (add-text-properties
+           (car comm-range)
+           (cdr comm-range)
+           `(folded
+             ,(lem-ui--set-invis-prop invis (car comm-range))))
+          (or invis ; kw
+              (if invis-before
+                  :not-invisible
+                :invisible)))))))
+
 (defun lem-ui-comment-fold-toggle (&optional invis)
   "Toggle invisibility of the comment at point.
 Optionally set it to INVIS, a keyword.
@@ -2287,6 +2337,33 @@ INDENT is the level of the top level comment to be folded."
               (lem-ui-comment-tree-fold invis-after top-indent))))))))
 
 (defun lem-ui-fold-current-branch (&optional buf)
+  "Toggle folding of comment at point and all its parents and children.
+Don't toggle folding of other sub-branches in the same top-level
+branch.
+BUF is the post view to fold in."
+  (interactive)
+  (with-current-buffer (or buf (current-buffer))
+    (lem-ui-with-view 'post
+      (let ((start-pos (point))
+            last-folded-indent)
+        (save-excursion
+          ;; ensure we are at byline top
+          (when (or (lem-ui--property 'body)
+                    (lem-ui--property 'byline-bt-fold))
+            (lem-prev-item))
+          ;; fold children:
+          (lem-ui-comment-tree-fold)
+          ;; fold parents:
+          (while (not (eq (lem-ui--current-indent) 0))
+            (setq last-folded-indent (lem-ui--current-indent))
+            (lem-prev-item)
+            ;; continue backwards we find a foldable item:
+            (while (<= last-folded-indent (lem-ui--current-indent))
+              (lem-prev-item))
+            (lem-ui-comment-fold-toggle)))
+        (goto-char start-pos)))))
+
+(defun lem-ui-fold-whole-top-level-branch (&optional buf)
   "Toggle folding the branch of comment at point.
 Optionally ensure buffer BUF is current."
   (interactive)
@@ -2360,8 +2437,10 @@ FOLDED is a flag, to display either + or -."
   "Un/Fold WIDGET and update its display."
   ;; point is momentarily moved to widget on click event
   ;; or RET, so safe to just move to byline-top then fold:
-  (lem-next-item)
-  (lem-ui-comment-tree-fold)
+  (if (eq (lem-ui--view-type) 'community)
+      (lem-ui-fold-community-description)
+    (lem-next-item)
+    (lem-ui-comment-tree-fold))
   (lem-ui--widget-update-on-fold widget))
 
 (defun lem-ui--widget-update-on-fold (widget)
@@ -2372,21 +2451,21 @@ and recreated."
   ;; help! save us from this awful hack:
   ;; we update, copy, delete, create just to update widget's
   ;; display:
-  (let* ((folded-p (save-excursion
-                     (unless (lem-ui--property 'byline-top)
-                       (lem-prev-item))
-                     (lem-ui--property 'folded)))
+  (let* ((folded-p
+          (if (eq (lem-ui--view-type) 'community)
+              (save-excursion
+                (goto-char (point-min))
+                (lem-ui--property 'folded))
+            (save-excursion
+              (unless (lem-ui--property 'byline-top)
+                (lem-prev-item))
+              (lem-ui--property 'folded))))
          (indent (lem-ui--property 'line-prefix)))
     (widget-put widget :format
                 (lem-ui--widget-fold-format indent folded-p))
     (let ((w2 (widget-copy widget)))
       (widget-delete widget)
-      ;; this breaks the save-excusion call of our caller!
-      ;; we needed to do this to make sure we insert the new widget at the
-      ;; position of the old one, when we fold with point in the comment body
-      ;; (save-excursion
-      ;; (goto-char pos)
-      (beginning-of-line)
+      (beginning-of-line) ;; assumes we are on top byline
       (widget-default-create w2))))
 
 (defun lem-ui-widget-fold-notify-fun (&optional old-value)
@@ -2394,9 +2473,7 @@ and recreated."
 OLD-VALUE is the widget's value before being changed."
   `(lambda (widget &rest ignore)
      (let ((value (widget-value widget)))
-       ;; FIXME: only works on second click? but RET works
-       ;; this is only called on second click!
-       ;; middle-click doesn't have the problem
+       ;; FIXME: only called on second click? but RET/middle-click works
        (condition-case x
            (save-excursion
              ;; ideally we would have our widget propertized like the
@@ -2938,7 +3015,7 @@ PAGE is the page number of items to display, a string."
                               id nil sort limit page)))) ; no sorting
          (bindings opts))
     (lem-ui-with-buffer buf 'lem-mode nil bindings
-      (lem-ui-render-community community :stats :view)
+      (lem-ui-render-community community :stats :view nil :folded)
       (lem-ui-set-buffer-spec nil sort #'lem-ui-view-community
                               item page)
       (let* ((choices `(,item ,sort))
@@ -2976,83 +3053,100 @@ TYPE is a symbol, either person or moderator."
                            .id
                            .actor_id))))
 
-(defun lem-ui-render-community (community &optional stats view brief)
+(defun lem-ui-render-community (community &optional stats view brief folded)
   "Render header details for COMMUNITY.
 BUFFER is the one to render in, a string.
 STATS are the community's stats to print.
 VIEW means COMMUNITY is a community_view.
 BRIEF means show fewer details, it is used on the current user's
-profile page."
+profile page.
+FOLDED is a flag to fold community description."
   (let* ((mods-list (unless brief (alist-get 'moderators community)))
          (mods (unless brief (lem-ui--names-list mods-list 'moderator)))
          (community (if view
                         (alist-get 'community_view community)
                       community)))
     (let-alist community
-      (let ((desc (if brief
-                      ""
-                    (if view
-                        (when .community.description
-                          (lem-ui-render-body .community.description
-                                              community))
-                      ;; more communities list means we have 'community
-                      ;; objects, requiring .community.description:
-                      (when-let ((desc (or .community.description
-                                           .description)))
-                        (lem-ui-render-body desc community))))))
+      (let* ((desc (if brief
+                       ""
+                     (if view
+                         (when .community.description
+                           (lem-ui-render-body .community.description
+                                               community))
+                       ;; more communities list means we have 'community
+                       ;; objects, requiring .community.description:
+                       (when-let ((desc (or .community.description
+                                            .description)))
+                         (lem-ui-render-body desc community)))))
+             (community-id .community.id)
+             (props `(json ,community
+                           mods ,mods-list
+                           ;; byline-top t
+                           id ,community-id
+                           lem-type community)))
         (insert
-         (propertize
-          (concat
-           (propertize .community.title
-                       'face '(:weight bold))
-           " | "
-           (lem-ui-font-lock-comment
-            (concat "!" .community.name))
-           (when (eq t .community.posting_restricted_to_mods)
-             (concat " " (lem-ui-symbol 'locked)))
-           "\n"
-           (lem-ui-font-lock-comment .community.actor_id)
-           (unless brief (concat "\n" desc "\n"
-                                 lem-ui-horiz-bar "\n")))
-          'json community
-          'mods mods-list
-          'byline-top t ; next/prev hack
-          'id .community.id
-          'lem-type 'community)))
-      ;; stats:
-      (when stats
-        (lem-ui-render-stats .counts.subscribers
-                             .counts.posts
-                             .counts.comments))
-      (unless brief
-        (insert (concat ;" "
-                 (when (eq .community.nsfw 't)
-                   (concat (propertize "NSFW"
-                                       'face 'success)
-                           " | "))
-                 .subscribed "\n"))))
-    ;; mods:
-    (when mods
-      (lem-ui-insert-people mods "mods: ")
-      (insert
-       "\n" lem-ui-horiz-bar "\n"))
-    (insert "\n")))
+         (apply #'propertize
+                (concat
+                 ;; title and name:
+                 (propertize .community.title
+                             'face '(:weight bold))
+                 " | "
+                 (lem-ui-font-lock-comment
+                  (concat "!" .community.name))
+                 (when (eq t .community.posting_restricted_to_mods)
+                   (concat " " (lem-ui-symbol 'locked)))
+                 "\n"
+                 ;; url
+                 (lem-ui-font-lock-comment .community.actor_id)
+                 "\n")
+                'byline-top t ; next/prev hack
+                props))
+        ;; description (foldable):
+        (unless brief
+          (widget-create 'toggle
+                         :help-echo (format "Toggle description folding")
+                         :format (lem-ui--widget-fold-format nil :folded)
+                         :notify (lem-ui-widget-fold-notify-fun)
+                         :keymap lem-widget-keymap)
+          (insert
+           (apply #'propertize
+                  (concat "\n"
+                          (propertize (or desc "")
+                                      'community-description t
+                                      'invisible folded)
+                          "\n" lem-ui-horiz-bar "\n")
+                  props)))
+        ;; ;; stats:
+        (when stats
+          (lem-ui-render-stats .counts.subscribers
+                               .counts.posts
+                               .counts.comments))
+        (unless brief
+          (insert (concat ;" "
+                   (when (eq .community.nsfw 't)
+                     (concat (propertize "NSFW"
+                                         'face 'success)
+                             " | "))
+                   .subscribed "\n")))
+        ;; mods:
+        (when mods
+          (lem-ui-insert-people mods "mods: ")
+          (insert
+           "\n" lem-ui-horiz-bar "\n"))
+        (insert "\n")))))
 
 (defun lem-ui-render-stats (subscribers posts comments
                                         &optional communities)
   "Render stats for SUBSCRIBERS, POSTS, COMMENTS.
 And optionally for instance COMMUNITIES."
-  (let ((s (number-to-string subscribers))
-        (s-sym (lem-ui-symbol 'person))
-        (p (number-to-string posts))
+  (let ((s-sym (lem-ui-symbol 'person))
         (p-sym (lem-ui-symbol 'direct))
-        (c (number-to-string comments))
         (c-sym (lem-ui-symbol 'reply))
         (ties (if communities (number-to-string communities) ""))
         (ties-sym (if communities (lem-ui-symbol 'community) "")))
     (insert
-     (format "%s %s | %s %s | %s %s | %s %s\n"
-             s-sym s p-sym p c-sym c ties-sym ties))))
+     (format "%s %d | %s %d | %s %d | %s %s\n"
+             s-sym subscribers p-sym posts c-sym comments ties-sym ties))))
 
 (defun lem-ui-view-item-community ()
   "View community of item at point."

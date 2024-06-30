@@ -29,8 +29,10 @@ Otherwise you can pull from this repo, main or develop branch, add to load-path,
 
 First set =lem-instance-url= to your lemmy instance.
 
-Then the first time you call =lem= you'll be asked for your username and
-password. Upon logging in, your authentication details will be saved in a
+Then the first time you call =lem= you'll be asked for your username and password.
+If =lem-use-totp= is set to a non-nil value, you will also be asked for your TOTP. 
+
+Upon logging in, your authentication details will be saved in a
 plstore under your emacs directory. You "shouldn't" have to provide your
 password again (unless server-side updates require new login).
 
@@ -149,6 +151,8 @@ Contributions are welcome. Open an issue to explain if you're working on
 something, and if you want to work on =lem-ui.el= make sure that what you're
 doing can't just be pulled in from =mastodon.el= to save work.
 
+For pull requests, please always open them against the develop branch.
+
 Also feel free to get in touch if you want to use =lem-api.el= to build another frontend.
 
 * Supporting =lem.el=
@@ -258,7 +262,9 @@ I don't have a tech worker's income, so even a small tip would help out.
 |           | lem-ui-feature-post                    | Feature (pin) a post, either to its instance or community.                |
 |           | lem-ui-fold-all-comments               | Fold all comments in current buffer.                                      |
 | C-M-f     | lem-ui-fold-all-toggle                 | Toggle folding status of all comments in the buffer.                      |
-| M-f       | lem-ui-fold-current-branch             | Toggle folding the branch of comment at point.                            |
+|           | lem-ui-fold-community-description      | Fold community description in community view.                             |
+| M-f       | lem-ui-fold-current-branch             | Toggle folding of comment at point and all its parents and children.      |
+|           | lem-ui-fold-whole-top-level-branch     | Toggle folding the branch of comment at point.                            |
 |           | lem-ui-jump-to-moderated               | Prompt for a community moderated by the current user and view it.         |
 | S         | lem-ui-jump-to-subscribed              | Prompt for a subscribed community and view it.                            |
 |           | lem-ui-like-item                       | Like (upvote) item at point.                                              |
