@@ -89,7 +89,7 @@ Lemmy makes heavy use of sorting. Item (posts, comments, users, communities) vie
 
 Additionally, for search there is:
 
-- =C-c C-h= - =lem-ui-cycle-search= - cycle between search result types for the current query.
+- =C-c C-h= - =lem-ui-cycle-search= - cycle between search result types for the current query (users, posts, comments, communities).
 
 
 ** sorting via widgets
@@ -112,6 +112,8 @@ Listing, sort, item, and search types are also visible and modifiable by drop-do
 - =C-M-f= - =lem-ui-fold-all-toggle= - toggle folding of all comments in buffer
 - =lem-ui-fold-all-comments= - fold all comments in buffer
 - =lem-ui-unfold-all-comments= - unfold all comments in buffer
+
+You can also un-/fold community descriptions in community views.
 
 * dependencies
 
