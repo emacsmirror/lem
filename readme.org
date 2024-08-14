@@ -172,6 +172,8 @@ I don't have a tech worker's income, so even a small tip would help out.
 
 [[file:./lem-post.png][file:./lem-post.png]]
 
+[[file:./lem-communities.png][file:./lem-communities.png]]
+
 * commands index
 #+BEGIN_SRC emacs-lisp :results table :colnames '("Binding" "Command" "Description") :exports results
   (let ((rows))
