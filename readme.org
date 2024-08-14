@@ -168,9 +168,17 @@ I don't have a tech worker's income, so even a small tip would help out.
 
 * screenshots
 
+Instance view showing jump to community:
+
 [[file:lem.png][file:./lem.png]]
 
+Community view (above), and rich post compose (below) showing community completion:
+
 [[file:./lem-post.png][file:./lem-post.png]]
+
+Rich browse communities interface showing listing and sort dropdown widgets (blue):
+
+[[file:./lem-communities.png][file:./lem-communities.png]]
 
 * commands index
 #+BEGIN_SRC emacs-lisp :results table :colnames '("Binding" "Command" "Description") :exports results
