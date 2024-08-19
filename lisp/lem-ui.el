@@ -1531,14 +1531,17 @@ TITLE means we are rendering a title, so fill accordingly."
         (condition-case nil
             (markdown-standalone buf)
           (t ; if rendering fails, return unrendered body:
-           (with-current-buffer buf
+           ;; `get-buffer-create' here to gracefully handle no md/pandoc:
+           (with-current-buffer (get-buffer-create buf)
              (erase-buffer)
-             (insert old-buf)))))
+             (insert old-buf)
+             (message "Unable to render with markdown. Install markdown or\
+pandoc for lem.el to render content correctly.")))))
       ;; 3: shr-render the md
       (with-current-buffer buf
         (let ((shr-width (cond (indent
                                 (- (window-width) (+ 1 indent)))
-                               (title ; is bold, not variable pitchI
+                               (title ; is bold, not variable pitch
                                 (- (window-width) 8))
                                (t (window-width))))
               (shr-discard-aria-hidden t)) ; for pandoc md image output
