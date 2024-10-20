@@ -1,7 +1,7 @@
 ;;; lem-api.el --- Basics for a lemmy client library -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2023  martian hiatus
-;; Author: martian hiatus <martianhiatus [a t] riseup [d o t] net>
+;; Author: martian hiatus <mousebot@disroot.org>
 ;; URL: https://codeberg.org/martianh/lem.el
 ;; Keywords: multimedia, multimedia
 
