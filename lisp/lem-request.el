@@ -115,7 +115,7 @@ Q is the search query.\"
                     `(funcall #',req-fun req-url params nil :json)
                   `(funcall #',req-fun req-url params :silent))))
          (fedi-http--triage response
-                            (lambda ()
+                            (lambda (_)
                               (with-current-buffer response
                                 (fedi-http--process-json))))))))
 

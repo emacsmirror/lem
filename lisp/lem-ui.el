@@ -64,7 +64,7 @@
 (defvar lem-search-types-implemented)
 (defvar lem-default-items-type)
 (defvar lem-search-listing-types)
-
+(defvar lem-instance-url)
 (defvar lem-enable-relative-timestamps)
 
 (defvar-local lem-ui-post-community-mods-ids nil
@@ -74,6 +74,7 @@
 (autoload 'lem-comment-sort-type-p "lem.el")
 (autoload 'lem-sort-type-p "lem.el")
 (autoload 'lem-user-view-sort-type-p "lem.el")
+(autoload 'lem-login-set-token "lem.el")
 
 (defface lem-ui-user-face '((t :inherit warning :underline t))
   "Face user displaying usernames.")
