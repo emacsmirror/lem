@@ -287,7 +287,7 @@ Load current user's instance posts."
   (let* ((name (or lem-current-user
                    (read-string "Username: "))))
     ;; if we have stored token, just set vars:
-    (if-let ((token (lem-auth-fetch-token name)))
+    (if-let* ((token (lem-auth-fetch-token name)))
         (progn (setq lem-auth-token token
                      lem-current-user name)
                (lem-set-user-id name))
