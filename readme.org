@@ -182,32 +182,52 @@ Rich browse communities interface showing listing and sort dropdown widgets (blu
 
 * commands index
 #+BEGIN_SRC emacs-lisp :results table :colnames '("Binding" "Command" "Description") :exports results
-  (let ((rows))
+  (defvar lem-readme-maps
+    (mapcar (lambda (x)
+              x)
+            (list lem-mode-map lem-post-mode-map lem-post-comment-mode-map)))
+
+  (defun lem-readme-where-is-map (symbol maps)
+    ""
+    (cl-remove-duplicates
+     (flatten-tree
+      (mapcar (lambda (x)
+                (where-is-internal symbol x t nil (command-remapping symbol)))
+              maps))
+     :test #'equal))
+
+  (defun lem-readme-push-rows (symbol)
+    (let* ((doc (car
+                 (split-string
+                  (or (documentation symbol t) "")
+                  "\n")))
+           (maps lem-readme-maps)
+           (binding-codes
+            (let ((keys (lem-readme-where-is-map symbol maps)))
+              ;; just take first 2 bindings:
+              (if (> (length keys) 2)
+                  (list (car keys) (cadr keys))
+                keys)))
+           (binding-str (if binding-codes
+                            (mapconcat
+                             (lambda (x)
+                               (key-description x))
+                             binding-codes ", ")
+                          "")))
+      (push `(,binding-str ,symbol ,doc) rows)
+      rows))
+
+  (let (rows)
     (mapatoms
      (lambda (symbol)
        (when (and (string-match "^lem"
                                 (symbol-name symbol))
                   (commandp symbol))
-         (let* ((doc (car
-                      (split-string
-                       (or (documentation symbol t) "")
-                       "\n")))
-                ;; add more keymaps here
-                ;; some keys are in sub 'keymap keys inside a map
-                (maps (list lem-mode-map lem-post-mode-map lem-post-comment-mode-map))
-                (binding-code
-                 (let ((keys (where-is-internal symbol maps nil nil (command-remapping symbol))))
-                   ;; just take first 2 bindings:
-                   (if (> (length keys) 2)
-                       (list (car keys) (cadr keys))
-                     keys)))
-                (binding-str (if binding-code
-                                 (mapconcat #'help--key-description-fontified
-                                            binding-code ", ")
-                               "")))
-           (push `(,binding-str ,symbol ,doc) rows)
-           rows))))
-    (sort rows (lambda (x y) (string-lessp (cadr x) (cadr y)))))
+         (lem-readme-push-rows symbol))))
+    (sort rows
+          (lambda (x y)
+            (string-lessp (cadr x) (cadr y)))))
+
 #+END_SRC
 
 #+RESULTS:
@@ -238,11 +258,12 @@ Rich browse communities interface showing listing and sort dropdown widgets (blu
 | C-c C-u   | lem-post-read-url                      | Read post URL.                                                            |
 | C-c C-o   | lem-post-select-community              | Select community to post to.                                              |
 | C-c C-l   | lem-post-set-post-language             | Prompt for a language and set `fedi-post-language'.                       |
-|           | lem-post-submit                        | Submit the post, comment, or community to lemmy.                          |
+| C-c C-c   | lem-post-submit                        | Submit the post, comment, or community to lemmy.                          |
 | C-c C-n   | lem-post-toggle-nsfw                   | Toggle `fedi-post-content-nsfw'.                                          |
 |           | lem-post-toggle-restricted-to-mods     | Toggle `lem-post-community-restricted-to-mods'.                           |
 | p         | lem-prev-item                          | Move to prev item.                                                        |
 |           | lem-shr-insert-image                   | Insert the image under point into the buffer.                             |
+| /         | lem-switch-to-buffer                   | Switch to a live lem.el buffer.                                           |
 |           | lem-ui--follow-link-at-point           | Follow link at point.                                                     |
 |           | lem-ui-block-community-at-point        | Block community at point.                                                 |
 |           | lem-ui-block-item-instance             | Block instance of item at point.                                          |

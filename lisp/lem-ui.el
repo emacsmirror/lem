@@ -2135,7 +2135,7 @@ NO-RECENTER means don't call `recenter-top-bottom'."
   ;; TODO: implement forward-search/pagination
   (with-current-buffer (format "*lem-post-%s*" post-id)
     (goto-char (point-min))
-    (when-let ((match (text-property-search-forward 'id comment-id t)))
+    (when-let* ((match (text-property-search-forward 'id comment-id t)))
       (goto-char (prop-match-beginning match))
       (unless no-recenter
         (recenter-top-bottom '(4))))))
@@ -2534,7 +2534,7 @@ SEARCH means we are rendering a search result."
                    (lem-ui-render-body .person.bio))
          "\n")
        ;; mods:
-       (when-let ((mods (alist-get 'moderates json)))
+       (when-let* ((mods (alist-get 'moderates json)))
          ;; needs wrapping or filling, maybe we `visual-line-mode' after all:
          (concat "mods: "
                  (cl-loop for c in mods
@@ -2915,12 +2915,12 @@ LIMIT is the max results to return."
                    (read-string "Subscribe to community (by handle): ")))
          (community (unless id
                       (lem-get-community nil handle))))
-    (if-let ((id (or id (lem-ui-get-community-id community)))
-             (fol (lem-follow-community id t))
-             (comm (alist-get 'community
-                              (alist-get 'community_view fol)))
-             (name (or (alist-get 'title comm)
-                       (alist-get 'name comm))))
+    (if-let* ((id (or id (lem-ui-get-community-id community)))
+              (fol (lem-follow-community id t))
+              (comm (alist-get 'community
+                               (alist-get 'community_view fol)))
+              (name (or (alist-get 'title comm)
+                        (alist-get 'name comm))))
         (lem-ui-response-msg fol
                              'community_view :non-nil
                              (format "Subscribed to community %s!" name)))))
@@ -3079,8 +3079,8 @@ FOLDED is a flag to fold community description."
                                                community))
                        ;; more communities list means we have 'community
                        ;; objects, requiring .community.description:
-                       (when-let ((desc (or .community.description
-                                            .description)))
+                       (when-let* ((desc (or .community.description
+                                             .description)))
                          (lem-ui-render-body desc community)))))
              (community-id .community.id)
              (props `(json ,community
