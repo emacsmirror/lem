@@ -71,6 +71,12 @@
   '((t :inherit font-lock-comment-face :weight bold))
   "Face for post title in compose buffer.")
 
+(defcustom lem-compose-autocomplete t
+  "Whether to enable autocompletion in compose buffers.
+Sets `corfu-auto' to t, buffer locally.
+Disable this if you prefer to trigger autocompletion manually."
+  :type 'boolean)
+
 (defvar lem-post-mode-map
   (let ((map (make-sparse-keymap)))
     ;; inheriting doesn't work for our post docs display
@@ -152,29 +158,31 @@ TYPE is a symbol of what we are composing, it may be comment or
 message."
   (interactive)
   (setq lem-post-last-buffer (buffer-name (current-buffer)))
-  (fedi-post--compose-buffer edit
-                             #'markdown-mode
-                             (or mode #'lem-post-mode)
-                             (when mode "lem-post")
-                             (or type 'post)
-                             (list #'lem-post--mentions-capf
-                                   #'lem-post--comms-capf)
-                             (unless type ; post
-                               '(((name . "title")
-                                  (no-label . t)
-                                  (prop . post-title)
-                                  (item-var . lem-post-title)
-                                  (face . lem-post-title-face))
-                                 ((name . "URL")
-                                  (no-label . t)
-                                  (prop . post-url)
-                                  (item-var . lem-post-url)
-                                  (face . link))
-                                 ((name . "community")
-                                  (no-label . t)
-                                  (prop . post-community)
-                                  (item-var . lem-post-community-name)
-                                  (face . lem-post-community-face)))))
+  (fedi-post--compose-buffer
+   edit
+   #'markdown-mode
+   (or mode #'lem-post-mode)
+   (when mode "lem-post")
+   (or type 'post)
+   (list #'lem-post--mentions-capf
+         #'lem-post--comms-capf)
+   (unless type ; post
+     '(((name . "title")
+        (no-label . t)
+        (prop . post-title)
+        (item-var . lem-post-title)
+        (face . lem-post-title-face))
+       ((name . "URL")
+        (no-label . t)
+        (prop . post-url)
+        (item-var . lem-post-url)
+        (face . link))
+       ((name . "community")
+        (no-label . t)
+        (prop . post-community)
+        (item-var . lem-post-community-name)
+        (face . lem-post-community-face))))
+   nil nil nil lem-compose-autocomplete)
   (setq lem-post-item-type 'post))
 
 (defun lem-post-compose-simple ()
